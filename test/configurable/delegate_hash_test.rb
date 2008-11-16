@@ -5,8 +5,6 @@ class DelegateHashTest < Test::Unit::TestCase
   Delegate = Configurable::Delegate
   DelegateHash = Configurable::DelegateHash
   
-  include Tap::Test::SubsetTest
-  
   class Receiver
     attr_accessor :key
     
