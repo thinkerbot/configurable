@@ -1,16 +1,16 @@
-require 'configurable/delegate'
+require 'configurable/configuration'
 
 module Configurable
   
-  # DelegateHash delegates get and set operations to instance methods on a receiver.  
+  # ConfigurationHash delegates get and set operations to instance methods on a receiver.  
   #
   #   class Sample
   #     attr_accessor :key
   #   end
   #   sample = Sample.new
   #
-  #   dhash = DelegateHash.new
-  #   dhash.delegates[:key] = Delegate.new(:key)
+  #   dhash = ConfigurationHash.new
+  #   dhash.delegates[:key] = Configuration.new(:key)
   #   dhash.bind(sample)
   #
   #   sample.key = 'value'
@@ -27,7 +27,7 @@ module Configurable
   #   dhash.store                # => {:not_delegated => 'value'}
   #   dhash.to_hash              # => {:key => 'another', :not_delegated => 'value'}
   #
-  class DelegateHash
+  class ConfigurationHash
     
     # The bound receiver
     attr_reader :receiver
@@ -35,7 +35,7 @@ module Configurable
     # The underlying data store for non-delegate keys
     attr_reader :store
     
-    # A hash of (key, Delegate) pairs identifying which
+    # A hash of (key, Configuration) pairs identifying which
     # keys to delegate to the receiver
     attr_reader :delegates
     
@@ -129,7 +129,7 @@ module Configurable
     #   self
     # end
     
-    # Duplicates self, returning an unbound DelegateHash.
+    # Duplicates self, returning an unbound ConfigurationHash.
     def dup
       duplicate = super()
       duplicate.instance_variable_set(:@receiver, nil)

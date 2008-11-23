@@ -1,9 +1,9 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable/delegate_hash'
+require 'configurable/configuration_hash'
 
-class DelegateHashTest < Test::Unit::TestCase
-  Delegate = Configurable::Delegate
-  DelegateHash = Configurable::DelegateHash
+class ConfigurationHashTest < Test::Unit::TestCase
+  Configuration = Configurable::Configuration
+  ConfigurationHash = Configurable::ConfigurationHash
   
   class Receiver
     attr_accessor :key
@@ -17,7 +17,7 @@ class DelegateHashTest < Test::Unit::TestCase
   
   def setup
     @r = Receiver.new
-    @d = DelegateHash.new({:key => Delegate.new(:key)})
+    @d = ConfigurationHash.new({:key => Configuration.new(:key)})
   end
   
   #
@@ -31,8 +31,8 @@ class DelegateHashTest < Test::Unit::TestCase
   def test_documentation
     sample = Sample.new
     
-    dhash = DelegateHash.new
-    dhash.delegates[:key] = Delegate.new(:key)
+    dhash = ConfigurationHash.new
+    dhash.delegates[:key] = Configuration.new(:key)
     dhash.bind(sample)
   
     sample.key = 'value'
@@ -53,7 +53,7 @@ class DelegateHashTest < Test::Unit::TestCase
   #
   
   def test_default_initialize
-    d = DelegateHash.new
+    d = ConfigurationHash.new
     assert_equal(nil, d.receiver)
     assert_equal({}, d.store)
     assert_equal({}, d.delegates)
@@ -61,7 +61,7 @@ class DelegateHashTest < Test::Unit::TestCase
   
   def test_initialize_binds_receiver
     r = Receiver.new
-    d = DelegateHash.new({:key => Delegate.new(:key)}, r, {:key => 'value'})
+    d = ConfigurationHash.new({:key => Configuration.new(:key)}, r, {:key => 'value'})
     
     assert d.bound?
     assert_equal({}, d.store)
@@ -353,7 +353,7 @@ class DelegateHashTest < Test::Unit::TestCase
     d[:one] = 'one'
     assert d == {:one => 'one'}
     
-    d2 = DelegateHash.new({}, nil, {:one => 'one'})
+    d2 = ConfigurationHash.new({}, nil, {:one => 'one'})
     assert d == d2
   end
   

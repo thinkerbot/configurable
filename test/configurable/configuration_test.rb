@@ -1,17 +1,17 @@
 require File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable/delegate'
+require 'configurable/configuration'
 
-class DelegateTest < Test::Unit::TestCase
-  Delegate = Configurable::Delegate
+class ConfigurationTest < Test::Unit::TestCase
+  Configuration = Configurable::Configuration
   
   attr_reader :c
   
   def setup
-    @c = Delegate.new('key', 'key=', nil)
+    @c = Configuration.new('key', 'key=', nil)
   end
   
   #
-  # Delegate.duplicable_value?
+  # Configuration.duplicable_value?
   #
   
   class NonDuplicable
@@ -20,13 +20,13 @@ class DelegateTest < Test::Unit::TestCase
   
   def test_duplicable_value_is_false_if_default_cannot_be_duplicated
     [nil, 1, 1.1, true, false, :sym, NonDuplicable.new].each do |non_duplicable_value|
-      assert !Delegate.duplicable_value?(non_duplicable_value)
+      assert !Configuration.duplicable_value?(non_duplicable_value)
     end
   end
   
   def test_duplicable_value_is_true_if_default_can_be_duplicated
     [{}, [], Object.new].each do |duplicable_value|
-      assert Delegate.duplicable_value?(duplicable_value)
+      assert Configuration.duplicable_value?(duplicable_value)
     end
   end
   
@@ -35,7 +35,7 @@ class DelegateTest < Test::Unit::TestCase
   #
   
   def test_initialize
-    c = Delegate.new('key', 'key=', 'default', :attr => 'value')
+    c = Configuration.new('key', 'key=', 'default', :attr => 'value')
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal 'default', c.default
@@ -43,7 +43,7 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   def test_initialize_using_defaults
-    c = Delegate.new('key')
+    c = Configuration.new('key')
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal nil, c.default
@@ -51,7 +51,7 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   def test_reader_and_writer_may_be_set_to_nil_during_initialize
-    c = Delegate.new(nil, nil, 'default')
+    c = Configuration.new(nil, nil, 'default')
     assert_equal nil, c.reader
     assert_equal nil, c.writer
   end
@@ -152,26 +152,26 @@ class DelegateTest < Test::Unit::TestCase
   #
   
   def test_another_is_equal_to_self_if_key_default_reader_and_writer_are_equal
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('key', 'key=', 'default')
+    config = Configuration.new('key', 'key=', 'default')
+    another = Configuration.new('key', 'key=', 'default')
     assert config == another
     
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('alt', 'key=', 'default')
+    config = Configuration.new('key', 'key=', 'default')
+    another = Configuration.new('alt', 'key=', 'default')
     assert config != another
     
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('key', 'alt=', 'default')
+    config = Configuration.new('key', 'key=', 'default')
+    another = Configuration.new('key', 'alt=', 'default')
     assert config != another
     
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('key', 'key=', 'alt')
+    config = Configuration.new('key', 'key=', 'default')
+    another = Configuration.new('key', 'key=', 'alt')
     assert config != another
   end
   
   def test_equal_does_not_consider_attributes
-    config = Delegate.new('key')
-    another = Delegate.new('key')
+    config = Configuration.new('key')
+    another = Configuration.new('key')
     another.attributes[:attr] = 'value'
     
     assert config.attributes != another.attributes

@@ -1,8 +1,8 @@
 module Configurable
   
-  # Delegates are used by DelegateHash to determine how to map read/write
+  # Configurations are used by ConfigurationHash to determine how to map read/write
   # operations to a receiver.
-  class Delegate
+  class Configuration
     class << self
       
       # Determines if the value is duplicable.  Non-duplicable 
@@ -39,7 +39,7 @@ module Configurable
 
     # Sets the default value for self.
     def default=(value)
-      @duplicable = Delegate.duplicable_value?(value)
+      @duplicable = Configuration.duplicable_value?(value)
       @default = value.freeze
     end
     
@@ -62,11 +62,11 @@ module Configurable
       @writer = value == nil ? value : value.to_sym
     end
     
-    # True if another is a kind of Delegate with the same
+    # True if another is a kind of Configuration with the same
     # reader, writer, and default value.  Attributes are
     # not considered.
     def ==(another)
-      another.kind_of?(Delegate) &&
+      another.kind_of?(Configuration) &&
       self.reader == another.reader &&
       self.writer == another.writer &&
       self.default(false) == another.default(false)

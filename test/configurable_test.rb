@@ -2,7 +2,7 @@ require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'configurable'
 
 class ConfigurableTest < Test::Unit::TestCase
-  Delegate = Configurable::Delegate
+  Configuration = Configurable::Configuration
   acts_as_subset_test
   
   # sample class repeatedly used in tests
@@ -19,8 +19,8 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_sample
     assert_equal({
-      :one => Delegate.new('one', 'one=', 'one'), 
-      :two => Delegate.new('two', 'two=', 'two')
+      :one => Configuration.new('one', 'one=', 'one'), 
+      :two => Configuration.new('two', 'two=', 'two')
     }, Sample.configurations)
     
     s = Sample.new
@@ -51,7 +51,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_documentation
     c = ConfigClass.new
-    assert_equal(Configurable::DelegateHash, c.config.class)
+    assert_equal(Configurable::ConfigurationHash, c.config.class)
     assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config)
   
     c.config[:one] = 'ONE'
@@ -116,10 +116,10 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_subclasses_inherit_configurations
-    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({:one => Configuration.new(:one, :one=, 'one')}, IncludeBase.configurations)
     assert_equal({
-      :one => Delegate.new(:one, :one=, 'one'), 
-      :two => Delegate.new(:two, :two=, 'two')
+      :one => Configuration.new(:one, :one=, 'one'), 
+      :two => Configuration.new(:two, :two=, 'two')
     }, IncludeSubclass.configurations)
   end
   
@@ -130,15 +130,15 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_inherited_configurations_can_be_overridden
-    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
-    assert_equal({:one => Delegate.new(:one, :one=, 'ONE')}, OverrideSubclass.configurations)
+    assert_equal({:one => Configuration.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({:one => Configuration.new(:one, :one=, 'ONE')}, OverrideSubclass.configurations)
   end
   
   def test_manual_changes_to_inherited_configurations_do_not_propogate_to_superclass
     ChangeDefaultSubclass.configurations[:one].default = 'two'
     
-    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
-    assert_equal({:one => Delegate.new(:one, :one=, 'two')}, ChangeDefaultSubclass.configurations)
+    assert_equal({:one => Configuration.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({:one => Configuration.new(:one, :one=, 'two')}, ChangeDefaultSubclass.configurations)
   end
   
   #
@@ -168,10 +168,10 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_config_adds_configurations_to_class_configuration
     assert_equal({
-      :zero =>  Delegate.new('zero', 'zero=', 'zero'),
-      :one =>   Delegate.new('one', 'one=', 'one'),
-      :two =>   Delegate.new('two', 'two=', 'two'),
-      :three => Delegate.new('three', 'three=', nil)
+      :zero =>  Configuration.new('zero', 'zero=', 'zero'),
+      :one =>   Configuration.new('one', 'one=', 'one'),
+      :two =>   Configuration.new('two', 'two=', 'two'),
+      :three => Configuration.new('three', 'three=', nil)
     },
     SampleClass.configurations)
   end
@@ -243,7 +243,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_config_attr_documentation
     s = DocSampleClass.new
-    assert_equal Configurable::DelegateHash, s.config.class
+    assert_equal Configurable::ConfigurationHash, s.config.class
     assert_equal 'value', s.str
     assert_equal 'value', s.config[:str]
   

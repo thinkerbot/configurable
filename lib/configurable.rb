@@ -74,7 +74,7 @@ module Configurable
   
   protected
   
-  # Initializes config to an DelegateHash. Default config values 
+  # Initializes config to an ConfigurationHash. Default config values 
   # are overridden as specified by overrides.
   def initialize_config(overrides={})
     delegates = self.class.configurations
@@ -90,6 +90,6 @@ module Configurable
       store[key] = delegate.default unless store.has_key?(key)
     end
     
-    @config = DelegateHash.new(delegates, self, store)
+    @config = ConfigurationHash.new(delegates, self, store)
   end
 end

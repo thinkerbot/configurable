@@ -1,4 +1,4 @@
-require 'configurable/delegate_hash'
+require 'configurable/configuration_hash'
 require 'configurable/validation'
 
 module ConfigurableClass
@@ -44,7 +44,7 @@ module ConfigurableClass
   #
   def config(key, value=nil, options={}, &block)
     if block_given?
-      options = standard_attributes(block).merge(options)
+      options = c::ATTRIBUTES[block].merge(options)
     
       instance_variable = "@#{key}".to_sym
       config_attr(key, value, options) do |input|
@@ -82,11 +82,11 @@ module ConfigurableClass
   #   end
   #
   # Instances of a Configurable class may set configurations through config.
-  # The config object is an DelegateHash which forwards read/write 
+  # The config object is an ConfigurationHash which forwards read/write 
   # operations to the configuration accessors.  For example:
   #
   #   s = SampleClass.new
-  #   s.config.class            # => Configurable::DelegateHash
+  #   s.config.class            # => Configurable::ConfigurationHash
   #   s.str                     # => 'value'
   #   s.config[:str]            # => 'value'
   #
@@ -136,7 +136,7 @@ module ConfigurableClass
   # which must be defined elsewhere) while nil prevents read/write
   # mapping of the config to a method.
   def config_attr(key, value=nil, options={}, &block)
-    attributes = standard_attributes(block).merge(:reader => true, :writer => true, :lazydoc => true)
+    attributes = c::ATTRIBUTES[block].merge(:reader => true, :writer => true, :lazydoc => true)
     attributes.merge!(options)
   
     # define the default public reader method
@@ -168,7 +168,7 @@ module ConfigurableClass
     end
     
     # register with Lazydoc so that all extra documentation can be extracted
-    if options[:lazydoc]
+    if options.delete(:lazydoc)
     # caller.each do |line|
     #   case line
     #   when /in .config.$/ then next
@@ -179,32 +179,12 @@ module ConfigurableClass
     # end if options[:desc] == nil
     end
   
-    configurations[key] = Configurable::Delegate.new(reader, writer, value)
+    configurations[key] = Configurable::Configuration.new(reader, writer, value, options)
   end
 
   # Alias for Configurable::Validation
   def c
-    Validation
+    Configurable::Validation
   end
   
-  private
-  
-  Validation = Configurable::Validation
-  
-  def standard_attributes(block)
-    case 
-    when block == Validation::SWITCH 
-      {:arg_type => :switch}
-    when block == Validation::FLAG
-      {:arg_type => :flag}
-    when block == Validation::LIST
-      {:arg_type => :list}
-    when block == Validation::ARRAY 
-      {:arg_name => "'[a, b, c]'"}
-    when block == Validation::HASH 
-      {:arg_name => "'{one: 1, two: 2}'"}
-    else 
-      {}
-    end
-  end
 end

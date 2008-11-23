@@ -472,5 +472,12 @@ module Configurable
     end 
     TIME_OR_NIL = time_or_nil_block
     
+    # A hash of default attributes for the validation blocks.
+    ATTRIBUTES = Hash.new({})
+    ATTRIBUTES[SWITCH] = {:arg_type => :switch}
+    ATTRIBUTES[FLAG]   = {:arg_type => :flag}
+    ATTRIBUTES[LIST]   = {:arg_type => :list}
+    ATTRIBUTES[ARRAY]  = {:arg_name => "'[a, b, c]'"}
+    ATTRIBUTES[HASH]   = {:arg_name => "'{one: 1, two: 2}'"}
   end
 end
