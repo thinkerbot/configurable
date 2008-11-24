@@ -1,4 +1,5 @@
 require 'configurable_class'
+
 # Configurable enables the specification of configurations within a class definition.
 #
 #   class ConfigClass
