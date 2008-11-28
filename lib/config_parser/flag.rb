@@ -1,6 +1,10 @@
 class ConfigParser 
-  class Switch
-    # long to --flag
-    # corresponding value: --flag      => !default
+  class Flag
+
+    def parse(switch, value, argv, config)
+      raise "value specified for flag" if value
+      config[key] = !default
+    end
+    
   end
 end

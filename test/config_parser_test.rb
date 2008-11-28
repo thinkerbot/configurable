@@ -2,69 +2,176 @@ require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'config_parser'
 
 class ConfigParserTest < Test::Unit::TestCase
-
-  #
-  # LONG_OPTION test
-  #
+  Option = ConfigParser::Option
   
-  def test_LONG_OPTION
-    r = ConfigParser::LONG_OPTION
-    
-    assert "--long-option" =~ r
-    assert_equal "long-option", $1
-    assert_equal nil, $3
-    
-    assert "--long-option=value" =~ r
-    assert_equal "long-option", $1
-    assert_equal "value", $3
-    
-    assert "--nested:long-option=value" =~ r
-    assert_equal "nested:long-option", $1
-    assert_equal "value", $3
-    
-    assert "--long-option=value=with=equals" =~ r
-    assert_equal "long-option", $1
-    assert_equal "value=with=equals", $3
-    
-    # non-matching
-    assert "arg" !~ r
-    assert "-o" !~ r
-    assert "--" !~ r
-    assert "---" !~ r
-    assert "--." !~ r
-    assert "--1" !~ r
-    assert "--=value" !~ r
+  attr_reader :c
+  
+  def setup
+    @c = ConfigParser.new
   end
   
   #
-  # SHORT_OPTION test
+  # register test
   #
   
-  def test_SHORT_OPTION
-    r = ConfigParser::SHORT_OPTION
+  def test_register_adds_opt_to_options
+    opt = Option.new(:key, 'value')
+    c.register(opt)
     
-    assert "-o" =~ r
-    assert_equal "o", $1
-    assert_equal nil, $3
+    assert_equal [opt], c.options
+  end
+  
+  def test_register_adds_opt_to_switches_by_switches
+    opt = Option.new(:key, 'value', :long => 'long', :short => 's')
+    c.register(opt)
     
-    assert "-ovalue" =~ r
-    assert_equal "o", $1
-    assert_equal "value", $3
+    assert_equal({'--long' => opt, '-s' => opt}, c.switches)
+  end
+  
+  def test_register_raises_error_for_conflicting_keys
+    c.register(Option.new(:key, 'value'))
     
-    assert "-o=value" =~ r
-    assert_equal "o", $1
-    assert_equal "value", $3
+    e = assert_raise(ArgumentError) { c.register(Option.new(:key, 'value')) }
+    assert_equal "key is already set by a different option: key", e.message
+  end
+  
+  def test_register_raises_error_for_conflicting_keys
+    c.register(Option.new(:key, 'value'))
     
-    assert "-o=value=with=equals" =~ r
-    assert_equal "o", $1
-    assert_equal "value=with=equals", $3
+    e = assert_raise(ArgumentError) { c.register(Option.new(:key, 'value')) }
+    assert_equal "key is already set by a different option: key", e.message
+  end
+  
+  def test_register_raises_error_for_conflicting_switches
+    c.register(Option.new(:a, '', :long => 'key', :short => 'k'))
     
-    # non-matching
-    assert "arg" !~ r
-    assert "--o" !~ r
-    assert "--" !~ r
-    assert "-." !~ r
-    assert "-1" !~ r
-    assert "-=value" !~ r
+    e = assert_raise(ArgumentError) { c.register(Option.new(:b, '', :long => 'key')) }
+    assert_equal "switch is already mapped to a different option: --key", e.message
+    
+    e = assert_raise(ArgumentError) { c.register(Option.new(:c, '', :short => 'k')) }
+    assert_equal "switch is already mapped to a different option: -k", e.message
+  end
+  
+  def test_register_does_not_raise_errors_for_registering_an_option_twice
+    opt = Option.new(:a, '', :long => 'key', :short => 'k')
+    c.register(opt)
+    assert_nothing_raised { c.register(opt) }
+  end
+  
+  #
+  # on test
+  #
+  
+  def test_on_adds_option
+    c.on(:key, 'value')
+    
+    assert_equal [[:key, 'value']], c.options.collect {|opt| [opt.key, opt.default]}
+  end
+  
+  #
+  # parse test
+  #
+  
+  def test_parse_adds_defaults_to_config
+    c.on('opt', 'default')
+    config, args = c.parse(["a", "b"])
+    
+    assert_equal({"opt" => "default"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_for_simple_option
+    c.on('opt', 'default')
+    config, args = c.parse(["a", "--opt", "value", "b"])
+    
+    assert_equal({"opt" => "value"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_for_simple_option_with_equals_syntax
+    c.on('opt', 'default')
+    config, args = c.parse(["a", "--opt=value", "b"])
+    
+    assert_equal({"opt" => "value"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_for_simple_option_with_empty_equals
+    c.on('opt', 'default')
+    config, args = c.parse(["a", "--opt=", "b"])
+    
+    assert_equal({"opt" => ""}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_with_short_syntax
+    c.on('opt', 'default', :short => 'o')
+    config, args = c.parse(["a", "-o", "value", "b"])
+    
+    assert_equal({"opt" => "value"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_with_short_equal_syntax
+    c.on('opt', 'default', :short => 'o')
+    config, args = c.parse(["a", "-o=value", "b"])
+    
+    assert_equal({"opt" => "value"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_with_short_empty_equals_syntax
+    c.on('opt', 'default', :short => 'o')
+    config, args = c.parse(["a", "-o=", "b"])
+    
+    assert_equal({"opt" => ""}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_with_alternate_short_syntax
+    c.on('opt', 'default', :short => 'o')
+    config, args = c.parse(["a", "-ovalue", "b"])
+    
+    assert_equal({"opt" => "value"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_for_simple_option_with_block
+    c.on('opt', 'default') {|value| value.upcase }
+    config, args = c.parse(["a", "--opt", "value", "b"])
+    
+    assert_equal({"opt" => "VALUE"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_block_recieves_default_values
+    c.on('opt', 'default') {|value| value.upcase }
+    config, args = c.parse(["a", "b"])
+    
+    assert_equal({"opt" => "DEFAULT"}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_raises_error_if_no_value_is_available
+    c.on('opt', 'default')
+    assert_raise(RuntimeError) { c.parse(["--opt"]) }
+  end
+  
+  def test_parse_stops_parsing_on_option_break
+    c.on('one', 'default')
+    c.on('two', 'default')
+    config, args = c.parse(["a", "--one", "1", "--", "--two", "2"])
+    
+    assert_equal({"one" => "1", "two" => "default"}, config)
+    assert_equal(["a", "--two", "2"], args)
+  end
+  
+  def test_parse_with_non_string_inputs
+    c.on('opt', 'default')
+    o = Object.new
+    config, args = c.parse([o, 1, {}, "--opt", :sym, []])
+    
+    assert_equal({"opt" => :sym}, config)
+    assert_equal([o, 1, {},[]], args)
   end
 end

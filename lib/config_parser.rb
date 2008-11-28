@@ -1,11 +1,43 @@
-require 'configurable'
+require 'config_parser/option'
 
 class ConfigParser 
+  include Utils
   
-  attr_reader :options
+  attr_reader :switches
+  
+  def initialize
+    @options = []
+    @switches = {}
+  end
+  
+  def options
+    @options.select do |opt|
+      opt.kind_of?(Option)
+    end
+  end
   
   def separator(str)
-    options << str
+    @options << str
+  end
+  
+  # Registers the option with self by adding opt to options and mapping
+  # the opt switches. Raises an error for conflicting keys and switches.
+  def register(opt)
+    unless @options.include?(opt)
+      # check for conflicts and register
+      if @options.find {|existing| existing.key == opt.key }
+        raise ArgumentError, "key is already set by a different option: #{opt.key}"
+      end
+      @options << opt
+    end
+    
+    opt.switches.each do |switch|
+      case @switches[switch]
+      when opt then next
+      when nil then @switches[switch] = opt
+      else raise ArgumentError, "switch is already mapped to a different option: #{switch}"
+      end
+    end
   end
   
   def on(key, value=nil, options={}, &block)
@@ -19,41 +51,9 @@ class ConfigParser
     register klass.new(key, value, options, &block)
   end
   
-  def register(opt)
-    return if options.include?(opt)
-    
-    # check for conflicts
-    # options.each do |existing|
-    #   if existing.key == opt.key && existing.nesting == opt.nesting
-    #     raise "conflict"
-    #   end
-    # end
-    
-    opt.longs.each do |long|
-      raise if long_options.has_key?(long)
-      long_options[long] = opt
-    end
-    
-    opt.shorts.each do |short|
-      raise if short_options.has_key?(short)
-      short_options[short] = opt
-    end
-    
-    options << opt
-  end
-  
-  # no block allowed?
-  # def add(key, configuration)
-  #   on(key, configuration.default(false), configuration.attributes)
-  # end
-  
   def parse(argv=ARGV)
     parse!(argv.dup)
   end
-  
-  OPTION_BREAK = "--"
-  LONG_OPTION = /^--([A-z].*?)(=(.*))?$/  # variants: /^--([^=].*?)(=(.*))?$/
-  SHORT_OPTION = /^-([A-z])(=?(.+))?$/
   
   def parse!(argv=ARGV)
     config = {}
@@ -63,88 +63,41 @@ class ConfigParser
       arg = argv.shift
       
       # determine if the arg is an option
-      unless arg[0] == ?-
+      unless arg.kind_of?(String) && arg[0] == ?-
         args << arg
         next
       end
       
-      # lookup the option
-      option = case
-      when OPTION_BREAK
+      # add the remaining args and break
+      # for the option break
+      if arg == OPTION_BREAK
         args.concat(argv)
         break
-      when LONG_OPTION 
-        long_options[$1]
-      when SHORT_OPTION 
-        short_options[$1]
-      else
-        nil
       end
       
-      unless option
-        raise "unknown option: #{arg}"
+      # split the arg
+      arg =~ LONG_OPTION || arg =~ SHORT_OPTION 
+      
+      # lookup the option
+      unless option = @switches[$1]
+        raise "unknown option: #{$1}"
       end
-      
-      # determine the value
-      # value = case 
-      # when option.flag?
-      #   raise "value specified for flag" if $3
-      #   !option.default
-      #   
-      # when option.switch?
-      #   raise "value specified for switch" if $3
-      #   parse_switch($1, option.key, option.default)
-      # 
-      # when option.list?
-      #   parse_list($3 || argv.shift)
-      #   
-      # else
-      #   $3 || argv.shift
-      # end
-      value = option.parse($1, $3, argv)
-      
-      # map value into config, collecting values as necessary
-      # target = option.nesting.inject(config) {|hash, key| hash[key] ||= {} }
-      # if n = option.n
-      #   target = (target[option.key] ||= [])
-      #   
-      #   if option.list?
-      #     target.concat(value)
-      #   else
-      #     target << value
-      #   end
-      #   
-      #   raise "too many specified" unless n < 0 || target.length <= n
-      # else
-      #   target[option.key] = value
-      # end
-      
-      target = option.target(config)
-      option.store(target, key)
+
+      option.parse($1, $3, argv, config)
     end
     
-    # insert default values as necessary and process config values
-    config = {}
-    options.each do |option|
+    # insert defaults as necessary and process values
+    @options.each do |option|
       next if option.kind_of?(String)
-      
-      target = option.target(config)
-      # target = option.nesting.inject(config) {|hash, key| hash[key] ||= {} }
-      
-      key = option.key
-      value = target.has_key?(key) ? target[key] : option.default
-      value = option.block.call(value) if option.block
-      
-      target[key] = value
+      option.process(config)
     end
 
     [config, args]
   end
   
   def to_s
-    options.collect do |option|
+    @options.collect do |option|
       option.to_s
     end.join("\n")
   end
-  
 end
