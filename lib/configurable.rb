@@ -112,6 +112,18 @@ module Configurable
   # A ConfigHash bound to self
   attr_reader :config
   
+  # Reconfigures self with the given overrides. Only the specified configs
+  # are modified. Keys are symbolized.
+  #
+  # Returns self.
+  def reconfigure(overrides={})
+    overrides.each_pair do |key, value|
+      config[key.to_sym] = value
+    end
+
+    self
+  end
+  
   # Reinitializes configurations in the copy such that
   # the new object has it's own set of configurations,
   # separate from the original object.

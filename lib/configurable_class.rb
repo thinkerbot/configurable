@@ -44,11 +44,11 @@ module ConfigurableClass
   
   # Loads the contents of path as YAML.  Returns an empty hash if the path 
   # is empty, does not exist, or is not a file.
-  # def load_config(path)
-  #   # the last check prevents YAML from auto-loading itself for empty files
-  #   return {} if path == nil || !File.file?(path) || File.size(path) == 0
-  #   YAML.load_file(path) || {}
-  # end
+  def load_config(path)
+    # the last check prevents YAML from auto-loading itself for empty files
+    return {} if path == nil || !File.file?(path) || File.size(path) == 0
+    YAML.load_file(path) || {}
+  end
   
   protected
   
@@ -157,7 +157,7 @@ module ConfigurableClass
   
     configurations[key] = Configurable::Config.new(reader, writer, value, options)
   end
-
+  
   # Alias for Validation
   def c
     Configurable::Validation

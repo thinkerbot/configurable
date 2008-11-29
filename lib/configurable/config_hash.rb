@@ -127,12 +127,12 @@ module Configurable
     # set if a value does not already exist.
     #
     # Returns self.
-    # def update
-    #   delegates.each_pair do |key, delegate|
-    #     self[key] ||= delegate.default
-    #   end
-    #   self
-    # end
+    def update(delegates)
+      delegates.each_pair do |key, delegate|
+        self[key] ||= delegate.default
+      end
+      self
+    end
   
     # Duplicates self, returning an unbound ConfigHash.
     def dup
