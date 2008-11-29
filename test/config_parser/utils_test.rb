@@ -1,5 +1,5 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'config_parser/option'
+require 'config_parser/utils'
 
 class UtilsTest < Test::Unit::TestCase
   include ConfigParser::Utils
@@ -128,5 +128,22 @@ class UtilsTest < Test::Unit::TestCase
     
     e = assert_raise(ArgumentError) { longify("") }
     assert_equal "invalid long option: --", e.message
+  end
+  
+  #
+  # nest test
+  #
+  
+  def test_nest_documentation
+    expected = {
+      'key' => 1,
+      'compound' => {'key' => 2}
+    }
+    assert_equal expected, nest('key' => 1, 'compound:key' => 2)
+    
+    options = [
+      {'key' => {}},
+      {'key' => {'overlap' => 'value'}}]
+    assert options.include?(nest('key' => {}, 'key:overlap' => 'value'))
   end
 end

@@ -1,62 +1,15 @@
-class ConfigParser
-  module Utils
-    module_function
-    OPTION_BREAK = "--"
-    
-    # Matches a short option
-    SHORT_OPTION = /^(-[A-z])(=?(.+))?$/
-    
-    # Turns the input string into a short-format option.  Raises
-    # an error if the option does not match SHORT_OPTION.  Nils
-    # are returned directly.
-    #
-    #   Utils.shortify("-o")         # => '-o'
-    #   Utils.shortify(:o)           # => '-o'
-    #
-    def shortify(str)
-      return nil if str == nil
-      
-      str = str.to_s
-      str = "-#{str}" unless str[0] == ?-
-      unless str =~ ConfigParser::SHORT_OPTION && ($3 == nil || $3.empty?)
-        raise ArgumentError, "invalid short option: #{str}"
-      end
-      str
-    end
-    
-    # Matches a long option
-    LONG_OPTION = /^(--[A-z].*?)(=(.*))?$/  # variants: /^--([^=].*?)(=(.*))?$/
-    
-    # Turns the input string into a long-format option.  Underscores
-    # are converted to hyphens. Raises an error if the option does
-    # not match LONG_OPTION.  Nils are returned directly.
-    #
-    #   Utils.longify("--opt")       # => '--opt'
-    #   Utils.longify(:opt)          # => '--opt'
-    #   Utils.longify(:opt_ion)      # => '--opt-ion'
-    #
-    def longify(str)
-      return nil if str == nil
-      
-      str = str.to_s
-      str = "--#{str}" unless str =~ /^--/
-      str.gsub!(/_/, '-')
-      unless str =~ ConfigParser::LONG_OPTION && ($3 == nil || $3.empty?)
-        raise ArgumentError, "invalid long option: #{str}"
-      end
-      str
-    end
-  end
-  
+require 'config_parser/utils'
+
+class ConfigParser  
   class Option
     include Utils
     
     attr_reader :key
-    attr_reader :default  # the default value
+    attr_reader :default  
     attr_reader :long
     attr_reader :short
     attr_reader :desc     
-    attr_reader :block    # values passed to block, if given.  result collected
+    attr_reader :block
     
     def initialize(key, default, options={}, &block)
       @key = key
