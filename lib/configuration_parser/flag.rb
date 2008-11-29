@@ -1,4 +1,4 @@
-class ConfigParser 
+class ConfigurationParser 
   class Flag < Option
     
     def initialize(*args)

@@ -1,4 +1,4 @@
-class ConfigParser 
+class ConfigurationParser 
   class Switch < Option
     attr_reader :negative_long
     

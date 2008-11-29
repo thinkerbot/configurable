@@ -2,7 +2,6 @@ require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'configurable'
 
 class ConfigurableTest < Test::Unit::TestCase
-  Configuration = Configurable::Configuration
   acts_as_subset_test
   
   # sample class repeatedly used in tests
@@ -51,7 +50,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_documentation
     c = ConfigClass.new
-    assert_equal(Configurable::ConfigurationHash, c.config.class)
+    assert_equal(ConfigurationHash, c.config.class)
     assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config)
   
     c.config[:one] = 'ONE'
@@ -72,10 +71,10 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal(-2, s.two)
     s.two = "3"
     assert_equal 3, s.two
-    e = assert_raise(Configurable::Validation::ValidationError) { s.two = nil }
+    e = assert_raise(Validation::ValidationError) { s.two = nil }
     assert_equal "expected [Integer] but was: nil", e.message
     
-    e = assert_raise(Configurable::Validation::ValidationError) { s.two = 'str' }
+    e = assert_raise(Validation::ValidationError) { s.two = 'str' }
     assert_equal "expected [Integer] but was: \"str\"", e.message
   end
   
@@ -243,7 +242,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_config_attr_documentation
     s = DocSampleClass.new
-    assert_equal Configurable::ConfigurationHash, s.config.class
+    assert_equal ConfigurationHash, s.config.class
     assert_equal 'value', s.str
     assert_equal 'value', s.config[:str]
   

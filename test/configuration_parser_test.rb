@@ -1,13 +1,13 @@
 require  File.join(File.dirname(__FILE__), 'tap_test_helper')
-require 'config_parser'
+require 'configuration_parser'
 
-class ConfigParserTest < Test::Unit::TestCase
-  Option = ConfigParser::Option
+class ConfigurationParserTest < Test::Unit::TestCase
+  Option = ConfigurationParser::Option
   
   attr_reader :c
   
   def setup
-    @c = ConfigParser.new
+    @c = ConfigurationParser.new
   end
   
   #
@@ -69,12 +69,12 @@ class ConfigParserTest < Test::Unit::TestCase
   
   def test_on_creates_Flag_option_with_flag_type
     opt = c.on(:key, true, :type => :flag)
-    assert_equal ConfigParser::Flag, opt.class
+    assert_equal ConfigurationParser::Flag, opt.class
   end
   
   def test_on_creates_Switch_option_with_switch_type
     opt = c.on(:key, true, :type => :switch)
-    assert_equal ConfigParser::Switch, opt.class
+    assert_equal ConfigurationParser::Switch, opt.class
   end
   
   #

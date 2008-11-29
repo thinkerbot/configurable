@@ -1,8 +1,8 @@
-require 'config_parser/option'
-require 'config_parser/switch'
-require 'config_parser/flag'
+require 'configuration_parser/option'
+require 'configuration_parser/switch'
+require 'configuration_parser/flag'
 
-class ConfigParser 
+class ConfigurationParser 
   include Utils
   
   attr_reader :switches

@@ -1,5 +1,5 @@
-require 'configurable/configuration_hash'
-require 'configurable/validation'
+require 'configuration_hash'
+require 'validation'
 
 module ConfigurableClass
   # A hash holding the class configurations.
@@ -86,7 +86,7 @@ module ConfigurableClass
   # operations to the configuration accessors.  For example:
   #
   #   s = SampleClass.new
-  #   s.config.class            # => Configurable::ConfigurationHash
+  #   s.config.class            # => ConfigurationHash
   #   s.str                     # => 'value'
   #   s.config[:str]            # => 'value'
   #
@@ -179,12 +179,12 @@ module ConfigurableClass
     # end if options[:desc] == nil
     end
   
-    configurations[key] = Configurable::Configuration.new(reader, writer, value, options)
+    configurations[key] = Configuration.new(reader, writer, value, options)
   end
 
-  # Alias for Configurable::Validation
+  # Alias for Validation
   def c
-    Configurable::Validation
+    Validation
   end
   
 end

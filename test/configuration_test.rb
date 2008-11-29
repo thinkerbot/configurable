@@ -1,9 +1,7 @@
-require File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable/configuration'
+require File.join(File.dirname(__FILE__), 'tap_test_helper')
+require 'configuration'
 
 class ConfigurationTest < Test::Unit::TestCase
-  Configuration = Configurable::Configuration
-  
   attr_reader :c
   
   def setup

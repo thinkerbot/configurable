@@ -15,7 +15,7 @@ require 'configurable_class'
 #   end
 #
 #   c = ConfigClass.new
-#   c.config.class         # => InstanceConfiguration
+#   c.config.class         # => ConfigurationHash
 #   c.config               # => {:one => 'one', :two => 'two', :three => 'three'}
 #
 # The <tt>config</tt> object acts as a forwarding hash; declared configurations

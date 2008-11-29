@@ -1,8 +1,8 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'config_parser/utils'
+require 'configuration_parser/utils'
 
 class UtilsTest < Test::Unit::TestCase
-  include ConfigParser::Utils
+  include ConfigurationParser::Utils
   
   #
   # LONG_OPTION test
@@ -108,8 +108,8 @@ class UtilsTest < Test::Unit::TestCase
   #
   
   def test_shortify_documentation
-    assert_equal '-o', ConfigParser::Utils.shortify("-o")
-    assert_equal '-o', ConfigParser::Utils.shortify(:o)
+    assert_equal '-o', ConfigurationParser::Utils.shortify("-o")
+    assert_equal '-o', ConfigurationParser::Utils.shortify(:o)
   end
   
   def test_shortify_turns_option_into_short
@@ -138,9 +138,9 @@ class UtilsTest < Test::Unit::TestCase
   #
   
   def test_longify_documentation
-    assert_equal '--opt', ConfigParser::Utils.longify("--opt")
-    assert_equal '--opt', ConfigParser::Utils.longify(:opt)
-    assert_equal '--opt-ion', ConfigParser::Utils.longify(:opt_ion) 
+    assert_equal '--opt', ConfigurationParser::Utils.longify("--opt")
+    assert_equal '--opt', ConfigurationParser::Utils.longify(:opt)
+    assert_equal '--opt-ion', ConfigurationParser::Utils.longify(:opt_ion) 
   end
   
   def test_longify_turns_option_into_long

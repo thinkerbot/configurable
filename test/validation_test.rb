@@ -1,15 +1,15 @@
-require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable/validation'
+require  File.join(File.dirname(__FILE__), 'tap_test_helper')
+require 'validation'
 
 class ValidationTest < Test::Unit::TestCase
-  include Configurable::Validation
+  include Validation
   
   #
   # documentation test
   #
   
   def test_documentation
-    integer = Configurable::Validation.integer
+    integer = Validation.integer
     assert_equal(Proc, integer.class)
     assert_equal 1, integer.call(1)
     assert_equal 1, integer.call('1')

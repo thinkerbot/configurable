@@ -1,6 +1,6 @@
-require 'config_parser/utils'
+require 'configuration_parser/utils'
 
-class ConfigParser  
+class ConfigurationParser  
   class Option
     include Utils
     

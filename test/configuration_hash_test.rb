@@ -1,9 +1,7 @@
-require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable/configuration_hash'
+require  File.join(File.dirname(__FILE__), 'tap_test_helper')
+require 'configuration_hash'
 
 class ConfigurationHashTest < Test::Unit::TestCase
-  Configuration = Configurable::Configuration
-  ConfigurationHash = Configurable::ConfigurationHash
   
   class Receiver
     attr_accessor :key

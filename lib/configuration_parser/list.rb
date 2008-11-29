@@ -1,4 +1,4 @@
-class ConfigParser 
+class ConfigurationParser 
   class List
     # list allows to --list a,b,c
     # list generates an array value, always

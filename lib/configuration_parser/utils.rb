@@ -1,4 +1,4 @@
-class ConfigParser
+class ConfigurationParser
   module Utils
     module_function
     OPTION_BREAK = "--"
@@ -20,7 +20,7 @@ class ConfigParser
       
       str = str.to_s
       str = "-#{str}" unless str[0] == ?-
-      unless str =~ ConfigParser::SHORT_OPTION && $3 == nil
+      unless str =~ ConfigurationParser::SHORT_OPTION && $3 == nil
         raise ArgumentError, "invalid short option: #{str}"
       end
       str
@@ -43,7 +43,7 @@ class ConfigParser
       str = str.to_s
       str = "--#{str}" unless str =~ /^--/
       str.gsub!(/_/, '-')
-      unless str =~ ConfigParser::LONG_OPTION && $3 == nil
+      unless str =~ ConfigurationParser::LONG_OPTION && $3 == nil
         raise ArgumentError, "invalid long option: #{str}"
       end
       str
