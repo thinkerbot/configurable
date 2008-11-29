@@ -15,7 +15,7 @@ require 'configurable_class'
 #   end
 #
 #   c = ConfigClass.new
-#   c.config.class         # => ConfigHash
+#   c.config.class         # => Configurable::ConfigHash
 #   c.config               # => {:one => 'one', :two => 'two', :three => 'three'}
 #
 # The <tt>config</tt> object acts as a forwarding hash; declared configurations
@@ -51,9 +51,56 @@ require 'configurable_class'
 #   s.two                  # => 3
 #   s.two = nil            # !> ValidationError
 #   s.two = 'str'          # !> ValidationError
+# 
+# As shown here, Configurations are inherited from the parent and may be
+# overridden in subclasses.
 #
-# As shown above, configurations are inherited from the parent and may be
-# overridden in subclasses.  See ConfigurableClass for more details.
+# === Options
+#
+# Alternative reader and writer methods may be specified as options to config.
+# When alternate methods are specified, Configurable assumes the methods are 
+# declared elsewhere and will not define accessors.  
+# 
+#   class AlternativeClass
+#     include Configurable
+#
+#     config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
+#
+#     def initialize
+#       initialize_config
+#     end
+#
+#     def get_sym
+#       @sym
+#     end
+#
+#     def set_sym(input)
+#       @sym = input.to_sym
+#     end
+#   end
+#
+#   alt = AlternativeClass.new
+#   alt.respond_to?(:sym)     # => false
+#   alt.respond_to?(:sym=)    # => false
+#   
+#   alt.config[:sym] = 'one'
+#   alt.get_sym               # => :one
+#
+#   alt.set_sym('two')
+#   alt.config[:sym]          # => :two
+#
+# Idiosyncratically, true, false, and nil may also be provided as 
+# reader/writer options. 
+#
+#   true     Same as using the defaults, accessors are defined.
+#
+#   false    Sets the default reader/writer but does not define
+#            the accessors (think 'define reader/writer' => false).
+#
+#   nil      Does not define a reader/writer, and does not define
+#            the accessors. In effect this will define a config
+#            that does not map to the instance, but will be
+#            present in instance.config
 #
 module Configurable
   
@@ -62,7 +109,7 @@ module Configurable
     mod.extend ConfigurableClass if mod.kind_of?(Class)
   end
   
-  # An InstanceConfig with configurations for self
+  # A ConfigHash bound to self
   attr_reader :config
   
   # Reinitializes configurations in the copy such that
@@ -75,7 +122,7 @@ module Configurable
   
   protected
   
-  # Initializes config to an ConfigHash. Default config values 
+  # Initializes config. Default config values 
   # are overridden as specified by overrides.
   def initialize_config(overrides={})
     delegates = self.class.configurations

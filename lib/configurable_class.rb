@@ -1,30 +1,63 @@
+require 'lazydoc/attributes'
 require 'configurable/config_hash'
 require 'configurable/validation'
+require 'configurable/desc'
 
+# ConfigurableClass extends classes that include Configurable and
+# provides methods for declaring configurations.
 module ConfigurableClass
+  include Lazydoc::Attributes
+  
   # A hash holding the class configurations.
   attr_reader :configurations
 
   def self.extended(base) # :nodoc:
+    caller.each_with_index do |line, index|
+      case line
+      when /\/configurable.rb/ then next
+      when Lazydoc::CALLER_REGEXP
+        base.instance_variable_set(:@source_file, File.expand_path($1))
+        break
+      end
+    end
+    
     base.instance_variable_set(:@configurations, {})
   end
 
   def inherited(child) # :nodoc:
+    unless child.instance_variable_defined?(:@source_file)
+      caller.first =~ Lazydoc::CALLER_REGEXP
+      child.instance_variable_set(:@source_file, File.expand_path($1)) 
+    end
+    
     configurations = {}
     @configurations.each_pair {|key, config| configurations[key] = config.dup } 
     child.instance_variable_set(:@configurations, configurations)
     super
   end
   
+  # Returns the lazydoc for self.
+  # def lazydoc(resolve=true)
+  #   Lazydoc.resolve_comments(configurations.code_comments) if resolve
+  #   super
+  # end
+  
+  # Loads the contents of path as YAML.  Returns an empty hash if the path 
+  # is empty, does not exist, or is not a file.
+  # def load_config(path)
+  #   # the last check prevents YAML from auto-loading itself for empty files
+  #   return {} if path == nil || !File.file?(path) || File.size(path) == 0
+  #   YAML.load_file(path) || {}
+  # end
+  
   protected
   
   # Declares a class configuration and generates the associated accessors. 
   # If a block is given, the <tt>key=</tt> method will set <tt>@key</tt> 
   # to the return of the block, which executes in class-context.  
-  # Configs are inherited, and can be overridden in subclasses. 
   #
   #   class SampleClass
-  #     include Tap::Support::Configurable
+  #     include Configurable
   #
   #     config :str, 'value'
   #     config(:upcase, 'value') {|input| input.upcase } 
@@ -44,7 +77,7 @@ module ConfigurableClass
   #
   def config(key, value=nil, options={}, &block)
     if block_given?
-      options = c::ATTRIBUTES[block].merge(options)
+      options = Configurable::Validation::ATTRIBUTES[block].merge(options)
     
       instance_variable = "@#{key}".to_sym
       config_attr(key, value, options) do |input|
@@ -56,9 +89,8 @@ module ConfigurableClass
   end
 
   # Declares a class configuration and generates the associated accessors. 
-  # If a block is given, the <tt>key=</tt> method will perform the block with
-  # instance-context.  Configs are inherited, and can be overridden 
-  # in subclasses. 
+  # If a block is given, the <tt>key=</tt> method will perform the block
+  # with instance-context.
   #
   #   class SampleClass
   #     include Configurable
@@ -81,62 +113,8 @@ module ConfigurableClass
   #     end
   #   end
   #
-  # Instances of a Configurable class may set configurations through config.
-  # The config object is an ConfigHash which forwards read/write 
-  # operations to the configuration accessors.  For example:
-  #
-  #   s = SampleClass.new
-  #   s.config.class            # => ConfigHash
-  #   s.str                     # => 'value'
-  #   s.config[:str]            # => 'value'
-  #
-  #   s.str = 'one'
-  #   s.config[:str]            # => 'one'
-  #   
-  #   s.config[:str] = 'two' 
-  #   s.str                     # => 'two'
-  # 
-  # Alternative reader and writer methods may be specified as an option;
-  # in this case config_attr assumes the methods are declared elsewhere
-  # and will not define the associated accessors.  
-  # 
-  #   class AlternativeClass
-  #     include Configurable
-  #
-  #     config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
-  #
-  #     def initialize
-  #       initialize_config
-  #     end
-  #
-  #     def get_sym
-  #       @sym
-  #     end
-  #
-  #     def set_sym(input)
-  #       @sym = input.to_sym
-  #     end
-  #   end
-  #
-  #   alt = AlternativeClass.new
-  #   alt.respond_to?(:sym)     # => false
-  #   alt.respond_to?(:sym=)    # => false
-  #   
-  #   alt.config[:sym] = 'one'
-  #   alt.get_sym               # => :one
-  #
-  #   alt.set_sym('two')
-  #   alt.config[:sym]          # => :two
-  #
-  # Idiosyncratically, true, false, and nil may also be provided as 
-  # reader/writer options. Specifying true is the same as using the 
-  # default.  Specifying false or nil prevents config_attr from 
-  # defining accessors; false sets the configuration to use 
-  # the default reader/writer methods (ie <tt>key</tt> and <tt>key=</tt>,
-  # which must be defined elsewhere) while nil prevents read/write
-  # mapping of the config to a method.
   def config_attr(key, value=nil, options={}, &block)
-    attributes = c::ATTRIBUTES[block].merge(:reader => true, :writer => true, :lazydoc => true)
+    attributes = Configurable::Validation::ATTRIBUTES[block].merge(:reader => true, :writer => true)
     attributes.merge!(options)
   
     # define the default public reader method
@@ -155,7 +133,7 @@ module ConfigurableClass
     writer = attributes.delete(:writer)
   
     if block_given? && writer != true
-      raise(ArgumentError, "a block may not be specified without writer == true") 
+      raise ArgumentError, "a block may not be specified without writer == true"
     end
   
     case writer
@@ -168,16 +146,14 @@ module ConfigurableClass
     end
     
     # register with Lazydoc so that all extra documentation can be extracted
-    if options.delete(:lazydoc)
-    # caller.each do |line|
-    #   case line
-    #   when /in .config.$/ then next
-    #   when Lazydoc::CALLER_REGEXP
-    #     options[:desc] = Lazydoc.register($1, $3.to_i - 1, Lazydoc::Config)
-    #     break
-    #   end
-    # end if options[:desc] == nil
-    end
+    caller.each do |line|
+      case line
+      when /in .config.$/ then next
+      when Lazydoc::CALLER_REGEXP
+        options[:desc] = Lazydoc.register($1, $3.to_i - 1, Configurable::Desc)
+        break
+      end
+    end unless options[:desc]
   
     configurations[key] = Configurable::Config.new(reader, writer, value, options)
   end

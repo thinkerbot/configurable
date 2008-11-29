@@ -3,9 +3,7 @@ require 'configurable'
 
 class ConfigurableTest < Test::Unit::TestCase
   acts_as_subset_test
-  Config = Configurable::Config
-  ConfigHash = Configurable::ConfigHash
-  Validation = Configurable::Validation
+  include Configurable
   
   # sample class repeatedly used in tests
   class Sample
@@ -51,9 +49,44 @@ class ConfigurableTest < Test::Unit::TestCase
     config :two, 2, &c.integer
   end
   
+  class ConfigClass
+    include Configurable
+  
+    config :one, 'one'
+    config :two, 'two'
+    config :three, 'three'
+  
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+  end
+  
+  class SubClass < ConfigClass
+    config(:one, 'one') {|v| v.upcase }
+    config :two, 2, &c.integer
+  end
+  
+  class DocAlternativeClass
+    include Configurable
+  
+    config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
+  
+    def initialize
+      initialize_config
+    end
+    
+    def get_sym
+      @sym
+    end
+  
+    def set_sym(input)
+      @sym = input.to_sym
+    end
+  end
+  
   def test_documentation
     c = ConfigClass.new
-    assert_equal(ConfigHash, c.config.class)
+    assert_equal(Configurable::ConfigHash, c.config.class)
     assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config)
   
     c.config[:one] = 'ONE'
@@ -79,6 +112,16 @@ class ConfigurableTest < Test::Unit::TestCase
     
     e = assert_raise(Validation::ValidationError) { s.two = 'str' }
     assert_equal "expected [Integer] but was: \"str\"", e.message
+    
+    alt = DocAlternativeClass.new
+    assert_equal false, alt.respond_to?(:sym)
+    assert_equal false, alt.respond_to?(:sym=)
+    
+    alt.config[:sym] = 'one'
+    assert_equal :one, alt.get_sym
+  
+    alt.set_sym('two')
+    assert_equal :two, alt.config[:sym]
   end
   
   #
@@ -214,57 +257,76 @@ class ConfigurableTest < Test::Unit::TestCase
   # config_attr test
   #
   
-  class DocSampleClass
+  class OptionClass
     include Configurable
   
-    def initialize
-      initialize_config
-    end
-    
-    config_attr :str, 'value'
-    config_attr(:upcase, 'value') {|input| @upcase = input.upcase } 
+    config_attr :trues, 'value', :reader => true, :writer => true
+    config_attr :falses, 'value', :reader => false, :writer => false
+    config_attr :nils, 'value', :reader => nil, :writer => nil
   end
   
-  class DocAlternativeClass
+  def test_config_attr_reader_and_writer_true
+    o = OptionClass.new
+    assert o.respond_to?(:trues)
+    assert o.respond_to?(:trues=)
+    
+    config = OptionClass.configurations[:trues]
+    assert_equal :trues, config.reader
+    assert_equal :trues=, config.writer
+  end
+  
+  def test_config_attr_reader_and_writer_false
+    o = OptionClass.new
+    assert !o.respond_to?(:falses)
+    assert !o.respond_to?(:falses=)
+    
+    config = OptionClass.configurations[:falses]
+    assert_equal :falses, config.reader
+    assert_equal :falses=, config.writer
+  end
+  
+  def test_config_attr_reader_and_writer_nil
+    o = OptionClass.new
+    assert !o.respond_to?(:nils)
+    assert !o.respond_to?(:nils=)
+    
+    config = OptionClass.configurations[:nils]
+    assert_equal nil, config.reader
+    assert_equal nil, config.writer
+  end
+  
+  def test_block_without_writer_true_raises_error
+    e = assert_raise(ArgumentError) { OptionClass.send(:config_attr, :key, 'val', :writer => :alt) {} }
+    assert_equal "a block may not be specified without writer == true", e.message
+    
+    e = assert_raise(ArgumentError) { OptionClass.send(:config_attr, :key, 'val', :writer => false) {} }
+    assert_equal "a block may not be specified without writer == true", e.message
+    
+    e = assert_raise(ArgumentError) { OptionClass.send(:config_attr, :key, 'val', :writer => nil) {} }
+    assert_equal "a block may not be specified without writer == true", e.message
+  end
+  
+  #
+  # lazydoc test
+  #
+  
+  class LazydocClass
     include Configurable
   
-    config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
-  
-    def initialize
-      initialize_config
-    end
-    
-    def get_sym
-      @sym
-    end
-  
-    def set_sym(input)
-      @sym = input.to_sym
-    end
+    config_attr :one, 'value'                           # with documentation
+    config_attr :two, 'value', :desc => "description"   # ignored documentation
   end
   
-  def test_config_attr_documentation
-    s = DocSampleClass.new
-    assert_equal ConfigHash, s.config.class
-    assert_equal 'value', s.str
-    assert_equal 'value', s.config[:str]
-  
-    s.str = 'one'
-    assert_equal 'one', s.config[:str]
+  def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
+    one = LazydocClass.configurations[:one].attributes[:desc]
+    assert_equal Configurable::Desc, one.class
     
-    s.config[:str] = 'two' 
-    assert_equal 'two', s.str
+    Lazydoc.resolve_comments([one])
+    assert_equal "with documentation", one.to_s
     
-    ###
-    alt = DocAlternativeClass.new
-    assert_equal false, alt.respond_to?(:sym)
-    assert_equal false, alt.respond_to?(:sym=)
-    
-    alt.config[:sym] = 'one'
-    assert_equal :one, alt.get_sym
-  
-    alt.set_sym('two')
-    assert_equal :two, alt.config[:sym]
+    two = LazydocClass.configurations[:two].attributes[:desc]
+    assert_equal String, two.class
+    assert_equal "description", two
   end
   
   #
