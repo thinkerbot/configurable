@@ -20,5 +20,10 @@ class ConfigurationParser
       config[key] = (switch == negative_long ? !default : default)
     end
     
+    def to_s
+      short_str = short ? short + ',' : '   '
+      long_str = long ? "--[no-]#{long[2,long.length-2]}" : ''
+      "%-40s%-40s" % ["    #{short_str} #{long_str}", desc]
+    end
   end
 end

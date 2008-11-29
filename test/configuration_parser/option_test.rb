@@ -108,7 +108,11 @@ class OptionTest < Test::Unit::TestCase
   # to_s test
   #
   
-  # def test_to_s_formats_option_for_the_command_line
-  #   
-  # end
+  def test_to_s_formats_option_for_the_command_line
+    opt = ConfigurationParser::Option.new('key', 'default')
+    assert_equal "        --key KEY                                                               ", opt.to_s
+    
+    opt = ConfigurationParser::Option.new('key', 'default', :long => 'long', :short => 's', :desc => "description of key")
+    assert_equal "    -s, --long KEY                      description of key                      ", opt.to_s
+  end
 end

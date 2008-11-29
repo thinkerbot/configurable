@@ -1,17 +1,9 @@
 require 'configuration_parser/option'
-require 'configuration_parser/switch'
-require 'configuration_parser/flag'
 
 class ConfigurationParser
-  OPTION_BREAK = "--"
-  
-  # Matches a short option
-  SHORT_OPTION = /^(-[A-z](:[A-z])*)(=(.*))?$/
-  
-  ALT_SHORT_OPTION = /^(-[A-z](:[A-z])*)(.+)$/
-  
-  # Matches a long option
-  LONG_OPTION = /^(--[A-z].*?)(=(.*))?$/  # variants: /^--([^=].*?)(=(.*))?$/
+  autoload(:Switch, 'configuration_parser/switch')
+  autoload(:Flag, 'configuration_parser/flag')
+  autoload(:List, 'configuration_parser/list')
   
   class << self
 
@@ -89,6 +81,16 @@ class ConfigurationParser
     end
   end
   
+  OPTION_BREAK = "--"
+  
+  # Matches a short option
+  SHORT_OPTION = /^(-[A-z](:[A-z])*)(=(.*))?$/
+  
+  ALT_SHORT_OPTION = /^(-[A-z](:[A-z])*)(.+)$/
+  
+  # Matches a long option
+  LONG_OPTION = /^(--[A-z].*?)(=(.*))?$/  # variants: /^--([^=].*?)(=(.*))?$/
+  
   attr_reader :switches
   
   def initialize
@@ -103,6 +105,7 @@ class ConfigurationParser
   end
   
   def separator(str)
+    @options << ""
     @options << str
   end
   
@@ -111,7 +114,7 @@ class ConfigurationParser
   def register(opt)
     unless @options.include?(opt)
       # check for conflicts and register
-      if @options.find {|existing| existing.key == opt.key }
+      if options.find {|existing| existing.key == opt.key }
         raise ArgumentError, "key is already set by a different option: #{opt.key}"
       end
       @options << opt
@@ -188,6 +191,6 @@ class ConfigurationParser
   def to_s
     @options.collect do |option|
       option.to_s
-    end.join("\n")
+    end.join("\n") + "\n"
   end
 end

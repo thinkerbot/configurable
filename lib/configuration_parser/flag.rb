@@ -13,5 +13,9 @@ class ConfigurationParser
       config[key] = !default
     end
     
+    def to_s
+      short_str = short ? short + ',' : '   '
+      "%-40s%-40s" % ["    #{short_str} #{long}", desc]
+    end
   end
 end

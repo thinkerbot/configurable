@@ -389,4 +389,52 @@ class ConfigurationParserTest < Test::Unit::TestCase
     assert_equal({"opt" => false}, config)
     assert_equal(["a", "b"], args)
   end
+  
+  #
+  # parse list test
+  #
+  
+  def test_parse_list
+    c.on('opt', true, :type => :list)
+    config, args = c.parse(["a", "--opt", "one", "--opt", "two", "--opt", "three", "b"])
+    
+    assert_equal({"opt" => ["one", "two", "three"]}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_list_with_split
+    c.on('opt', true, :type => :list, :split => ',')
+    config, args = c.parse(["a", "--opt", "one,two", "--opt", "three", "b"])
+    
+    assert_equal({"opt" => ["one", "two", "three"]}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_list_with_limit_raises_error_for_too_many_entries
+    c.on('opt', true, :type => :list, :n => 1)
+    e = assert_raise(RuntimeError) { c.parse(["a", "--opt", "one", "--opt", "three", "b"]) }
+    assert_equal "too many assignments: opt", e.message
+  end
+  
+  #
+  # to_s test
+  #
+  
+  def test_to_s
+    c.on('opt', true, :short => 'o', :desc => 'desc')
+    c.separator "specials:"
+    c.on('switch', true, :type => :switch)
+    c.on('flag', true, :type => :flag)
+    c.on('list', true, :type => :list, :split => ',')
+    
+    expected = %Q{
+    -o, --opt OPT                       desc                                    
+
+specials:
+        --[no-]switch                                                           
+        --flag                                                                  
+        --list A,B,C                                                            
+}
+    assert_equal expected, "\n" + c.to_s
+  end
 end

@@ -43,7 +43,8 @@ class ConfigurationParser
     end
     
     def to_s
-      "#{short}, #{long} #{default_str}  #{desc}"
+      short_str = short ? short + ',' : '   '
+      "%-40s%-40s" % ["    #{short_str} #{long} #{key.upcase}", desc]
     end
   end
 end

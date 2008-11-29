@@ -1,46 +1,48 @@
 class ConfigurationParser 
-  class List
+  class List < Option
     # list allows to --list a,b,c
     # list generates an array value, always
     # n > 1 concatenates additional values
     
     # number of times option may be specified.
-    # nil indicates an option may be specified multiple times, each new value overrides the previous
-    # 1 indicates a specification up to n times, collected as an array
-    # -1 collects all values as a single array
+    # n indicates a specification up to n values
+    # nil collects all values as a single array
     attr_reader :n
     
-    attr_reader :allowed_values  # an optional array of allowed values
+    attr_reader :split
     
-    def initialize
+    #attr_reader :allowed_values  # an optional array of allowed values
+    
+    def initialize(key, default, options={}, &block)
       super
       @n = options[:n]
-      @allowed_values = options[:allowed_values]
+      @split = options[:split]
+      #@allowed_values = options[:allowed_values]
     end
     
     def parse(switch, value, argv, config)
-      values = (value || argv.shift).split(',')
+      value = argv.shift unless value
       
-      if allowed_values
-        unallowed_values = values - allowed_values
-        unless unallowed_values.empty?
-          raise "unallowed values: #{unallowed_values.inpect}"
-        end
-      end
+      # if allowed_values
+      #   unallowed_values = values - allowed_values
+      #   unless unallowed_values.empty?
+      #     raise "unallowed values: #{unallowed_values.inpect}"
+      #   end
+      # end
       
-      if n == nil
-        config[key] = values
+      current = (config[key] ||= [])
+      if split
+        current.concat(value.split(split))
       else
-        current = (config[key] ||= [])
-        current.concat(values)
-        raise "too many assignments to #{self}" if n >= 0 && current.length > n
+        current << value
       end
+      raise "too many assignments: #{key}" if n && current.length > n
     end
     
-    def process(config)
-      value = config.has_key?(key) ? config[key] : default
-      config[key] = block ? block.call(value) : value
+    def to_s
+      short_str = short ? short + ',' : '   '
+      split_str = split ? ['A', 'B', 'C'].join(split) : key.upcase
+      "%-40s%-40s" % ["    #{short_str} #{long} #{split_str}", desc]
     end
-    
   end
 end
