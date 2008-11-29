@@ -1,4 +1,6 @@
 require 'config_parser/option'
+require 'config_parser/switch'
+require 'config_parser/flag'
 
 class ConfigParser 
   include Utils
@@ -38,6 +40,8 @@ class ConfigParser
       else raise ArgumentError, "switch is already mapped to a different option: #{switch}"
       end
     end
+    
+    opt
   end
   
   def on(key, value=nil, options={}, &block)

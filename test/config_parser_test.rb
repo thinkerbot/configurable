@@ -62,10 +62,19 @@ class ConfigParserTest < Test::Unit::TestCase
   # on test
   #
   
-  def test_on_adds_option
-    c.on(:key, 'value')
-    
-    assert_equal [[:key, 'value']], c.options.collect {|opt| [opt.key, opt.default]}
+  def test_on_adds_and_returns_option
+    opt = c.on(:key, 'value')
+    assert_equal [opt], c.options
+  end
+  
+  def test_on_creates_Flag_option_with_flag_type
+    opt = c.on(:key, true, :type => :flag)
+    assert_equal ConfigParser::Flag, opt.class
+  end
+  
+  def test_on_creates_Switch_option_with_switch_type
+    opt = c.on(:key, true, :type => :switch)
+    assert_equal ConfigParser::Switch, opt.class
   end
   
   #
@@ -173,5 +182,34 @@ class ConfigParserTest < Test::Unit::TestCase
     
     assert_equal({"opt" => :sym}, config)
     assert_equal([o, 1, {},[]], args)
+  end
+  
+  #
+  # parse flag test
+  #
+  
+  def test_parse_flag
+    c.on('opt', false, :type => :flag)
+    config, args = c.parse(["a", "--opt", "b"])
+    
+    assert_equal({"opt" => true}, config)
+    assert_equal(["a", "b"], args)
+  end
+  
+  #
+  # parse switch test
+  #
+  
+  def test_parse_switch
+    c.on('opt', true, :type => :switch)
+    config, args = c.parse(["a", "--opt", "b"])
+    
+    assert_equal({"opt" => true}, config)
+    assert_equal(["a", "b"], args)
+    
+    config, args = c.parse(["a", "--no-opt", "b"])
+    
+    assert_equal({"opt" => false}, config)
+    assert_equal(["a", "b"], args)
   end
 end

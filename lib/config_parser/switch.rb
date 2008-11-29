@@ -1,17 +1,18 @@
 class ConfigParser 
-  class Switch
-    # long to --[no-]switch
-    # corresponding value: --switch    => default
-    #                      --no-switch => !default
+  class Switch < Option
     attr_reader :negative_long
     
-    def initialize
+    def initialize(*args)
       super
-      @negative_long = longify("no-#{long}")
+      @negative_long = long ? longify("no-#{long[2,long.length-2]}") : nil
+      
+      unless default == true || default == false
+        raise ArgumentError, "default value must be boolean"
+      end
     end
     
     def switches
-      super + [negative_long]
+      [long, negative_long, short].compact
     end
     
     def parse(switch, value, argv, config)
