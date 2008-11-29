@@ -52,8 +52,8 @@ require 'configurable_class'
 #   s.two = nil            # !> ValidationError
 #   s.two = 'str'          # !> ValidationError
 # 
-# As shown here, Configurations are inherited from the parent and may be
-# overridden in subclasses.
+# Configurations are inherited from the parent and may be overridden in
+# subclasses.
 #
 # === Options
 #
@@ -138,6 +138,6 @@ module Configurable
       store[key] = delegate.default unless store.has_key?(key)
     end
     
-    @config = ConfigHash.new(delegates, self, store)
+    @config = ConfigHash.new(delegates, store).bind(self)
   end
 end

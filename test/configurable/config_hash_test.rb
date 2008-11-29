@@ -59,14 +59,14 @@ class ConfigHashTest < Test::Unit::TestCase
     assert_equal({}, d.delegates)
   end
   
-  def test_initialize_binds_receiver
+  def test_initialize_sets_receiver_without_mapping_store
     r = Receiver.new
-    d = ConfigHash.new({:key => Config.new(:key)}, r, {:key => 'value'})
+    d = ConfigHash.new({:key => Config.new(:key)}, {:key => 'value'}, r)
     
     assert d.bound?
-    assert_equal({}, d.store)
+    assert_equal({:key => 'value'}, d.store)
     assert_equal r, d.receiver
-    assert_equal 'value', r.key
+    assert_equal nil, r.key
   end
   
   #
@@ -353,7 +353,7 @@ class ConfigHashTest < Test::Unit::TestCase
     d[:one] = 'one'
     assert d == {:one => 'one'}
     
-    d2 = ConfigHash.new({}, nil, {:one => 'one'})
+    d2 = ConfigHash.new({}, {:one => 'one'})
     assert d == d2
   end
   

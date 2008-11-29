@@ -14,14 +14,14 @@ module Configurable
   #   integer.call(nil)         # => ValidationError
   #
   #--
-  # Note the unusual syntax for declaring constants that are blocks
-  # defined by lambda... ex:
+  # Developers: note the unusual syntax for declaring constants that are
+  # blocks defined by lambda... ex:
   #
   #   block = lambda {}
   #   CONST = block
   #
-  # This syntax plays well with RDoc, which otherwise gets jacked 
-  # when you do it all in one step.
+  # This syntax plays well with RDoc, which otherwise gets jacked when you
+  # do it all in one step.
   module Validation
   
     # Raised when Validation blocks fail.

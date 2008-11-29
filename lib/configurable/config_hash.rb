@@ -38,13 +38,18 @@ module Configurable
     # A hash of (key, Config) pairs identifying which
     # keys to delegate to the receiver
     attr_reader :delegates
-  
-    def initialize(delegates={}, receiver=nil, store={})
+    
+    # Initializes a new ConfigHash.  Note that initialize simply sets the
+    # receiver, it does NOT map stored values the same way bind does.
+    # This allows quick, implicit binding where the bound store is set
+    # up beforehand.
+    #
+    # For more standard binding use: ConfigHash.new.bind(receiver)
+    def initialize(delegates={}, store={}, receiver=nil)
       @receiver = nil
       @store = store
       @delegates = delegates
-    
-      bind(receiver) unless receiver == nil 
+      @receiver = receiver
     end
   
     # Binds self to the specified receiver.  Mapped keys are
@@ -150,19 +155,6 @@ module Configurable
       end if bound?
       hash
     end
-  
-    # def to_yaml(opts)
-    #   hash = {}
-    #   store.each_pair do |key, value|
-    #     hash[key.to_s] = value
-    #   end
-    #   
-    #   delegates.each_pair do |key, delegate|
-    #     hash[key.to_s] = bound? ? self[key] : delegate.default
-    #   end
-    #   
-    #   hash.to_yaml(opts)
-    # end
   
     # Overrides default inspect to show the to_hash values.
     def inspect
