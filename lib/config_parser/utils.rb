@@ -4,7 +4,9 @@ class ConfigParser
     OPTION_BREAK = "--"
     
     # Matches a short option
-    SHORT_OPTION = /^(-[A-z])(=?(.+))?$/
+    SHORT_OPTION = /^(-[A-z](:[A-z])*)(=(.*))?$/
+    
+    ALT_SHORT_OPTION = /^(-[A-z](:[A-z])*)(.+)$/
     
     # Turns the input string into a short-format option.  Raises
     # an error if the option does not match SHORT_OPTION.  Nils
@@ -18,7 +20,7 @@ class ConfigParser
       
       str = str.to_s
       str = "-#{str}" unless str[0] == ?-
-      unless str =~ ConfigParser::SHORT_OPTION && ($3 == nil || $3.empty?)
+      unless str =~ ConfigParser::SHORT_OPTION && $3 == nil
         raise ArgumentError, "invalid short option: #{str}"
       end
       str
@@ -41,7 +43,7 @@ class ConfigParser
       str = str.to_s
       str = "--#{str}" unless str =~ /^--/
       str.gsub!(/_/, '-')
-      unless str =~ ConfigParser::LONG_OPTION && ($3 == nil || $3.empty?)
+      unless str =~ ConfigParser::LONG_OPTION && $3 == nil
         raise ArgumentError, "invalid long option: #{str}"
       end
       str

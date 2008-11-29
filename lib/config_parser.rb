@@ -75,15 +75,17 @@ class ConfigParser
         break
       end
       
-      # split the arg
-      arg =~ LONG_OPTION || arg =~ SHORT_OPTION 
+      # split the arg...
+      # switch= $1
+      # value = $4 if SHORT_OPTION, $3 otherwise
+      arg =~ LONG_OPTION || arg =~ SHORT_OPTION || arg =~ ALT_SHORT_OPTION 
       
       # lookup the option
       unless option = @switches[$1]
         raise "unknown option: #{$1}"
       end
-
-      option.parse($1, $3, argv, config)
+      
+      option.parse($1, $4 || $3, argv, config)
     end
     
     # insert defaults as necessary and process values

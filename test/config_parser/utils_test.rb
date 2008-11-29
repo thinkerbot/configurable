@@ -19,6 +19,10 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal "--long-option", $1
     assert_equal "value", $3
     
+    assert "--long-option=" =~ r
+    assert_equal "--long-option", $1
+    assert_equal "", $3
+    
     assert "--nested:long-option=value" =~ r
     assert_equal "--nested:long-option", $1
     assert_equal "value", $3
@@ -46,19 +50,23 @@ class UtilsTest < Test::Unit::TestCase
     
     assert "-o" =~ r
     assert_equal "-o", $1
-    assert_equal nil, $3
-    
-    assert "-ovalue" =~ r
-    assert_equal "-o", $1
-    assert_equal "value", $3
+    assert_equal nil, $4
     
     assert "-o=value" =~ r
     assert_equal "-o", $1
-    assert_equal "value", $3
+    assert_equal "value", $4
+    
+    assert "-o=" =~ r
+    assert_equal "-o", $1
+    assert_equal "", $4
+    
+    assert "-n:l:o=value" =~ r
+    assert_equal "-n:l:o", $1
+    assert_equal "value", $4
     
     assert "-o=value=with=equals" =~ r
     assert_equal "-o", $1
-    assert_equal "value=with=equals", $3
+    assert_equal "value=with=equals", $4
     
     # non-matching
     assert "arg" !~ r
@@ -67,6 +75,32 @@ class UtilsTest < Test::Unit::TestCase
     assert "-." !~ r
     assert "-1" !~ r
     assert "-=value" !~ r
+    assert "-n:long" !~ r
+  end
+  
+  #
+  # ALT_SHORT_OPTION test
+  #
+  
+  def test_ALT_SHORT_OPTION
+    r = ALT_SHORT_OPTION
+    
+    assert "-ovalue" =~ r
+    assert_equal "-o", $1
+    assert_equal "value", $3
+
+    assert "-n:l:ovalue" =~ r
+    assert_equal "-n:l:o", $1
+    assert_equal "value", $3
+    
+    # non-matching
+    assert "arg" !~ r
+    assert "--o" !~ r
+    assert "--" !~ r
+    assert "-." !~ r
+    assert "-1" !~ r
+    assert "-=value" !~ r
+    assert "-o" !~ r
   end
   
   #
