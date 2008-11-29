@@ -1,7 +1,9 @@
-require  File.join(File.dirname(__FILE__), 'tap_test_helper')
-require 'configuration_hash'
+require  File.join(File.dirname(__FILE__), '../tap_test_helper')
+require 'configurable/config_hash'
 
-class ConfigurationHashTest < Test::Unit::TestCase
+class ConfigHashTest < Test::Unit::TestCase
+  Config = Configurable::Config
+  ConfigHash = Configurable::ConfigHash
   
   class Receiver
     attr_accessor :key
@@ -15,7 +17,7 @@ class ConfigurationHashTest < Test::Unit::TestCase
   
   def setup
     @r = Receiver.new
-    @d = ConfigurationHash.new({:key => Configuration.new(:key)})
+    @d = ConfigHash.new({:key => Config.new(:key)})
   end
   
   #
@@ -29,8 +31,8 @@ class ConfigurationHashTest < Test::Unit::TestCase
   def test_documentation
     sample = Sample.new
     
-    dhash = ConfigurationHash.new
-    dhash.delegates[:key] = Configuration.new(:key)
+    dhash = ConfigHash.new
+    dhash.delegates[:key] = Config.new(:key)
     dhash.bind(sample)
   
     sample.key = 'value'
@@ -51,7 +53,7 @@ class ConfigurationHashTest < Test::Unit::TestCase
   #
   
   def test_default_initialize
-    d = ConfigurationHash.new
+    d = ConfigHash.new
     assert_equal(nil, d.receiver)
     assert_equal({}, d.store)
     assert_equal({}, d.delegates)
@@ -59,7 +61,7 @@ class ConfigurationHashTest < Test::Unit::TestCase
   
   def test_initialize_binds_receiver
     r = Receiver.new
-    d = ConfigurationHash.new({:key => Configuration.new(:key)}, r, {:key => 'value'})
+    d = ConfigHash.new({:key => Config.new(:key)}, r, {:key => 'value'})
     
     assert d.bound?
     assert_equal({}, d.store)
@@ -351,7 +353,7 @@ class ConfigurationHashTest < Test::Unit::TestCase
     d[:one] = 'one'
     assert d == {:one => 'one'}
     
-    d2 = ConfigurationHash.new({}, nil, {:one => 'one'})
+    d2 = ConfigHash.new({}, nil, {:one => 'one'})
     assert d == d2
   end
   

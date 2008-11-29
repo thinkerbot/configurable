@@ -15,7 +15,7 @@ require 'configurable_class'
 #   end
 #
 #   c = ConfigClass.new
-#   c.config.class         # => ConfigurationHash
+#   c.config.class         # => ConfigHash
 #   c.config               # => {:one => 'one', :two => 'two', :three => 'three'}
 #
 # The <tt>config</tt> object acts as a forwarding hash; declared configurations
@@ -62,7 +62,7 @@ module Configurable
     mod.extend ConfigurableClass if mod.kind_of?(Class)
   end
   
-  # An InstanceConfiguration with configurations for self
+  # An InstanceConfig with configurations for self
   attr_reader :config
   
   # Reinitializes configurations in the copy such that
@@ -75,7 +75,7 @@ module Configurable
   
   protected
   
-  # Initializes config to an ConfigurationHash. Default config values 
+  # Initializes config to an ConfigHash. Default config values 
   # are overridden as specified by overrides.
   def initialize_config(overrides={})
     delegates = self.class.configurations
@@ -91,6 +91,6 @@ module Configurable
       store[key] = delegate.default unless store.has_key?(key)
     end
     
-    @config = ConfigurationHash.new(delegates, self, store)
+    @config = ConfigHash.new(delegates, self, store)
   end
 end

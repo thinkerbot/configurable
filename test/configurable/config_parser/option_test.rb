@@ -1,14 +1,15 @@
-require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configuration_parser/option'
+require  File.join(File.dirname(__FILE__), '../../tap_test_helper')
+require 'configurable/config_parser/option'
 
 class OptionTest < Test::Unit::TestCase
+  Option =  Configurable::ConfigParser::Option
   
   #
   # initialize tests
   #
   
   def test_initialization
-    o = ConfigurationParser::Option.new('key', 'value')
+    o = Option.new('key', 'value')
     assert_equal 'key', o.key
     assert_equal 'value', o.default
     assert_equal '--key', o.long
@@ -19,7 +20,7 @@ class OptionTest < Test::Unit::TestCase
   
   def test_initialization_with_options
     b = lambda {}
-    o = ConfigurationParser::Option.new('key', 'value', :long => 'long', :short => 's', :desc => 'some desc', &b)
+    o = Option.new('key', 'value', :long => 'long', :short => 's', :desc => 'some desc', &b)
     assert_equal 'key', o.key
     assert_equal 'value', o.default
     assert_equal '--long', o.long
@@ -29,7 +30,7 @@ class OptionTest < Test::Unit::TestCase
   end
   
   def test_options_may_be_initialized_with_no_long_option
-    opt = ConfigurationParser::Option.new('key', 'value', :long => nil)
+    opt = Option.new('key', 'value', :long => nil)
     assert_equal nil, opt.long
   end
   
@@ -38,13 +39,13 @@ class OptionTest < Test::Unit::TestCase
   #
   
   def test_switches_returns_the_non_nil_long_and_short_options
-    opt = ConfigurationParser::Option.new('key', 'value')
+    opt = Option.new('key', 'value')
     assert_equal ["--key"], opt.switches
     
-    opt = ConfigurationParser::Option.new('key', 'value', :long => 'long', :short => 's')
+    opt = Option.new('key', 'value', :long => 'long', :short => 's')
     assert_equal ["--long", '-s'], opt.switches
     
-    opt = ConfigurationParser::Option.new('key', 'value', :long => nil)
+    opt = Option.new('key', 'value', :long => nil)
     assert_equal [], opt.switches
   end
   
@@ -53,7 +54,7 @@ class OptionTest < Test::Unit::TestCase
   #
   
   def test_parse_sets_the_value_in_config_by_key
-    opt = ConfigurationParser::Option.new('key', 'default')
+    opt = Option.new('key', 'default')
     config = {}
     
     opt.parse('--key', 'value', [], config)
@@ -61,7 +62,7 @@ class OptionTest < Test::Unit::TestCase
   end
   
   def test_parse_shifts_the_next_argv_as_value_if_value_is_nil
-    opt = ConfigurationParser::Option.new('key', 'default')
+    opt = Option.new('key', 'default')
     config = {}
     argv = ['value']
     
@@ -71,7 +72,7 @@ class OptionTest < Test::Unit::TestCase
   end
   
   def test_parse_overrides_the_existing_key_without_error
-    opt = ConfigurationParser::Option.new('key', 'default')
+    opt = Option.new('key', 'default')
     config = {'key' => 'another'}
     
     opt.parse('--key', 'value', [], config)
@@ -79,7 +80,7 @@ class OptionTest < Test::Unit::TestCase
   end
   
   def test_parse_raises_error_if_no_value_is_available
-    opt = ConfigurationParser::Option.new('key', 'default')
+    opt = Option.new('key', 'default')
     e = assert_raise(RuntimeError) { opt.parse('--key', nil, [], {})  }
     assert_equal "no value provided for: --key", e.message
   end
@@ -89,7 +90,7 @@ class OptionTest < Test::Unit::TestCase
   #
   
   def test_process_passes_keyed_value_to_block_and_sets_result_in_config
-    opt = ConfigurationParser::Option.new('key', 'default') {|value| value.upcase}
+    opt = Option.new('key', 'default') {|value| value.upcase}
     config = {'key' => 'value'}
     
     opt.process(config)
@@ -97,7 +98,7 @@ class OptionTest < Test::Unit::TestCase
   end
   
   def test_process_uses_default_if_config_has_no_value_set_to_key
-    opt = ConfigurationParser::Option.new('key', 'default') {|value| value.upcase}
+    opt = Option.new('key', 'default') {|value| value.upcase}
     config = {}
     
     opt.process(config)
@@ -109,10 +110,10 @@ class OptionTest < Test::Unit::TestCase
   #
   
   def test_to_s_formats_option_for_the_command_line
-    opt = ConfigurationParser::Option.new('key', 'default')
+    opt = Option.new('key', 'default')
     assert_equal "        --key KEY                                                               ", opt.to_s
     
-    opt = ConfigurationParser::Option.new('key', 'default', :long => 'long', :short => 's', :desc => "description of key")
+    opt = Option.new('key', 'default', :long => 'long', :short => 's', :desc => "description of key")
     assert_equal "    -s, --long KEY                      description of key                      ", opt.to_s
   end
 end

@@ -1,13 +1,14 @@
-require  File.join(File.dirname(__FILE__), 'tap_test_helper')
-require 'configuration_parser'
+require  File.join(File.dirname(__FILE__), '../tap_test_helper')
+require 'configurable/config_parser'
 
-class ConfigurationParserTest < Test::Unit::TestCase
-  Option = ConfigurationParser::Option
+class ConfigParserTest < Test::Unit::TestCase
+  Option = Configurable::ConfigParser::Option
+  ConfigParser = Configurable::ConfigParser
   
   attr_reader :c
   
   def setup
-    @c = ConfigurationParser.new
+    @c = ConfigParser.new
   end
   
   #
@@ -15,7 +16,7 @@ class ConfigurationParserTest < Test::Unit::TestCase
   #
   
   def test_LONG_OPTION
-    r = ConfigurationParser::LONG_OPTION
+    r = ConfigParser::LONG_OPTION
     
     assert "--long-option" =~ r
     assert_equal "--long-option", $1
@@ -52,7 +53,7 @@ class ConfigurationParserTest < Test::Unit::TestCase
   #
   
   def test_SHORT_OPTION
-    r = ConfigurationParser::SHORT_OPTION
+    r = ConfigParser::SHORT_OPTION
     
     assert "-o" =~ r
     assert_equal "-o", $1
@@ -89,7 +90,7 @@ class ConfigurationParserTest < Test::Unit::TestCase
   #
   
   def test_ALT_SHORT_OPTION
-    r = ConfigurationParser::ALT_SHORT_OPTION
+    r = ConfigParser::ALT_SHORT_OPTION
     
     assert "-ovalue" =~ r
     assert_equal "-o", $1
@@ -114,28 +115,28 @@ class ConfigurationParserTest < Test::Unit::TestCase
   #
   
   def test_shortify_documentation
-    assert_equal '-o', ConfigurationParser.shortify("-o")
-    assert_equal '-o', ConfigurationParser.shortify(:o)
+    assert_equal '-o', ConfigParser.shortify("-o")
+    assert_equal '-o', ConfigParser.shortify(:o)
   end
   
   def test_shortify_turns_option_into_short
-    assert_equal "-o", ConfigurationParser.shortify("o")
-    assert_equal "-a", ConfigurationParser.shortify("-a")
-    assert_equal "-T", ConfigurationParser.shortify(:T)
+    assert_equal "-o", ConfigParser.shortify("o")
+    assert_equal "-a", ConfigParser.shortify("-a")
+    assert_equal "-T", ConfigParser.shortify(:T)
   end
   
   def test_shortify_returns_nils
-    assert_equal nil, ConfigurationParser.shortify(nil)
+    assert_equal nil, ConfigParser.shortify(nil)
   end
   
   def test_shortify_raises_error_for_invalid_short
-    e = assert_raise(ArgumentError) { ConfigurationParser.shortify("-long") }
+    e = assert_raise(ArgumentError) { ConfigParser.shortify("-long") }
     assert_equal "invalid short option: -long", e.message
     
-    e = assert_raise(ArgumentError) { ConfigurationParser.shortify("-1") }
+    e = assert_raise(ArgumentError) { ConfigParser.shortify("-1") }
     assert_equal "invalid short option: -1", e.message
     
-    e = assert_raise(ArgumentError) { ConfigurationParser.shortify("") }
+    e = assert_raise(ArgumentError) { ConfigParser.shortify("") }
     assert_equal "invalid short option: -", e.message
   end
   
@@ -144,29 +145,29 @@ class ConfigurationParserTest < Test::Unit::TestCase
   #
   
   def test_longify_documentation
-    assert_equal '--opt', ConfigurationParser.longify("--opt")
-    assert_equal '--opt', ConfigurationParser.longify(:opt)
-    assert_equal '--opt-ion', ConfigurationParser.longify(:opt_ion) 
+    assert_equal '--opt', ConfigParser.longify("--opt")
+    assert_equal '--opt', ConfigParser.longify(:opt)
+    assert_equal '--opt-ion', ConfigParser.longify(:opt_ion) 
   end
   
   def test_longify_turns_option_into_long
-    assert_equal "--option", ConfigurationParser.longify("option")
-    assert_equal "--an-option", ConfigurationParser.longify("--an-option")
-    assert_equal "--T", ConfigurationParser.longify(:T)
+    assert_equal "--option", ConfigParser.longify("option")
+    assert_equal "--an-option", ConfigParser.longify("--an-option")
+    assert_equal "--T", ConfigParser.longify(:T)
   end
   
   def test_longify_returns_nils
-    assert_equal nil, ConfigurationParser.longify(nil)
+    assert_equal nil, ConfigParser.longify(nil)
   end
   
   def test_longify_raises_error_for_invalid_long
-    e = assert_raise(ArgumentError) { ConfigurationParser.longify("-long") }
+    e = assert_raise(ArgumentError) { ConfigParser.longify("-long") }
     assert_equal "invalid long option: ---long", e.message
     
-    e = assert_raise(ArgumentError) { ConfigurationParser.longify("1") }
+    e = assert_raise(ArgumentError) { ConfigParser.longify("1") }
     assert_equal "invalid long option: --1", e.message
     
-    e = assert_raise(ArgumentError) { ConfigurationParser.longify("") }
+    e = assert_raise(ArgumentError) { ConfigParser.longify("") }
     assert_equal "invalid long option: --", e.message
   end
   
@@ -179,12 +180,12 @@ class ConfigurationParserTest < Test::Unit::TestCase
       'key' => 1,
       'compound' => {'key' => 2}
     }
-    assert_equal expected, ConfigurationParser.nest('key' => 1, 'compound:key' => 2)
+    assert_equal expected, ConfigParser.nest('key' => 1, 'compound:key' => 2)
     
     options = [
       {'key' => {}},
       {'key' => {'overlap' => 'value'}}]
-    assert options.include?(ConfigurationParser.nest('key' => {}, 'key:overlap' => 'value'))
+    assert options.include?(ConfigParser.nest('key' => {}, 'key:overlap' => 'value'))
   end
   
   #
@@ -246,12 +247,12 @@ class ConfigurationParserTest < Test::Unit::TestCase
   
   def test_on_creates_Flag_option_with_flag_type
     opt = c.on(:key, true, :type => :flag)
-    assert_equal ConfigurationParser::Flag, opt.class
+    assert_equal ConfigParser::Flag, opt.class
   end
   
   def test_on_creates_Switch_option_with_switch_type
     opt = c.on(:key, true, :type => :switch)
-    assert_equal ConfigurationParser::Switch, opt.class
+    assert_equal ConfigParser::Switch, opt.class
   end
   
   #

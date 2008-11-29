@@ -1,15 +1,17 @@
-require File.join(File.dirname(__FILE__), 'tap_test_helper')
-require 'configuration'
+require File.join(File.dirname(__FILE__), '../tap_test_helper')
+require 'configurable/config'
 
-class ConfigurationTest < Test::Unit::TestCase
+class ConfigTest < Test::Unit::TestCase
+  Config = Configurable::Config
+
   attr_reader :c
   
   def setup
-    @c = Configuration.new('key', 'key=', nil)
+    @c = Config.new('key', 'key=', nil)
   end
   
   #
-  # Configuration.duplicable_value?
+  # Config.duplicable_value?
   #
   
   class NonDuplicable
@@ -18,13 +20,13 @@ class ConfigurationTest < Test::Unit::TestCase
   
   def test_duplicable_value_is_false_if_default_cannot_be_duplicated
     [nil, 1, 1.1, true, false, :sym, NonDuplicable.new].each do |non_duplicable_value|
-      assert !Configuration.duplicable_value?(non_duplicable_value)
+      assert !Config.duplicable_value?(non_duplicable_value)
     end
   end
   
   def test_duplicable_value_is_true_if_default_can_be_duplicated
     [{}, [], Object.new].each do |duplicable_value|
-      assert Configuration.duplicable_value?(duplicable_value)
+      assert Config.duplicable_value?(duplicable_value)
     end
   end
   
@@ -33,7 +35,7 @@ class ConfigurationTest < Test::Unit::TestCase
   #
   
   def test_initialize
-    c = Configuration.new('key', 'key=', 'default', :attr => 'value')
+    c = Config.new('key', 'key=', 'default', :attr => 'value')
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal 'default', c.default
@@ -41,7 +43,7 @@ class ConfigurationTest < Test::Unit::TestCase
   end
   
   def test_initialize_using_defaults
-    c = Configuration.new('key')
+    c = Config.new('key')
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal nil, c.default
@@ -49,7 +51,7 @@ class ConfigurationTest < Test::Unit::TestCase
   end
   
   def test_reader_and_writer_may_be_set_to_nil_during_initialize
-    c = Configuration.new(nil, nil, 'default')
+    c = Config.new(nil, nil, 'default')
     assert_equal nil, c.reader
     assert_equal nil, c.writer
   end
@@ -150,26 +152,26 @@ class ConfigurationTest < Test::Unit::TestCase
   #
   
   def test_another_is_equal_to_self_if_key_default_reader_and_writer_are_equal
-    config = Configuration.new('key', 'key=', 'default')
-    another = Configuration.new('key', 'key=', 'default')
+    config = Config.new('key', 'key=', 'default')
+    another = Config.new('key', 'key=', 'default')
     assert config == another
     
-    config = Configuration.new('key', 'key=', 'default')
-    another = Configuration.new('alt', 'key=', 'default')
+    config = Config.new('key', 'key=', 'default')
+    another = Config.new('alt', 'key=', 'default')
     assert config != another
     
-    config = Configuration.new('key', 'key=', 'default')
-    another = Configuration.new('key', 'alt=', 'default')
+    config = Config.new('key', 'key=', 'default')
+    another = Config.new('key', 'alt=', 'default')
     assert config != another
     
-    config = Configuration.new('key', 'key=', 'default')
-    another = Configuration.new('key', 'key=', 'alt')
+    config = Config.new('key', 'key=', 'default')
+    another = Config.new('key', 'key=', 'alt')
     assert config != another
   end
   
   def test_equal_does_not_consider_attributes
-    config = Configuration.new('key')
-    another = Configuration.new('key')
+    config = Config.new('key')
+    another = Config.new('key')
     another.attributes[:attr] = 'value'
     
     assert config.attributes != another.attributes

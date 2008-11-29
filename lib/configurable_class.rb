@@ -1,5 +1,5 @@
-require 'configuration_hash'
-require 'validation'
+require 'configurable/config_hash'
+require 'configurable/validation'
 
 module ConfigurableClass
   # A hash holding the class configurations.
@@ -21,7 +21,7 @@ module ConfigurableClass
   # Declares a class configuration and generates the associated accessors. 
   # If a block is given, the <tt>key=</tt> method will set <tt>@key</tt> 
   # to the return of the block, which executes in class-context.  
-  # Configurations are inherited, and can be overridden in subclasses. 
+  # Configs are inherited, and can be overridden in subclasses. 
   #
   #   class SampleClass
   #     include Tap::Support::Configurable
@@ -57,7 +57,7 @@ module ConfigurableClass
 
   # Declares a class configuration and generates the associated accessors. 
   # If a block is given, the <tt>key=</tt> method will perform the block with
-  # instance-context.  Configurations are inherited, and can be overridden 
+  # instance-context.  Configs are inherited, and can be overridden 
   # in subclasses. 
   #
   #   class SampleClass
@@ -82,11 +82,11 @@ module ConfigurableClass
   #   end
   #
   # Instances of a Configurable class may set configurations through config.
-  # The config object is an ConfigurationHash which forwards read/write 
+  # The config object is an ConfigHash which forwards read/write 
   # operations to the configuration accessors.  For example:
   #
   #   s = SampleClass.new
-  #   s.config.class            # => ConfigurationHash
+  #   s.config.class            # => ConfigHash
   #   s.str                     # => 'value'
   #   s.config[:str]            # => 'value'
   #
@@ -179,12 +179,12 @@ module ConfigurableClass
     # end if options[:desc] == nil
     end
   
-    configurations[key] = Configuration.new(reader, writer, value, options)
+    configurations[key] = Configurable::Config.new(reader, writer, value, options)
   end
 
   # Alias for Validation
   def c
-    Validation
+    Configurable::Validation
   end
   
 end
