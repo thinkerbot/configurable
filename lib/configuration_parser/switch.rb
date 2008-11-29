@@ -4,7 +4,7 @@ class ConfigurationParser
     
     def initialize(*args)
       super
-      @negative_long = long ? longify("no-#{long[2,long.length-2]}") : nil
+      @negative_long = long ? ConfigurationParser.longify("no-#{long[2,long.length-2]}") : nil
       
       unless default == true || default == false
         raise ArgumentError, "default value must be boolean"

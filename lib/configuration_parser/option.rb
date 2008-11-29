@@ -1,9 +1,6 @@
-require 'configuration_parser/utils'
-
 class ConfigurationParser  
   class Option
-    include Utils
-    
+
     attr_reader :key
     attr_reader :default  
     attr_reader :long
@@ -14,8 +11,8 @@ class ConfigurationParser
     def initialize(key, default, options={}, &block)
       @key = key
       @default = default
-      @long = longify(options.has_key?(:long) ? options[:long] : key)
-      @short = shortify(options[:short])
+      @long = ConfigurationParser.longify(options.has_key?(:long) ? options[:long] : key)
+      @short = ConfigurationParser.shortify(options[:short])
       @desc = options[:desc]
       @block = block
     end
