@@ -158,44 +158,100 @@ module ConfigurableClass
     configurations[key] = Configurable::Config.new(reader, writer, value, options)
   end
   
-  # Nests the configurations of the configurable in self.  Nest requires a
-  # block that can initialize an instance of configurable using a hash.
+  # Adds a configuration to self accessing the configurations for the
+  # configurable class.  Unlike config_attr and config, nest does not
+  # create accessors; the configurations must be accessed through
+  # the instance config method.
   #
+  #   class A
+  #     include Configurable
+  #     config :key, 'value'
   #
-  # a config that has an unbound ConfigHash as a default value.  Nest 
-  # then links the config to a pair of private methods that map to
-  # the 
-  def nest(key, configurable, options={})
-    raise ArgumentError, "no initialize block given" unless block_given?
-    
-    unless configurable.kind_of?(ConfigurableClass)
-      raise ArgumentError, "not a ConfigurableClass: #{configurable}" 
+  #     def initialize(overrides={})
+  #       initialize_config(overrides)
+  #     end
+  #   end
+  #
+  #   class B
+  #     include Configurable
+  #     nest :a, A
+  #
+  #     def initialize(overrides={})
+  #       initialize_config(overrides)
+  #     end
+  #   end
+  #
+  #   b = B.new
+  #   b.config[:a]                   # => {:key => 'value'}
+  #
+  # Nest may be provided a block which receives the first value for
+  # the nested config and is expected to initialize an instance of
+  # configurable_class.  In this case a reader for the instance is
+  # created and access becomes quite natural.
+  #
+  #   class C
+  #     include Configurable
+  #     nest(:a, A) {|overrides| A.new(overrides) }
+  #
+  #     def initialize(overrides={})
+  #       initialize_config(overrides)
+  #     end
+  #   end
+  #
+  #   c = C.new
+  #   c.a.key                        # => "value"
+  #
+  #   c.a.key = "one"
+  #   c.config[:a].to_hash           # => {:key => 'one'}
+  #
+  #   c.config[:a][:key] = 'two'
+  #   c.a.key                        # => "two"
+  #
+  #   c.config[:a] = {:key => 'three'}
+  #   c.a.key                        # => "three"
+  # 
+  # Nesting with an initialization block creates private methods
+  # that config[:a] uses to read and write the instance configurations;
+  # these methods are "#{key}_config" and "#{key}_config=" by default, 
+  # but they may be renamed using the :reader and :writer options.
+  def nest(key, configurable_class, options={})
+    unless configurable_class.kind_of?(ConfigurableClass)
+      raise ArgumentError, "not a ConfigurableClass: #{configurable_class}" 
     end
     
-    # define methods
-    instance_var = "@#{key}".to_sym
-    reader = (options.delete(:reader) || "#{key}_config")
-    writer = (options.delete(:writer) || "#{key}_config=")
+    reader = options.delete(:reader)
+    writer = options.delete(:writer)
     
-    attr_reader key
-    public(key)
+    if block_given?
+      # define instance accessor methods
+      instance_var = "@#{key}".to_sym
+      reader = "#{key}_config" unless reader
+      writer = "#{key}_config=" unless writer
+      
+      # the public accessor
+      attr_reader key
+      public(key)
     
-    define_method(reader) do
-      # return the config for the instance
-      instance_variable_get(instance_var).config
-    end
-    
-    define_method(writer) do |value|
-      # initialize or reconfigure the instance of subclass
-      if instance_variable_defined?(instance_var) 
-        instance_variable_get(instance_var).reconfigure(value)
-      else
-        instance_variable_set(instance_var, yield(value))
+      # the reader returns the config for the instance
+      define_method(reader) do
+        instance_variable_get(instance_var).config
       end
-    end
-    private(reader, writer)
     
-    value = Configurable::ConfigHash.new(configurable.configurations)
+      # the writer initializes the instance if necessary,
+      # or reconfigures the instance if it already exists
+      define_method(writer) do |value|
+        if instance_variable_defined?(instance_var) 
+          instance_variable_get(instance_var).reconfigure(value)
+        else
+          instance_variable_set(instance_var, yield(value))
+        end
+      end
+      private(reader, writer)
+    else
+      reader = writer = nil
+    end
+    
+    value = Configurable::ConfigHash.new(configurable_class.configurations).update
     configurations[key] = Configurable::Config.new(reader, writer, value, options)
   end
   

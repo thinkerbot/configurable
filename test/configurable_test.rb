@@ -371,6 +371,50 @@ class ConfigurableTest < Test::Unit::TestCase
   # nest test
   #
   
+  class A
+    include Configurable
+    config :key, 'value'
+
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+  end
+
+  class B
+    include Configurable
+    nest :a, A
+
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+  end
+  
+  class C
+    include Configurable
+    nest(:a, A) {|overrides| A.new(overrides) }
+
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+  end
+  
+  def test_nest_documentation
+    b = B.new
+    assert_equal({:key => 'value'}, b.config[:a])
+  
+    c = C.new
+    assert_equal("value", c.a.key)
+    
+    c.a.key = "one"
+    assert_equal({:key => 'one'}, c.config[:a].to_hash)
+
+    c.config[:a][:key] = 'two'
+    assert_equal("two", c.a.key)
+  
+    c.config[:a] = {:key => 'three'}
+    assert_equal("three", c.a.key)
+  end
+  
   class NestChild
     include Configurable    
     def initialize(overrides={})
@@ -389,6 +433,8 @@ class ConfigurableTest < Test::Unit::TestCase
     nest :key, NestChild do |overrides|
       NestChild.new(overrides)
     end
+    
+    nest :blockless, NestChild
   end
   
   def test_nest_creates_reader_initialized_to_subclass
@@ -397,7 +443,12 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal NestChild,  p.key.class
   end
   
-  def test_define_adds_config_by_key_to_configurations
+  def test_nest_without_block_adds_a_non_mapping_configuration
+    p = NestParent.new
+    assert !p.respond_to?(:blockless)
+  end
+  
+  def test_define_adds_configs_by_key_to_configurations
     assert NestParent.configurations.key?(:key)
     config = NestParent.configurations[:key]
     
@@ -405,17 +456,24 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :key_config=, config.writer
     assert_equal Configurable::ConfigHash, config.default.class
     assert_equal NestChild.configurations, config.default.delegates
+    
+    assert NestParent.configurations.key?(:blockless)
+    config = NestParent.configurations[:blockless]
+    assert_equal nil, config.reader
+    assert_equal nil, config.writer
+    assert_equal Configurable::ConfigHash, config.default.class
+    assert_equal NestChild.configurations, config.default.delegates
   end
   
   def test_instance_is_initialized_with_defaults
     p = NestParent.new 
-    assert_equal({:key => {:key => 'value'}}, p.config.to_hash)
+    assert_equal({:key => {:key => 'value'}, :blockless => {:key => 'value'}}, p.config.to_hash)
     assert_equal({:key => 'value'}, p.key.config.to_hash)
   end
   
   def test_instance_is_initialized_with_overrides
     p = NestParent.new :key => {:key => 'one'}
-    assert_equal({:key => {:key => 'one'}}, p.config.to_hash)
+    assert_equal({:key => {:key => 'one'}, :blockless => {:key => 'value'}}, p.config.to_hash)
     assert_equal({:key => 'one'}, p.key.config.to_hash)
   end
   
@@ -439,10 +497,10 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal({:key => 'zero'}, p.config[:key])
   end
   
-  def test_nest_raises_error_for_missing_initialize_block
-    e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
-    assert_equal "no initialize block given", e.message
-  end
+  # def test_nest_raises_error_for_missing_initialize_block
+  #   e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
+  #   assert_equal "no initialize block given", e.message
+  # end
   
   def test_nest_raises_error_for_non_configurable_input
     e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) {} }
