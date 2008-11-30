@@ -158,6 +158,47 @@ module ConfigurableClass
     configurations[key] = Configurable::Config.new(reader, writer, value, options)
   end
   
+  # Nests the configurations of the configurable in self.  Nest requires a
+  # block that can initialize an instance of configurable using a hash.
+  #
+  #
+  # a config that has an unbound ConfigHash as a default value.  Nest 
+  # then links the config to a pair of private methods that map to
+  # the 
+  def nest(key, configurable, options={})
+    raise ArgumentError, "no initialize block given" unless block_given?
+    
+    unless configurable.kind_of?(ConfigurableClass)
+      raise ArgumentError, "not a ConfigurableClass: #{configurable}" 
+    end
+    
+    # define methods
+    instance_var = "@#{key}".to_sym
+    reader = (options.delete(:reader) || "#{key}_config")
+    writer = (options.delete(:writer) || "#{key}_config=")
+    
+    attr_reader key
+    public(key)
+    
+    define_method(reader) do
+      # return the config for the instance
+      instance_variable_get(instance_var).config
+    end
+    
+    define_method(writer) do |value|
+      # initialize or reconfigure the instance of subclass
+      if instance_variable_defined?(instance_var) 
+        instance_variable_get(instance_var).reconfigure(value)
+      else
+        instance_variable_set(instance_var, yield(value))
+      end
+    end
+    private(reader, writer)
+    
+    value = Configurable::ConfigHash.new(configurable.configurations)
+    configurations[key] = Configurable::Config.new(reader, writer, value, options)
+  end
+  
   # Alias for Validation
   def c
     Configurable::Validation

@@ -127,7 +127,7 @@ module Configurable
     # set if a value does not already exist.
     #
     # Returns self.
-    def update(delegates)
+    def update
       delegates.each_pair do |key, delegate|
         self[key] ||= delegate.default
       end

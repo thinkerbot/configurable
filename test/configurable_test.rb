@@ -366,7 +366,89 @@ class ConfigurableTest < Test::Unit::TestCase
     c.config_attr_context = nil
     assert_equal "Instance", c.config_attr_context 
   end
-
+  
+  #
+  # nest test
+  #
+  
+  class NestChild
+    include Configurable    
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+    
+    config :key, 'value'
+  end
+  
+  class NestParent
+    include Configurable
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+    
+    nest :key, NestChild do |overrides|
+      NestChild.new(overrides)
+    end
+  end
+  
+  def test_nest_creates_reader_initialized_to_subclass
+    p = NestParent.new
+    assert p.respond_to?(:key)
+    assert_equal NestChild,  p.key.class
+  end
+  
+  def test_define_adds_config_by_key_to_configurations
+    assert NestParent.configurations.key?(:key)
+    config = NestParent.configurations[:key]
+    
+    assert_equal :key_config, config.reader
+    assert_equal :key_config=, config.writer
+    assert_equal Configurable::ConfigHash, config.default.class
+    assert_equal NestChild.configurations, config.default.delegates
+  end
+  
+  def test_instance_is_initialized_with_defaults
+    p = NestParent.new 
+    assert_equal({:key => {:key => 'value'}}, p.config.to_hash)
+    assert_equal({:key => 'value'}, p.key.config.to_hash)
+  end
+  
+  def test_instance_is_initialized_with_overrides
+    p = NestParent.new :key => {:key => 'one'}
+    assert_equal({:key => {:key => 'one'}}, p.config.to_hash)
+    assert_equal({:key => 'one'}, p.key.config.to_hash)
+  end
+  
+  def test_modification_of_configs_adjusts_instance_configs_and_vice_versa
+    p = NestParent.new
+    assert_equal({:key => 'value'}, p.key.config.to_hash)
+    
+    p.config[:key][:key] = 'zero'
+    assert_equal({:key => 'zero'}, p.key.config.to_hash)
+    
+    p.config[:key] = {:key => 'two'}
+    assert_equal({:key => 'two'}, p.key.config.to_hash)
+      
+    p.key.key = "two"
+    assert_equal({:key => 'two'}, p.config[:key])
+    
+    p.key.reconfigure(:key => 'one')
+    assert_equal({:key => 'one'}, p.config[:key])
+    
+    p.key.config[:key] = 'zero'
+    assert_equal({:key => 'zero'}, p.config[:key])
+  end
+  
+  def test_nest_raises_error_for_missing_initialize_block
+    e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
+    assert_equal "no initialize block given", e.message
+  end
+  
+  def test_nest_raises_error_for_non_configurable_input
+    e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) {} }
+    assert_equal "not a ConfigurableClass: b", e.message
+  end
+  
   #
   # initialize_config test
   #
