@@ -36,19 +36,17 @@ module ConfigurableClass
     super
   end
   
-  # Returns the lazydoc for self.
+  # Returns the lazydoc for self.  Resolve will recursively
+  # resolve superclass lazydocs.
+  #--
+  # what about nested configurables?
+  #
   # def lazydoc(resolve=true)
-  #   Lazydoc.resolve_comments(configurations.code_comments) if resolve
+  #   if resolve 
+  #     Lazydoc.resolve_comments(config_comments)
+  #   end
   #   super
   # end
-  
-  # Loads the contents of path as YAML.  Returns an empty hash if the path 
-  # is empty, does not exist, or is not a file.
-  def load_config(path)
-    # the last check prevents YAML from auto-loading itself for empty files
-    return {} if path == nil || !File.file?(path) || File.size(path) == 0
-    YAML.load_file(path) || {}
-  end
   
   protected
   
