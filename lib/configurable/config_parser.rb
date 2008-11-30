@@ -82,30 +82,54 @@ module Configurable
         result
       end
     end
-  
+    
+    # The option break argument
     OPTION_BREAK = "--"
-  
-    # Matches a short option
+    
+    # Matches a nested long option, with or without a value
+    # (ex: '--opt', '--nested:opt', '--opt=value').  After 
+    # the match:
+    #
+    #   $1:: the switch
+    #   $3:: the value
+    #
+    LONG_OPTION = /^(--[A-z].*?)(=(.*))?$/
+    
+    # Matches a nested short option, with or without a value
+    # (ex: '-o', '-n:o', '-o=value').  After the match:
+    #
+    #   $1:: the switch
+    #   $4:: the value
+    #
     SHORT_OPTION = /^(-[A-z](:[A-z])*)(=(.*))?$/
-  
+    
+    # Matches the alternate syntax for short options
+    # (ex: '-n:ovalue', '-ovalue').  After the match:
+    #
+    #   $1:: the switch
+    #   $3:: the value
+    #
     ALT_SHORT_OPTION = /^(-[A-z](:[A-z])*)(.+)$/
-  
-    # Matches a long option
-    LONG_OPTION = /^(--[A-z].*?)(=(.*))?$/  # variants: /^--([^=].*?)(=(.*))?$/
-  
+    
+    # A hash of (switch, Option) pairs mapping switches to
+    # options.
     attr_reader :switches
   
     def initialize
       @options = []
       @switches = {}
+      
+      yield(self) if block_given?
     end
-  
+    
+    # Returns an array of options registered with self.
     def options
       @options.select do |opt|
         opt.kind_of?(Option)
       end
     end
-  
+    
+    # Adds a separator string to self.
     def separator(str)
       @options << ""
       @options << str
@@ -132,7 +156,8 @@ module Configurable
     
       opt
     end
-  
+    
+    # Defines and adds an option to self.
     def on(key, value=nil, options={}, &block)
       klass = case options[:type]
       when :flag then Flag
@@ -170,7 +195,7 @@ module Configurable
       
         # split the arg...
         # switch= $1
-        # value = $4 if SHORT_OPTION, $3 otherwise
+        # value = $4 || $3 (if arg matches SHORT_OPTION, value is $4 or $3 otherwise)
         arg =~ LONG_OPTION || arg =~ SHORT_OPTION || arg =~ ALT_SHORT_OPTION 
       
         # lookup the option

@@ -111,7 +111,7 @@ class ConfigParserTest < Test::Unit::TestCase
   end
   
   #
-  # shortify test
+  # ConfigParser.shortify test
   #
   
   def test_shortify_documentation
@@ -141,7 +141,7 @@ class ConfigParserTest < Test::Unit::TestCase
   end
   
   #
-  # longify test
+  # ConfigParser.longify test
   #
   
   def test_longify_documentation
@@ -172,7 +172,7 @@ class ConfigParserTest < Test::Unit::TestCase
   end
   
   #
-  # nest test
+  # ConfigParser.nest test
   #
   
   def test_nest_documentation
