@@ -307,29 +307,6 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # lazydoc test
-  #
-  
-  class LazydocClass
-    include Configurable
-  
-    config_attr :one, 'value'                           # with documentation
-    config_attr :two, 'value', :desc => "description"   # ignored documentation
-  end
-  
-  def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
-    one = LazydocClass.configurations[:one].attributes[:desc]
-    assert_equal Configurable::Desc, one.class
-    
-    Lazydoc.resolve_comments([one])
-    assert_equal "with documentation", one.to_s
-    
-    two = LazydocClass.configurations[:two].attributes[:desc]
-    assert_equal String, two.class
-    assert_equal "description", two
-  end
-  
-  #
   # config context test
   #
   
@@ -443,7 +420,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal NestChild,  p.key.class
   end
   
-  def test_nest_without_block_adds_a_non_mapping_configuration
+  def test_nest_without_block_does_not_define_accessors
     p = NestParent.new
     assert !p.respond_to?(:blockless)
   end
@@ -497,14 +474,68 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal({:key => 'zero'}, p.config[:key])
   end
   
-  # def test_nest_raises_error_for_missing_initialize_block
-  #   e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
-  #   assert_equal "no initialize block given", e.message
-  # end
-  
   def test_nest_raises_error_for_non_configurable_input
-    e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) {} }
+    e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
     assert_equal "not a ConfigurableClass: b", e.message
+  end
+  
+  class RecursiveA
+    include Configurable
+  end
+  
+  class RecursiveB
+    include Configurable
+    nest :a, RecursiveA
+  end
+  
+  class RecursiveC
+    include Configurable
+    nest :b, RecursiveB
+  end
+  
+  def test_nest_raises_error_for_infinite_nest
+    e = assert_raise(RuntimeError) { RecursiveA.send(:nest, :A, RecursiveA) }
+    assert_equal "infinite nest detected", e.message
+    
+    e = assert_raise(RuntimeError) { RecursiveA.send(:nest, :C, RecursiveC) }
+    assert_equal "infinite nest detected", e.message
+  end
+  
+  #
+  # lazydoc test
+  #
+  
+  class LazydocNestClass
+    include Configurable
+  end
+  
+  class LazydocClass
+    include Configurable
+  
+    config_attr :one, 'value'                           # with documentation
+    config_attr :two, 'value', :desc => "description"   # ignored documentation
+    
+    config :three, 'value'                              # with documentation
+    config :four, 'value', :desc => "description"       # ignored documentation
+    
+    nest :five, LazydocNestClass                        # with documentation
+    nest :six, LazydocNestClass, :desc => "description" # ignored documentation
+  end
+  
+  def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
+    LazydocClass.lazydoc.resolve
+    
+    [:one, :three, :five].each do |doc_config|
+      desc = LazydocClass.configurations[doc_config].attributes[:desc]
+      assert_equal Configurable::Desc, desc.class
+      assert_equal "with documentation", desc.to_s
+    end
+    
+    [:two, :four, :six].each do |nodoc_config|
+      desc = LazydocClass.configurations[nodoc_config].attributes[:desc]
+      assert_equal String, desc.class
+      assert_equal "description", desc.to_s
+    end
   end
   
   #

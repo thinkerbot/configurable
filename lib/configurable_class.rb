@@ -214,11 +214,15 @@ module ConfigurableClass
   # that config[:a] uses to read and write the instance configurations;
   # these methods are "#{key}_config" and "#{key}_config=" by default, 
   # but they may be renamed using the :reader and :writer options.
+  #
+  # Nest checks for recursive nesting and raises an error if
+  # a recursive nest is detected.
+  #
   def nest(key, configurable_class, options={})
     unless configurable_class.kind_of?(ConfigurableClass)
       raise ArgumentError, "not a ConfigurableClass: #{configurable_class}" 
     end
-    
+
     reader = options.delete(:reader)
     writer = options.delete(:writer)
     
@@ -251,8 +255,20 @@ module ConfigurableClass
       reader = writer = nil
     end
     
+    # register with Lazydoc so that all extra documentation can be extracted
+    caller.each do |line|
+      case line
+      when /in .config.$/ then next
+      when Lazydoc::CALLER_REGEXP
+        options[:desc] = Lazydoc.register($1, $3.to_i - 1, Configurable::Desc)
+        break
+      end
+    end unless options[:desc]
+    
     value = Configurable::ConfigHash.new(configurable_class.configurations).update
     configurations[key] = Configurable::Config.new(reader, writer, value, options)
+    
+    check_infinite_nest(configurable_class.configurations)
   end
   
   # Alias for Validation
@@ -260,4 +276,19 @@ module ConfigurableClass
     Configurable::Validation
   end
   
+  private
+  
+  # helper to recursively check a set of 
+  # configurations for an infinite nest
+  def check_infinite_nest(configurations) # :nodoc:
+    raise "infinite nest detected" if configurations == self.configurations
+    
+    configurations.each_pair do |key, config|
+      config_hash = config.default(false)
+      
+      if config_hash.kind_of?(Configurable::ConfigHash)
+        check_infinite_nest(config_hash.delegates)
+      end
+    end
+  end
 end
