@@ -13,24 +13,42 @@ module Configurable
       end
 
       if recursive
-        files, dirs = Dir.glob("#{path.chomp(File.extname(path))}/*").partition {|sub_path| File.file?(sub_path)} 
-
-        files.each do |sub_path|
-          key = File.basename(sub_path).chomp(File.extname(sub_path))
-          
-          # don't add if already specified
-          value = load(sub_path, true)
-          each_in(base) {|hash| hash[key] ||= value}
+        # determine the files/dirs to load recursively
+        # and add them to paths by key (ie the base 
+        # name of the path, minus any extname)
+        paths = {}
+        files, dirs = Dir.glob("#{path.chomp(File.extname(path))}/*").partition do |sub_path| 
+          File.file?(sub_path)
         end
         
-        dirs.each do |sub_path|
-          key = File.basename(sub_path)
-          value = load(sub_path, true)
+        # directories are added to paths first so they can be
+        # overridden by the files (appropriate since the file
+        # will recursively load the directory if it exists)
+        dirs.each do |dir| 
+          paths[File.basename(dir)] = dir
+        end
+        
+        # when adding files, check that no two files map to
+        # the same key (ex a.yml, a.yaml).
+        files.each do |filepath| 
+          key = File.basename(filepath).chomp(File.extname(filepath))
+          if existing = paths[key]
+            if File.file?(existing)
+              confict = [File.basename(paths[key]), File.basename(filepath)].sort
+              raise "multiple files load the same key: #{confict.inspect}"
+            end
+          end
           
-          # merge result with the existing, or add
+          paths[key] = filepath
+        end
+        
+        # recursively load each file and reverse merge
+        # the result into the base
+        paths.each_pair do |key, recursive_path|
+          value = nil
           each_in(base) do |hash|
-            each_in(hash[key] ||= {}) do |current|
-              current.merge!(value)
+            unless hash.has_key?(key)
+              hash[key] = (value ||= load(recursive_path, true))
             end
           end
         end
@@ -50,13 +68,13 @@ module Configurable
       when Array 
         collection.each do |hash|
           unless hash.kind_of?(Hash)
-            raise ArgumentError, "Array contains non-Hash entries: #{collection}"
+            raise ArgumentError, "Array contains non-Hash entries: #{collection.inspect}"
           end
           
           yield(hash)
         end
       else
-        raise ArgumentError, "not an Array or Hash: #{collection}"
+        raise ArgumentError, "not an Array or Hash: #{collection.inspect}"
       end
     end
     

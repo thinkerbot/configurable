@@ -6,6 +6,14 @@ class UtilsTest < Test::Unit::TestCase
   
   acts_as_file_test
   
+  def prepare(path, obj=nil)
+    path = method_root.filepath(:output, path)
+    dirname = File.dirname(path)
+    FileUtils.mkdir_p(dirname) unless File.exists?(dirname)
+    File.open(path, 'w') {|file| file << obj.to_yaml } if obj
+    path
+  end
+  
   #
   # load test
   #
@@ -33,21 +41,115 @@ class UtilsTest < Test::Unit::TestCase
   end
   
   def test_load_recursively_loads_files
-    path = method_root.filepath("a.yml")
+    path = prepare("a.yml", {'key' => 'a value'})
+           prepare("a/b.yml", 'b value')
+           prepare("a/c.yml", 'c value')
     
-    d = {'key' => 'abcd value'}
-    c = {'d' => d}
-    b = {'key' => 'ab value', 'c' => c}
-    a = {'key' => 'a value', 'b' => b}
+    a = {'key' => 'a value', 'b' => 'b value', 'c' => 'c value'}    
+    assert_equal(a, load(path))
+  end
+  
+  def test_load_recursively_loads_directories
+    path = prepare("a.yml", {'key' => 'value'})
+           prepare("a/b/c.yml", 'c value')
+           prepare("a/c/d.yml", 'd value')
+           
+    a = {
+       'key' => 'value', 
+       'b' => {'c' => 'c value'},
+       'c' => {'d' => 'd value'}
+    }     
+    assert_equal(a, load(path))
+  end
+  
+  def test_recursive_loading_with_files_and_directories
+    path = prepare("a.yml", {'key' => 'a value'})
+           prepare("a/b.yml", {'key' => 'b value'})
+           prepare("a/b/c.yml", 'c value')
+           
+           prepare("a/d.yml", {'key' => 'd value'})
+           prepare("a/d/e/f.yml", 'f value')
+    
+    d = {'key' => 'd value', 'e' => {'f' => 'f value'}}   
+    b = {'key' => 'b value', 'c' => 'c value'}   
+    a = {'key' => 'a value', 'b' => b, 'd' => d}
+    
+    assert_equal(a, load(path))
+  end
+  
+  def test_recursive_loading_sets_value_for_each_hash_in_a_parent_array
+    path = prepare("a.yml", [{'key' => 'one'}, {'key' => 'two'}])
+           prepare("a/b.yml", 'b value')
+           
+    a = [
+      {'key' => 'one', 'b' => 'b value'},
+      {'key' => 'two', 'b' => 'b value'}]
             
     assert_equal(a, load(path))
   end
   
+  def test_recursive_loading_with_files_and_directories_and_arrays
+    path = prepare("a.yml", [{'key' => 'a one'}, {'key' => 'a two'}])
+           prepare("a/b.yml", [{'key' => 'b one'}, {'key' => 'b two'}])
+           prepare("a/b/c.yml", 'c value')
+           
+           prepare("a/d.yml", [{'key' => 'd one'}, {'key' => 'd two'}])
+           prepare("a/d/e/f.yml", 'f value')
+    
+    d = [
+      {'key' => 'd one', 'e' => {'f' => 'f value'}}, 
+      {'key' => 'd two', 'e' => {'f' => 'f value'}}]
+    b = [
+      {'key' => 'b one', 'c' => 'c value'}, 
+      {'key' => 'b two', 'c' => 'c value'}]
+    a = [
+      {'key' => 'a one', 'b' => b, 'd' => d}, 
+      {'key' => 'a two', 'b' => b, 'd' => d}]
+    
+    assert_equal(a, load(path))
+  end
+  
+  def test_recursive_loading_does_not_override_values_set_in_parent
+    path = prepare("a.yml", {'a' => 'set value', 'b' => 'set value'})
+           prepare("a/b.yml", 'recursive value')
+           prepare("a/c.yml", 'recursive value')
+           
+    a = {
+      'a' => 'set value',
+      'b' => 'set value',
+      'c' => 'recursive value'
+    }
+    
+    assert_equal(a, load(path))
+  end
+  
   def test_load_does_not_recusively_load_unless_specified
-    path = method_root.filepath("a.yml")
+    path = prepare("a.yml", {'key' => 'a value'})
+           prepare("a/b.yml", {'key' => 'ab value'})
+           
     a = {'key' => 'a value'}
             
     assert_equal(a, load(path, false))
   end
   
+  def test_recursive_loading_raises_error_when_setting_value_in_a_non_hash_parent
+    path = prepare("a.yml", 'not_a_hash')
+           prepare("a/b.yml", 'b value')  
+    e = assert_raise(ArgumentError) { load(path) }
+    assert_equal "not an Array or Hash: \"not_a_hash\"", e.message
+
+    path = prepare("a.yml", ['not_a_hash', {'key' => 'one'}])
+           prepare("a/b.yml", 'b value')
+    e = assert_raise(ArgumentError) { load(path) }
+    assert_equal "Array contains non-Hash entries: [\"not_a_hash\", {\"key\"=>\"one\"}]", e.message
+  end
+  
+  def test_recursive_loading_raises_error_when_two_files_map_to_the_same_value
+    path = prepare("a.yml", {})
+    one  = prepare("a/b.yml", 'one')
+    two  = prepare("a/b.yaml", 'two')  
+           
+    e = assert_raise(RuntimeError) { load(path) }
+    assert_equal "multiple files load the same key: [\"b.yaml\", \"b.yml\"]", e.message
+  end
 end
