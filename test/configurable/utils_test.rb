@@ -109,6 +109,18 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal(a, load(path))
   end
   
+  def test_load_with_symbolize_symbolizes_all_hash_keys
+    path = prepare("a.yml", [{'key' => 'one'}, {'key' => 'two'}])
+           prepare("a/b.yml", 'b value')
+           prepare("a/c.yml", {'key' => 'value'})
+           
+    a = [
+      {:key => 'one', :b => 'b value', :c => {:key => 'value'}},
+      {:key => 'two', :b => 'b value', :c => {:key => 'value'}}]
+            
+    assert_equal(a, load(path, true, true))
+  end
+  
   def test_recursive_loading_does_not_override_values_set_in_parent
     path = prepare("a.yml", {'a' => 'set value', 'b' => 'set value'})
            prepare("a/b.yml", 'recursive value')
@@ -123,6 +135,13 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal(a, load(path))
   end
   
+  def test_load_does_not_recursively_load_over_single_values
+    path = prepare("a.yml", 'single value')
+           prepare("a/b.yml", 'b value')  
+    
+    assert_equal('single value', load(path))
+  end
+  
   def test_load_does_not_recusively_load_unless_specified
     path = prepare("a.yml", {'key' => 'a value'})
            prepare("a/b.yml", {'key' => 'ab value'})
@@ -130,18 +149,6 @@ class UtilsTest < Test::Unit::TestCase
     a = {'key' => 'a value'}
             
     assert_equal(a, load(path, false))
-  end
-  
-  def test_recursive_loading_raises_error_when_setting_value_in_a_non_hash_parent
-    path = prepare("a.yml", 'not_a_hash')
-           prepare("a/b.yml", 'b value')  
-    e = assert_raise(ArgumentError) { load(path) }
-    assert_equal "not an Array or Hash: \"not_a_hash\"", e.message
-
-    path = prepare("a.yml", ['not_a_hash', {'key' => 'one'}])
-           prepare("a/b.yml", 'b value')
-    e = assert_raise(ArgumentError) { load(path) }
-    assert_equal "Array contains non-Hash entries: [\"not_a_hash\", {\"key\"=>\"one\"}]", e.message
   end
   
   def test_recursive_loading_raises_error_when_two_files_map_to_the_same_value

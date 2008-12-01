@@ -4,7 +4,7 @@ module Configurable
     
     # Loads the contents of path as YAML.  Returns an empty hash if the path 
     # is empty, does not exist, or is not a file.
-    def load(path, recursive=true)
+    def load(path, recursive=true, symbolize=false)
       base = case
       when path == nil then {}
       when !File.file?(path) then {}
@@ -48,34 +48,41 @@ module Configurable
           value = nil
           each_in(base) do |hash|
             unless hash.has_key?(key)
-              hash[key] = (value ||= load(recursive_path, true))
+              hash[key] = (value ||= load(recursive_path, recursive, symbolize))
             end
           end
         end
       end
-
+      
+      base = each_in(base) do |hash|
+        hash.replace(symbolize(hash))
+      end if symbolize
+      
       base
     end
     
+    # Symbolizes String keys of the hash (only) and returns
+    # the symbolized hash.
+    def symbolize(hash)
+      hash.inject({}) do |opts, (key, value)|
+        opts[key.kind_of?(String) ? key.to_sym : key] = value
+        opts
+      end
+    end
+    
     # Yields each hash in the collection (ie each member of
-    # an Array, or the collection if it is a hash).  Raises
-    # an error if the collection is not an Array or Hash.
-    # Also raises an error if an array collection has
-    # non-hash entries.
+    # an Array, or the collection if it is a hash).  Returns
+    # the collection.
     def each_in(collection) # :yields: hash
       case collection
       when Hash then yield(collection)
       when Array 
         collection.each do |hash|
-          unless hash.kind_of?(Hash)
-            raise ArgumentError, "Array contains non-Hash entries: #{collection.inspect}"
-          end
-          
-          yield(hash)
+          yield(hash) if hash.kind_of?(Hash)
         end
-      else
-        raise ArgumentError, "not an Array or Hash: #{collection.inspect}"
       end
+      
+      collection
     end
     
     def recurse(delegates, nest=[], &block)
