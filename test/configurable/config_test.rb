@@ -7,7 +7,7 @@ class ConfigTest < Test::Unit::TestCase
   attr_reader :c
   
   def setup
-    @c = Config.new('key', 'key=', nil)
+    @c = Config.new('key')
   end
   
   #
@@ -35,23 +35,25 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_initialize
-    c = Config.new('key', 'key=', 'default', :attr => 'value')
+    c = Config.new('key', 'default', 'key', 'key=', :attr => 'value')
+    assert_equal 'key', c.key
+    assert_equal 'default', c.default
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
-    assert_equal 'default', c.default
     assert_equal({:attr => 'value'}, c.attributes)
   end
   
   def test_initialize_using_defaults
     c = Config.new('key')
+    assert_equal 'key', c.key
+    assert_equal nil, c.default
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
-    assert_equal nil, c.default
     assert_equal({}, c.attributes)
   end
   
   def test_reader_and_writer_may_be_set_to_nil_during_initialize
-    c = Config.new(nil, nil, 'default')
+    c = Config.new('key', 'default', nil, nil)
     assert_equal nil, c.reader
     assert_equal nil, c.writer
   end
@@ -152,20 +154,20 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_another_is_equal_to_self_if_key_default_reader_and_writer_are_equal
-    config = Config.new('key', 'key=', 'default')
-    another = Config.new('key', 'key=', 'default')
+    config = Config.new('key', 'default', 'key', 'key=')
+    another = Config.new('key', 'default', 'key', 'key=')
     assert config == another
     
-    config = Config.new('key', 'key=', 'default')
-    another = Config.new('alt', 'key=', 'default')
+    another = Config.new('alt', 'default', 'key', 'key=')
     assert config != another
     
-    config = Config.new('key', 'key=', 'default')
-    another = Config.new('key', 'alt=', 'default')
+    another = Config.new('key', 'alt', 'key', 'key=')
     assert config != another
     
-    config = Config.new('key', 'key=', 'default')
-    another = Config.new('key', 'key=', 'alt')
+    another = Config.new('key', 'default', 'alt', 'key=')
+    assert config != another
+    
+    another = Config.new('key', 'default', 'key', 'alt=')
     assert config != another
   end
   

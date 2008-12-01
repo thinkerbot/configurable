@@ -18,9 +18,12 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_sample
+    one = Config.new(:one, 'one')
+    two = Config.new(:two, 'two')
+    
     assert_equal({
-      :one => Config.new('one', 'one=', 'one'), 
-      :two => Config.new('two', 'two=', 'two')
+      :one => one, 'one' => one,
+      :two => two, 'two' => two
     }, Sample.configurations)
     
     s = Sample.new
@@ -161,10 +164,15 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_subclasses_inherit_configurations
-    assert_equal({:one => Config.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    one = Config.new(:one, 'one')
+    two = Config.new(:two, 'two')
+    
+    assert_equal({:one => one, 'one' => one}, IncludeBase.configurations)
+    
+    
     assert_equal({
-      :one => Config.new(:one, :one=, 'one'), 
-      :two => Config.new(:two, :two=, 'two')
+      :one => one, 'one' => one, 
+      :two => two, 'two' => two, 
     }, IncludeSubclass.configurations)
   end
   
@@ -175,15 +183,21 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_inherited_configurations_can_be_overridden
-    assert_equal({:one => Config.new(:one, :one=, 'one')}, IncludeBase.configurations)
-    assert_equal({:one => Config.new(:one, :one=, 'ONE')}, OverrideSubclass.configurations)
+    one = Config.new(:one, 'one')
+    assert_equal({:one => one, 'one' => one}, IncludeBase.configurations)
+    
+    one = Config.new(:one, 'ONE')
+    assert_equal({:one => one, 'one' => one}, OverrideSubclass.configurations)
   end
   
   def test_manual_changes_to_inherited_configurations_do_not_propogate_to_superclass
     ChangeDefaultSubclass.configurations[:one].default = 'two'
     
-    assert_equal({:one => Config.new(:one, :one=, 'one')}, IncludeBase.configurations)
-    assert_equal({:one => Config.new(:one, :one=, 'two')}, ChangeDefaultSubclass.configurations)
+    one = Config.new(:one, 'one')
+    assert_equal({:one => one, 'one' => one}, IncludeBase.configurations)
+    
+    two = Config.new(:one, 'two')
+    assert_equal({:one => two, 'one' => two}, ChangeDefaultSubclass.configurations)
   end
   
   #
@@ -212,13 +226,17 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_adds_configurations_to_class_configuration
-    assert_equal({
-      :zero =>  Config.new('zero', 'zero=', 'zero'),
-      :one =>   Config.new('one', 'one=', 'one'),
-      :two =>   Config.new('two', 'two=', 'two'),
-      :three => Config.new('three', 'three=', nil)
-    },
-    SampleClass.configurations)
+    expected = {
+      :zero =>  Config.new(:zero, 'zero'),
+      :one =>   Config.new(:one, 'one'),
+      :two =>   Config.new(:two, 'two'),
+      :three => Config.new(:three, nil)
+    }
+    expected.dup.each_pair do |key, config|
+      expected[key.to_s] = config
+    end
+    
+    assert_equal(expected, SampleClass.configurations)
   end
   
   def test_config_generates_accessors

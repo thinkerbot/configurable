@@ -60,7 +60,9 @@ module Configurable
       raise ArgumentError, "already bound to: #{@receiver}" if bound? && @receiver != receiver
           
       delegates.each_pair do |key, delegate|
-        receiver.send(delegate.writer, store.delete(key)) if delegate.writer
+        if delegate.writer && store.has_key?(key)
+          receiver.send(delegate.writer, store.delete(key))
+        end
       end
       @receiver = receiver
     
@@ -75,7 +77,7 @@ module Configurable
     # Unbinds self from the specified receiver.  Mapped values
     # are stored in store.  Returns the unbound receiver.
     def unbind
-      delegates.each_pair do |key, delegate|
+      each_delegate do |key, delegate|
         store[key] = receiver.send(delegate.reader) if delegate.reader
       end
       current_receiver = receiver
@@ -113,7 +115,7 @@ module Configurable
   
     # Calls block once for each key-value pair stored in self.
     def each_pair # :yields: key, value
-      delegates.each_pair do |key, delegate|
+      each_delegate do |key, delegate|
         yield(key, receiver.send(delegate.reader)) if delegate.reader
       end if bound?
     
@@ -128,7 +130,7 @@ module Configurable
     #
     # Returns self.
     def update
-      delegates.each_pair do |key, delegate|
+      each_delegate do |key, delegate|
         self[key] ||= delegate.default
       end
       self
@@ -150,7 +152,7 @@ module Configurable
     # Returns self as a hash. 
     def to_hash
       hash = store.dup
-      delegates.keys.each do |key|
+      each_delegate do |key, delegate|
         hash[key] = self[key]
       end if bound?
       hash
@@ -159,6 +161,14 @@ module Configurable
     # Overrides default inspect to show the to_hash values.
     def inspect
       "#<#{self.class}:#{object_id} to_hash=#{to_hash.inspect}>"
+    end
+    
+    private
+    
+    def each_delegate
+      delegates.each_pair do |key, delegate|
+        yield(key, delegate) if key == delegate.key
+      end
     end
   end
 end

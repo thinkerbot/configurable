@@ -143,10 +143,11 @@ module Configurable
     # by the overrides, but this is likely more efficient
     # on average since delegates duplicate default values.
     store = {}
-    overrides.each_pair do |key, value| 
+    overrides.each_pair do |key, value| # required in case overrides is a ConfigHash...
       store[key] = value
     end
     delegates.each_pair do |key, delegate|
+      key = delegate.key
       store[key] = delegate.default unless store.has_key?(key)
     end
     

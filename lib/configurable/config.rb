@@ -15,6 +15,8 @@ module Configurable
         end
       end
     end
+    
+    attr_accessor :key
 
     # The reader method, by default key
     attr_reader :reader
@@ -26,14 +28,15 @@ module Configurable
     # delegate in different contexts (ex on the command
     # line or web).
     attr_reader :attributes
-  
+    
     # Initializes a new Config with the specified key 
     # and default value.
-    def initialize(reader, writer="#{reader}=", default=nil, attributes={})
+    def initialize(key, default=nil, reader=key, writer="#{reader}=", attributes={})
       self.default = default
       self.reader = reader
       self.writer = writer
-    
+      
+      @key = key
       @attributes = attributes
     end
 
@@ -67,6 +70,7 @@ module Configurable
     # not considered.
     def ==(another)
       another.kind_of?(Config) &&
+      self.key == another.key &&
       self.reader == another.reader &&
       self.writer == another.writer &&
       self.default(false) == another.default(false)

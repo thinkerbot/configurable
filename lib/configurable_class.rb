@@ -30,8 +30,19 @@ module ConfigurableClass
       child.instance_variable_set(:@source_file, File.expand_path($1)) 
     end
     
+    reverse_map = {}
+    @configurations.each_pair do |key, config|
+      (reverse_map[config] ||= []) << key 
+    end
+    
     configurations = {}
-    @configurations.each_pair {|key, config| configurations[key] = config.dup } 
+    reverse_map.each_pair do |config, keys|
+      config = config.dup
+      keys.each do |key|
+        configurations[key] = config
+      end
+    end
+    
     child.instance_variable_set(:@configurations, configurations)
     super
   end
@@ -112,7 +123,10 @@ module ConfigurableClass
   #   end
   #
   def config_attr(key, value=nil, options={}, &block)
-    attributes = Configurable::Validation::ATTRIBUTES[block].merge(:reader => true, :writer => true)
+    attributes = Configurable::Validation::ATTRIBUTES[block].merge(
+      :reader => true, 
+      :writer => true, 
+      :indifferent_access => true)
     attributes.merge!(options)
   
     # define the default public reader method
@@ -148,12 +162,19 @@ module ConfigurableClass
       case line
       when /in .config.$/ then next
       when Lazydoc::CALLER_REGEXP
-        options[:desc] = Lazydoc.register($1, $3.to_i - 1, Configurable::Desc)
+        attributes[:desc] = Lazydoc.register($1, $3.to_i - 1, Configurable::Desc)
         break
       end
-    end unless options[:desc]
-  
-    configurations[key] = Configurable::Config.new(reader, writer, value, options)
+    end unless attributes[:desc]
+    
+    config = Configurable::Config.new(key, value, reader, writer, attributes)
+
+    if attributes.delete(:indifferent_access)
+      configurations[key.to_sym] = config
+      configurations[key.to_s] = config
+    else
+      configurations[key] = config
+    end
   end
   
   # Adds a configuration to self accessing the configurations for the
@@ -264,7 +285,14 @@ module ConfigurableClass
     end unless options[:desc]
     
     value = Configurable::ConfigHash.new(configurable_class.configurations).update
-    configurations[key] = Configurable::Config.new(reader, writer, value, options)
+    config = Configurable::Config.new(key, value, reader, writer, options)
+
+    if options[:indifferent_access]
+      configurations[key.to_sym] = config
+      configurations[key.to_str] = config
+    else
+      configurations[key] = config
+    end
     
     check_infinite_nest(configurable_class.configurations)
   end
