@@ -1,9 +1,9 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable/config_hash'
+require 'configurable/delegate_hash'
 
-class ConfigHashTest < Test::Unit::TestCase
-  Config = Configurable::Config
-  ConfigHash = Configurable::ConfigHash
+class DelegateHashTest < Test::Unit::TestCase
+  Delegate = Configurable::Delegate
+  DelegateHash = Configurable::DelegateHash
   
   class Receiver
     attr_accessor :key
@@ -17,7 +17,7 @@ class ConfigHashTest < Test::Unit::TestCase
   
   def setup
     @r = Receiver.new
-    @d = ConfigHash.new({:key => Config.new(:key)})
+    @d = DelegateHash.new({:key => Delegate.new(:key)})
   end
   
   #
@@ -31,8 +31,8 @@ class ConfigHashTest < Test::Unit::TestCase
   def test_documentation
     sample = Sample.new
     
-    dhash = ConfigHash.new
-    dhash.delegates[:key] = Config.new(:key)
+    dhash = DelegateHash.new
+    dhash.delegates[:key] = Delegate.new(:key)
     dhash.bind(sample)
   
     sample.key = 'value'
@@ -53,7 +53,7 @@ class ConfigHashTest < Test::Unit::TestCase
   #
   
   def test_default_initialize
-    d = ConfigHash.new
+    d = DelegateHash.new
     assert_equal(nil, d.receiver)
     assert_equal({}, d.store)
     assert_equal({}, d.delegates)
@@ -61,7 +61,7 @@ class ConfigHashTest < Test::Unit::TestCase
   
   def test_initialize_sets_receiver_without_mapping_store
     r = Receiver.new
-    d = ConfigHash.new({:key => Config.new(:key)}, {:key => 'value'}, r)
+    d = DelegateHash.new({:key => Delegate.new(:key)}, {:key => 'value'}, r)
     
     assert d.bound?
     assert_equal({:key => 'value'}, d.store)
@@ -353,7 +353,7 @@ class ConfigHashTest < Test::Unit::TestCase
     d[:one] = 'one'
     assert d == {:one => 'one'}
     
-    d2 = ConfigHash.new({}, {:one => 'one'})
+    d2 = DelegateHash.new({}, {:one => 'one'})
     assert d == d2
   end
   

@@ -1,2 +1,2 @@
 require 'rubygems'
-require 'tap/test'
+require 'test/unit'

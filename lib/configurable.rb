@@ -1,4 +1,4 @@
-require 'configurable_class'
+require 'configurable/class_methods'
 
 # Configurable enables the specification of configurations within a class definition.
 #
@@ -15,7 +15,7 @@ require 'configurable_class'
 #   end
 #
 #   c = ConfigClass.new
-#   c.config.class         # => Configurable::ConfigHash
+#   c.config.class         # => Configurable::DelegateHash
 #   c.config               # => {:one => 'one', :two => 'two', :three => 'three'}
 #
 # The <tt>config</tt> object acts as a forwarding hash; declared configurations
@@ -103,27 +103,27 @@ require 'configurable_class'
 #            present in instance.config
 #
 module Configurable
-  
-  # Extends including classes with ConfigurableClass
+
+  # Extends including classes with Configurable::ClassMethods
   def self.included(mod) # :nodoc:
-    mod.extend ConfigurableClass if mod.kind_of?(Class)
+    mod.extend ClassMethods if mod.kind_of?(Class)
   end
-  
+
   # A ConfigHash bound to self
   attr_reader :config
-  
+
   # Reconfigures self with the given overrides. Only the specified configs
   # are modified. Keys are symbolized.
   #
   # Returns self.
   def reconfigure(overrides={})
     overrides.each_pair do |key, value|
-      config[key.to_sym] = value
+      config[key] = value
     end
 
     self
   end
-  
+
   # Reinitializes configurations in the copy such that
   # the new object has it's own set of configurations,
   # separate from the original object.
@@ -131,26 +131,25 @@ module Configurable
     super
     initialize_config(orig.config)
   end
-  
+
   protected
-  
+
   # Initializes config. Default config values 
   # are overridden as specified by overrides.
   def initialize_config(overrides={})
     delegates = self.class.configurations
-    
+
     # note the defaults could be stored first and overridden
     # by the overrides, but this is likely more efficient
     # on average since delegates duplicate default values.
     store = {}
-    overrides.each_pair do |key, value| # required in case overrides is a ConfigHash...
+    overrides.each_pair do |key, value| 
       store[key] = value
     end
     delegates.each_pair do |key, delegate|
-      key = delegate.key
       store[key] = delegate.default unless store.has_key?(key)
     end
-    
-    @config = ConfigHash.new(delegates, store).bind(self)
+
+    @config = DelegateHash.new(delegates, store).bind(self)
   end
 end

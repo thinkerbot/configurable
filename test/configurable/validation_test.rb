@@ -198,8 +198,8 @@ class ValidationTest < Test::Unit::TestCase
   def test_list_documentation
     assert_equal Proc, list.class
     assert_equal [1,2,3], list.call([1,2,3])
-    assert_equal [1,2,3], list.call('1,2,3')
-    assert_equal ['str'], list.call('str')
+    assert_equal [1,'str'], list.call(['1', 'str'])
+    assert_raise(ValidationError) { list.call('str') }
     assert_raise(ValidationError) { list.call(nil) }
   end
 

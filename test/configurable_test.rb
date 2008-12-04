@@ -2,8 +2,9 @@ require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'configurable'
 
 class ConfigurableTest < Test::Unit::TestCase
-  acts_as_subset_test
-  include Configurable
+  Delegate = Configurable::Delegate
+  DelegateHash = Configurable::DelegateHash
+  Validation = Configurable::Validation
   
   # sample class repeatedly used in tests
   class Sample
@@ -18,12 +19,9 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_sample
-    one = Config.new(:one, 'one')
-    two = Config.new(:two, 'two')
-    
     assert_equal({
-      :one => one, 'one' => one,
-      :two => two, 'two' => two
+      :one => Delegate.new('one', 'one=', 'one'), 
+      :two => Delegate.new('two', 'two=', 'two')
     }, Sample.configurations)
     
     s = Sample.new
@@ -34,23 +32,6 @@ class ConfigurableTest < Test::Unit::TestCase
   #
   # documentation test
   #
-  
-  class ConfigClass
-    include Configurable
-  
-    config :one, 'one'
-    config :two, 'two'
-    config :three, 'three'
-  
-    def initialize(overrides={})
-      initialize_config(overrides)
-    end
-  end
-  
-  class SubClass < ConfigClass
-    config(:one, 'one') {|v| v.upcase }
-    config :two, 2, &c.integer
-  end
   
   class ConfigClass
     include Configurable
@@ -89,7 +70,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_documentation
     c = ConfigClass.new
-    assert_equal(Configurable::ConfigHash, c.config.class)
+    assert_equal(DelegateHash, c.config.class)
     assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config)
   
     c.config[:one] = 'ONE'
@@ -135,8 +116,8 @@ class ConfigurableTest < Test::Unit::TestCase
     include Configurable
   end
   
-  def test_include_extends_class_with_ConfigurableClass
-    assert IncludeClass.kind_of?(ConfigurableClass)
+  def test_include_extends_class_with_ClassMethods
+    assert IncludeClass.kind_of?(Configurable::ClassMethods)
   end
    
   def test_extend_initializes_class_configurations
@@ -164,15 +145,10 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_subclasses_inherit_configurations
-    one = Config.new(:one, 'one')
-    two = Config.new(:two, 'two')
-    
-    assert_equal({:one => one, 'one' => one}, IncludeBase.configurations)
-    
-    
+    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
     assert_equal({
-      :one => one, 'one' => one, 
-      :two => two, 'two' => two, 
+      :one => Delegate.new(:one, :one=, 'one'), 
+      :two => Delegate.new(:two, :two=, 'two')
     }, IncludeSubclass.configurations)
   end
   
@@ -183,21 +159,15 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_inherited_configurations_can_be_overridden
-    one = Config.new(:one, 'one')
-    assert_equal({:one => one, 'one' => one}, IncludeBase.configurations)
-    
-    one = Config.new(:one, 'ONE')
-    assert_equal({:one => one, 'one' => one}, OverrideSubclass.configurations)
+    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({:one => Delegate.new(:one, :one=, 'ONE')}, OverrideSubclass.configurations)
   end
   
   def test_manual_changes_to_inherited_configurations_do_not_propogate_to_superclass
     ChangeDefaultSubclass.configurations[:one].default = 'two'
     
-    one = Config.new(:one, 'one')
-    assert_equal({:one => one, 'one' => one}, IncludeBase.configurations)
-    
-    two = Config.new(:one, 'two')
-    assert_equal({:one => two, 'one' => two}, ChangeDefaultSubclass.configurations)
+    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({:one => Delegate.new(:one, :one=, 'two')}, ChangeDefaultSubclass.configurations)
   end
   
   #
@@ -226,17 +196,13 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_adds_configurations_to_class_configuration
-    expected = {
-      :zero =>  Config.new(:zero, 'zero'),
-      :one =>   Config.new(:one, 'one'),
-      :two =>   Config.new(:two, 'two'),
-      :three => Config.new(:three, nil)
-    }
-    expected.dup.each_pair do |key, config|
-      expected[key.to_s] = config
-    end
-    
-    assert_equal(expected, SampleClass.configurations)
+    assert_equal({
+      :zero =>  Delegate.new('zero', 'zero=', 'zero'),
+      :one =>   Delegate.new('one', 'one=', 'one'),
+      :two =>   Delegate.new('two', 'two=', 'two'),
+      :three => Delegate.new('three', 'three=', nil)
+    },
+    SampleClass.configurations)
   end
   
   def test_config_generates_accessors
@@ -449,14 +415,14 @@ class ConfigurableTest < Test::Unit::TestCase
     
     assert_equal :key_config, config.reader
     assert_equal :key_config=, config.writer
-    assert_equal Configurable::ConfigHash, config.default.class
+    assert_equal DelegateHash, config.default.class
     assert_equal NestChild.configurations, config.default.delegates
     
     assert NestParent.configurations.key?(:blockless)
     config = NestParent.configurations[:blockless]
     assert_equal nil, config.reader
     assert_equal nil, config.writer
-    assert_equal Configurable::ConfigHash, config.default.class
+    assert_equal DelegateHash, config.default.class
     assert_equal NestChild.configurations, config.default.delegates
   end
   
@@ -494,7 +460,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_nest_raises_error_for_non_configurable_input
     e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
-    assert_equal "not a ConfigurableClass: b", e.message
+    assert_equal "not a Configurable class: b", e.message
   end
   
   class RecursiveA
@@ -557,6 +523,24 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
+  # indifferent access test
+  #
+  
+  def test_access_is_indifferent_through_config
+    s = Sample.new
+    
+    s.config['one'] = 'value'
+    assert_equal 'VALUE', s.one
+    assert_equal 'VALUE', s.config['one']
+    assert_equal 'VALUE', s.config[:one]
+    
+    s.config[:one] = 'alt'
+    assert_equal 'ALT', s.one
+    assert_equal 'ALT', s.config['one']
+    assert_equal 'ALT', s.config[:one]
+  end
+  
+  #
   # initialize_config test
   #
   
@@ -582,41 +566,4 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'two', t2.two
   end
   
-  #
-  # benchmarks
-  #
-  
-  class ConfigBenchmark
-    include Configurable
-    
-    config :key, nil
-    config(:block, nil) {|value| value }
-    attr_accessor :attr
-  end
-
-  def test_config_and_attr_speed
-    t = ConfigBenchmark.new 
-    t.send(:initialize_config)
-    
-    benchmark_test(20) do |x|
-      n = 100000
-      
-      puts "writers"
-      x.report("100k key= ") { n.times { t.key = 1 } }
-      x.report("100k block= ") { n.times { t.block = 1 } }
-      x.report("100k attr= ") { n.times { t.attr = 1 } }
-      x.report("100k config[key]= ") { n.times { t.config[:key] = 1 } }
-      x.report("100k config[block]= ") { n.times { t.config[:block] = 1 } }
-      x.report("100k config[attr]= ") { n.times { t.config[:attr] = 1 } }
-      
-      puts "readers"
-      x.report("100k key") { n.times { t.key } }
-      x.report("100k block") { n.times { t.block } }
-      x.report("100k attr") { n.times { t.attr } }
-      x.report("100k config[key]") { n.times { t.config[:key] } }
-      x.report("100k config[block]") { n.times { t.config[:block] } }
-      x.report("100k config[attr]") { n.times { t.config[:attr] } }
-      
-    end
-  end
 end

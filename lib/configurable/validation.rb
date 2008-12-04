@@ -23,7 +23,7 @@ module Configurable
   # This syntax plays well with RDoc, which otherwise gets jacked when you
   # do it all in one step.
   module Validation
-  
+
     # Raised when Validation blocks fail.
     class ValidationError < ArgumentError
       def initialize(input, validations)
@@ -35,19 +35,19 @@ module Configurable
         end
       end
     end
-  
+
     # Raised when yamlization fails.
     class YamlizationError < ArgumentError
       def initialize(input, error)
         super "#{error} ('#{input}')"
       end
     end
-  
+
     module_function
-  
+
     # Yaml conversion and checker.  Valid if any of the validations
     # match in a case statement.  Otherwise raises an error.
-  
+
     # Returns input if any of the validations match any of the
     # inputs, as in a case statement.  Raises a ValidationError 
     # otherwise.  For example:
@@ -67,17 +67,17 @@ module Configurable
     def validate(input, validations)
       case validations
       when Array
-    
+  
         case input
         when *validations then input
         else raise ValidationError.new(input, validations)
         end
-      
+    
       when nil then input
       else raise ArgumentError.new("validations must be nil, or an array of valid inputs")
       end
     end
-  
+
     # Attempts to load the input as YAML.  Raises a YamlizationError
     # for errors.
     def yamlize(input)
@@ -87,7 +87,7 @@ module Configurable
         raise YamlizationError.new(input, $!.message)
       end
     end
-  
+
     # Returns a block that calls validate using the block input
     # and the input validations.  Raises an error if no validations
     # are specified.
@@ -115,7 +115,7 @@ module Configurable
         validations.empty? ? res : validate(res, validations)
       end
     end
-  
+
     # Returns a block loads a String input as YAML then
     # validates the result is valid using the input
     # validations.  If the input is not a String, the
@@ -126,7 +126,7 @@ module Configurable
         validate(input, validations)
       end
     end
-  
+
     # Returns a block that checks the input is a string.
     # Moreover, strings are re-evaluated as string 
     # literals using %Q. 
@@ -145,7 +145,7 @@ module Configurable
       eval %Q{"#{input}"}
     end
     STRING = string_validation_block
-  
+
     # Same as string but allows nil.  Note the special
     # behavior of the nil string '~' -- rather than
     # being treated as a string, it is processed as nil
@@ -163,7 +163,7 @@ module Configurable
       end
     end
     STRING_OR_NIL = string_or_nil_validation_block
-  
+
     # Returns a block that checks the input is a symbol.
     # String inputs are loaded as yaml first.
     #
@@ -175,14 +175,14 @@ module Configurable
     #
     def symbol(); SYMBOL; end
     SYMBOL = yamlize_and_check(Symbol)
-  
+
     # Same as symbol but allows nil:
     #
     #   symbol_or_nil.call('~')   # => nil
     #   symbol_or_nil.call(nil)   # => nil
     def symbol_or_nil(); SYMBOL_OR_NIL; end
     SYMBOL_OR_NIL = yamlize_and_check(Symbol, nil)
-  
+
     # Returns a block that checks the input is true, false or nil.
     # String inputs are loaded as yaml first.
     #
@@ -200,11 +200,11 @@ module Configurable
     #
     def boolean(); BOOLEAN; end
     BOOLEAN = yamlize_and_check(true, false, nil)
-  
+
     # Same as boolean.
     def switch(); SWITCH; end
     SWITCH = yamlize_and_check(true, false, nil)
-  
+
     # Same as boolean.
     def flag(); FLAG; end
     FLAG = yamlize_and_check(true, false, nil)
@@ -220,31 +220,28 @@ module Configurable
     #
     def array(); ARRAY; end
     ARRAY = yamlize_and_check(Array)
-  
+
     # Same as array but allows nil:
     #
     #   array_or_nil.call('~')    # => nil
     #   array_or_nil.call(nil)    # => nil
     def array_or_nil(); ARRAY_OR_NIL; end
     ARRAY_OR_NIL = yamlize_and_check(Array, nil)
-  
-    # Returns a block that checks the input is an array.
-    # If the input is a string the string is split along
-    # commas and each value yamlized into an array.
+
+    # Returns a block that checks the input is an array,
+    # then yamlizes each string value of the array.
     #
     #   list.class                # => Proc
     #   list.call([1,2,3])        # => [1,2,3]
-    #   list.call('1,2,3')        # => [1,2,3]
-    #   list.call('str')          # => ['str']
+    #   list.call(['1', 'str'])   # => [1,'str']
+    #   list.call('str')          # => ValidationError
     #   list.call(nil)            # => ValidationError
     #
     def list(); LIST; end
     list_block = lambda do |input|
-      if input.kind_of?(String)
-        input = input.split(/,/).collect {|arg| yamlize(arg) }
+      validate(input, [Array]).collect do |arg| 
+        arg.kind_of?(String) ? yamlize(arg) : arg
       end
-    
-      validate(input, [Array])
     end
     LIST = list_block
 
@@ -259,14 +256,14 @@ module Configurable
     #
     def hash(); HASH; end
     HASH = yamlize_and_check(Hash)
-  
+
     # Same as hash but allows nil:
     #
     #   hash_or_nil.call('~')          # => nil
     #   hash_or_nil.call(nil)          # => nil
     def hash_or_nil(); HASH_OR_NIL; end
     HASH_OR_NIL = yamlize_and_check(Hash, nil)
-  
+
     # Returns a block that checks the input is an integer.
     # String inputs are loaded as yaml first.
     #
@@ -279,14 +276,14 @@ module Configurable
     #
     def integer(); INTEGER; end
     INTEGER = yamlize_and_check(Integer)
-  
+
     # Same as integer but allows nil:
     #
     #   integer_or_nil.call('~')  # => nil
     #   integer_or_nil.call(nil)  # => nil
     def integer_or_nil(); INTEGER_OR_NIL; end
     INTEGER_OR_NIL = yamlize_and_check(Integer, nil)
-  
+
     # Returns a block that checks the input is a float.
     # String inputs are loaded as yaml first.
     #
@@ -300,14 +297,14 @@ module Configurable
     #
     def float(); FLOAT; end
     FLOAT = yamlize_and_check(Float)
-  
+
     # Same as float but allows nil:
     #
     #   float_or_nil.call('~')    # => nil
     #   float_or_nil.call(nil)    # => nil
     def float_or_nil(); FLOAT_OR_NIL; end
     FLOAT_OR_NIL = yamlize_and_check(Float, nil)
-  
+
     # Returns a block that checks the input is a number.
     # String inputs are loaded as yaml first.
     #
@@ -322,14 +319,14 @@ module Configurable
     #
     def num(); NUMERIC; end
     NUMERIC = yamlize_and_check(Numeric)
-  
+
     # Same as num but allows nil:
     #
     #   num_or_nil.call('~')    # => nil
     #   num_or_nil.call(nil)    # => nil
     def num_or_nil(); NUMERIC_OR_NIL; end
     NUMERIC_OR_NIL = yamlize_and_check(Numeric, nil)
-  
+
     # Returns a block that checks the input is a regexp.
     # String inputs are converted to regexps using
     # Regexp#new.
@@ -348,7 +345,7 @@ module Configurable
       validate(input, [Regexp])
     end
     REGEXP = regexp_block
-  
+
     # Same as regexp but allows nil. Note the special
     # behavior of the nil string '~' -- rather than
     # being converted to a regexp, it is processed as 
@@ -364,11 +361,11 @@ module Configurable
       when String then Regexp.new(input)
       else input
       end
-    
+  
       validate(input, [Regexp, nil])
     end
     REGEXP_OR_NIL = regexp_or_nil_block
-  
+
     # Returns a block that checks the input is a range.
     # String inputs are split into a beginning and
     # end if possible, where each part is loaded as
@@ -391,7 +388,7 @@ module Configurable
       validate(input, [Range])
     end
     RANGE = range_block
-  
+
     # Same as range but allows nil:
     #
     #   range_or_nil.call('~')    # => nil
@@ -408,11 +405,11 @@ module Configurable
         end
       else input
       end
-    
+  
       validate(input, [Range, nil])
     end
     RANGE_OR_NIL = range_or_nil_block
-  
+
     # Returns a block that checks the input is a Time. String inputs are 
     # loaded using Time.parse and then converted into times.  Parsed times 
     # are local unless specified otherwise.
@@ -443,13 +440,13 @@ module Configurable
       require 'time' unless Time.respond_to?(:parse)
       TIME
     end
-  
+
     time_block = lambda do |input|
       input = Time.parse(input) if input.kind_of?(String)
       validate(input, [Time])
     end
     TIME = time_block
-  
+
     # Same as time but allows nil:
     #
     #   time_or_nil.call('~')    # => nil
@@ -460,18 +457,18 @@ module Configurable
       require 'time' unless Time.respond_to?(:parse)
       TIME_OR_NIL
     end
-  
+
     time_or_nil_block = lambda do |input|
       input = case input
       when nil, '~' then nil
       when String then Time.parse(input)
       else input
       end
-    
+  
       validate(input, [Time, nil])
     end 
     TIME_OR_NIL = time_or_nil_block
-  
+
     # A hash of default attributes for the validation blocks.
     ATTRIBUTES = Hash.new({})
     ATTRIBUTES[SWITCH] = {:type => :switch}
