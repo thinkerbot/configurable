@@ -1,7 +1,6 @@
 require 'lazydoc/attributes'
 require 'configurable/delegate_hash'
 require 'configurable/validation'
-require 'configurable/desc'
 require 'configurable/indifferent_access'
 
 module Configurable
@@ -95,7 +94,8 @@ module Configurable
     #   end
     #
     def config(key, value=nil, options={}, &block)
-      options[:desc] ||= Lazydoc.register_caller(Desc)
+      # register with Lazydoc
+      options[:desc] ||= Lazydoc.register_caller
       
       if block_given?
         options = Validation::ATTRIBUTES[block].merge(options)
@@ -135,11 +135,13 @@ module Configurable
     #   end
     #
     def config_attr(key, value=nil, options={}, &block)
-      attributes = Validation::ATTRIBUTES[block].merge(:reader => true, :writer => true)
-      attributes.merge!(options)
+      options = Validation::ATTRIBUTES[block].merge(
+        :reader => true, 
+        :writer => true
+      ).merge!(options)
 
       # define the default public reader method
-      reader = attributes.delete(:reader)
+      reader = options.delete(:reader)
 
       case reader
       when true
@@ -151,7 +153,7 @@ module Configurable
       end
 
       # define the default public writer method
-      writer = attributes.delete(:writer)
+      writer = options.delete(:writer)
 
       if block_given? && writer != true
         raise ArgumentError, "a block may not be specified without writer == true"
@@ -166,10 +168,10 @@ module Configurable
         writer = "#{key}="
       end
   
-      # register with Lazydoc so that all extra documentation can be extracted
-      attributes[:desc] ||= Lazydoc.register_caller(Desc)
+      # register with Lazydoc
+      options[:desc] ||= Lazydoc.register_caller
       
-      configurations[key] = Delegate.new(reader, writer, value, attributes)
+      configurations[key] = Delegate.new(reader, writer, value, options)
     end
 
     # Adds a configuration to self accessing the configurations for the
@@ -269,8 +271,8 @@ module Configurable
         reader = writer = nil
       end
   
-      # register with Lazydoc so that all extra documentation can be extracted
-      options[:desc] ||= Lazydoc.register_caller(Desc)
+      # register with Lazydoc
+      options[:desc] ||= Lazydoc.register_caller
       
       value = DelegateHash.new(configurable_class.configurations).update
       configurations[key] = Delegate.new(reader, writer, value, options)
