@@ -1,4 +1,3 @@
-require 'lazydoc'
 require 'lazydoc/attributes'
 require 'configurable/delegate_hash'
 require 'configurable/validation'
@@ -96,9 +95,11 @@ module Configurable
     #   end
     #
     def config(key, value=nil, options={}, &block)
+      options[:desc] ||= Lazydoc.register_caller(Desc)
+      
       if block_given?
         options = Validation::ATTRIBUTES[block].merge(options)
-  
+
         instance_variable = "@#{key}".to_sym
         config_attr(key, value, options) do |input|
           instance_variable_set(instance_variable, yield(input))
@@ -166,16 +167,9 @@ module Configurable
       end
   
       # register with Lazydoc so that all extra documentation can be extracted
-      caller.each do |line|
-        case line
-        when /in .config.$/ then next
-        when Lazydoc::CALLER_REGEXP
-          options[:desc] = Lazydoc.register($1, $3.to_i - 1, Desc)
-          break
-        end
-      end unless options[:desc]
-
-      configurations[key] = Delegate.new(reader, writer, value, options)
+      attributes[:desc] ||= Lazydoc.register_caller(Desc)
+      
+      configurations[key] = Delegate.new(reader, writer, value, attributes)
     end
 
     # Adds a configuration to self accessing the configurations for the
@@ -276,15 +270,8 @@ module Configurable
       end
   
       # register with Lazydoc so that all extra documentation can be extracted
-      caller.each do |line|
-        case line
-        when /in .config.$/ then next
-        when Lazydoc::CALLER_REGEXP
-          options[:desc] = Lazydoc.register($1, $3.to_i - 1, Desc)
-          break
-        end
-      end unless options[:desc]
-  
+      options[:desc] ||= Lazydoc.register_caller(Desc)
+      
       value = DelegateHash.new(configurable_class.configurations).update
       configurations[key] = Delegate.new(reader, writer, value, options)
   

@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
   s.name = "configurable"
-  s.version = "0.0.1"
+  s.version = "0.1.0"
   s.author = "Simon Chiang"
   s.email = "simon.a.chiang@gmail.com"
-  s.homepage = "http://rubyforge.org/projects/tap/"
+  s.homepage = "http://tap.rubyforge.org/configurable"
   s.platform = Gem::Platform::RUBY
   s.summary = "configurable"
   s.require_path = "lib"
@@ -14,22 +14,23 @@ Gem::Specification.new do |s|
   
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{
+    MIT-LICENSE
     README
   }
   
   # list the files you want to include here. you can
   # check this manifest using 'rake :print_manifest'
   s.files = %W{
+    lib/config_parser.rb
+    lib/config_parser/option.rb
+    lib/config_parser/switch.rb
+    lib/config_parser/utils.rb
     lib/configurable.rb
-    lib/configurable/config.rb
-    lib/configurable/config_hash.rb
-    lib/configurable/config_parser.rb
-    lib/configurable/config_parser/flag.rb
-    lib/configurable/config_parser/list.rb
-    lib/configurable/config_parser/option.rb
-    lib/configurable/config_parser/switch.rb
+    lib/configurable/class_methods.rb
+    lib/configurable/delegate.rb
+    lib/configurable/delegate_hash.rb
     lib/configurable/desc.rb
+    lib/configurable/indifferent_access.rb
     lib/configurable/validation.rb
-    lib/configurable_class.rb
   }
 end

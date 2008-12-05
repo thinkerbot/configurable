@@ -3,8 +3,6 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/gempackagetask'
 
-require 'tap/constants'
-
 #
 # Gem specification
 #
@@ -47,6 +45,20 @@ task :print_manifest do
   end
 end
 
+desc "Publish RDoc to RubyForge"
+task :publish_rdoc => [:rdoc] do
+  require 'yaml'
+  
+  config = YAML.load(File.read(File.expand_path("~/.rubyforge/user-config.yml")))
+  host = "#{config["username"]}@rubyforge.org"
+  
+  rsync_args = "-v -c -r"
+  remote_dir = "/var/www/gforge-projects/tap/configurable"
+  local_dir = "rdoc"
+ 
+  sh %{rsync #{rsync_args} #{local_dir}/ #{host}:#{remote_dir}}
+end
+
 #
 # Documentation tasks
 #
@@ -61,13 +73,6 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.options << '--line-numbers' << '--inline-source'
   rdoc.rdoc_files.include( spec.extra_rdoc_files )
   rdoc.rdoc_files.include( spec.files.select {|file| file =~ /^lib.*\.rb$/} )
-  
-  # Using Tdoc to template your Rdoc will result in configurations being
-  # listed with documentation in a subsection following attributes.  Not
-  # necessary, but nice.
-  require 'tap/support/tdoc'
-  rdoc.template = 'tap/support/tdoc/tdoc_html_template' 
-  rdoc.options << '--fmt' << 'tdoc'
 end
 
 #
