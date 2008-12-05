@@ -29,7 +29,6 @@ Gem::Specification.new do |s|
     lib/configurable/class_methods.rb
     lib/configurable/delegate.rb
     lib/configurable/delegate_hash.rb
-    lib/configurable/desc.rb
     lib/configurable/indifferent_access.rb
     lib/configurable/validation.rb
   }

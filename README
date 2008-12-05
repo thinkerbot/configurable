@@ -1,0 +1,74 @@
+= Configurable[http://tap.rubyforge.org/configurable]
+
+Class configurations that map to the command line.  Configurable is used by the
+Tap[http://tap.rubyforge.org] framework.
+
+== Description
+
+Configurable allows the declaration of inheritable, class-based configurations
+that map to methods but may be accessed like a hash; a setup that is both fast
+and convenient.  Configurable facilitates the use of configuration files, and
+parsing of configurations from the command line.
+
+Check out these links for development, and bug tracking.
+
+* Website[http://tap.rubyforge.org/configurable]
+* Github[http://github.com/bahuvrihi/configurable/tree/master]
+* Lighthouse[]
+* {Google Group}[http://groups.google.com/group/ruby-on-tap]
+
+== Usage
+
+Configurations are added to classes via declarations.  Declarations are a lot
+like specifying an attribute reader, writer, and initialization.
+
+  class ConfigClass
+    include Configurable
+
+    config :key, 'value' do |input|
+      input.upcase
+    end
+  
+    def initialize
+      initialize_config
+    end
+  end
+
+Is basically the same as:
+
+  class RegularClass
+    attr_reader :key
+
+    def key=(input)
+      @key = input.upcase
+    end
+
+    def initialize
+      self.key = 'value'
+    end
+  end
+
+As you can see here:
+
+  c = ConfigClass.new
+  c.key                       # => 'VALUE'
+
+  c.config[:key] = 'new value'
+  c.key                       # => 'NEW VALUE'
+
+  c.key = 'another value'
+  c.config[:key]              # => 'ANOTHER VALUE'
+
+== Installation
+
+Configurable is available as a gem on RubyForge[http://rubyforge.org/projects/tap].  Use:
+
+  % gem install configurable
+
+== Info 
+
+Copyright (c) 2008, Regents of the University of Colorado.
+Developer:: {Simon Chiang}[http://bahuvrihi.wordpress.com], {Biomolecular Structure Program}[http://biomol.uchsc.edu/], {Hansen Lab}[http://hsc-proteomics.uchsc.edu/hansenlab/] 
+Support:: CU Denver School of Medicine Deans Academic Enrichment Fund
+Licence:: {MIT-Style}[link:files/MIT-LICENSE.html]
+
