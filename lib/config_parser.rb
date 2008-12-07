@@ -1,6 +1,8 @@
 require 'config_parser/option'
 require 'config_parser/switch'
 
+autoload(:Shellwords, 'shellwords')
+
 class ConfigParser
   class << self
     # Splits and nests compound keys of a hash.
@@ -150,10 +152,13 @@ class ConfigParser
     # instantiate and register the new option
     register klass.new(options, &block) 
   end
-
+  
+  # Parse is non-destructive to argv.  If a string argv is provided, parse
+  # splits it into an array using Shellwords.
+  #
   def parse(argv=ARGV, config={})
     @config = config
-    argv = argv.dup
+    argv = argv.kind_of?(String) ? Shellwords.shellwords(argv) : argv.dup
     args = []
     
     while !argv.empty?
@@ -191,12 +196,19 @@ class ConfigParser
     
     args
   end
-
+  
+  # Same as parse, but removes parsed args from argv.
   def parse!(argv=ARGV, config={})
     argv.replace(parse(argv, config))
   end
 
   def to_s
+    comments = @options.collect do |option|
+      next unless option.respond_to?(:desc)
+      option.desc.kind_of?(Lazydoc::Comment) ? option.desc : nil
+    end.compact
+    Lazydoc.resolve_comments(comments)
+    
     @options.collect do |option|
       option.to_s.rstrip
     end.join("\n") + "\n"

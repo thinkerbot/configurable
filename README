@@ -19,8 +19,106 @@ Check out these links for development, and bug tracking.
 
 == Usage
 
+=== Quickstart
+
+  class ConfigClass
+    include Configurable
+
+    config :key, 'default', :short => 'k'   # a simple config with short
+    config :flag, false, &c.flag            # a flag config
+    config :switch, false, &c.switch        # a --[no-]switch config
+    config :num, 10, &c.integer             # integer only
+    config :range, 1..10, &c.range          # range only
+    config :upcase, 'default' do |value|    # custom transformation
+      value.upcase
+    end
+
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+  end
+  
+Configurations are present and documented in the class ConfigParser, the
+Configurable equivalent of OptionParser:
+
+  parser = ConfigClass.parser
+  parser.class                        # => ConfigParser
+  "\n" + parser.to_s
+  # => %Q{
+  #    -k, --key KEY                    a simple config with short
+  #        --flag                       a flag config
+  #        --[no-]switch                a --[no-]switch config
+  #        --num NUM                    integer only
+  #        --range RANGE                range only
+  #        --upcase UPCASE              custom transformation
+  # }
+  
+Command line arguments parse as expected:
+
+  parser.parse "one two --key=value --flag --no-switch --num 8 --range a..z three"  
+  # => ['one', 'two', 'three']
+  
+  parser.config  
+  # => {
+  # :key => 'value',
+  # :flag => true,
+  # :switch => false,
+  # :num => '8',
+  # :range => 'a..z',
+  # :upcase => 'default'
+  # }
+
+Validations/transformations occur upon initialization:
+  
+  c = ConfigClass.new(parser.config)
+  c.config.to_hash      
+  # => {
+  # :key => 'value',
+  # :flag => true,
+  # :switch => false,
+  # :num => 8,
+  # :range => 'a'..'z',
+  # :upcase => 'DEFAULT'
+  # }
+
+Configurations have accessors, and are accessible through config.
+  
+  c.upcase                    # => 'DEFAULT'
+  
+  c.config[:upcase] = 'neW valuE'
+  c.upcase                    # => 'NEW VALUE'
+
+  c.upcase = 'fiNal Value'
+  c.config[:upcase]           # => 'FINAL VALUE'
+
+Note that configurations are validated every time they are set:
+
+  c.num = 'blue'              # !> ValidationError
+
+By default config treats strings and symbols as the same, so YAML config files
+are easily created and used.
+
+  yaml_str = %Q{
+  key: a new value
+  flag: false
+  range: 1..100
+  }
+  
+  c.reconfigure(YAML.load(yaml_str))
+  c.config.to_hash      
+  # => {
+  # :key => 'a new value',
+  # :flag => false,
+  # :switch => false,
+  # :num => 8,
+  # :range => 1..100,
+  # :upcase => 'FINAL VALUE'
+  # }
+  
+=== Declarations
+
 Configurations are added to classes via declarations.  Declarations are a lot
-like specifying an attribute reader, writer, and initialization.
+like specifying an attribute reader, writer, and the initialization code.
 
   class ConfigClass
     include Configurable
@@ -47,17 +145,82 @@ Is basically the same as:
       self.key = 'value'
     end
   end
+  
+As far as the reader/writer goes, the analogy is quite good.  The writer
+method is defined so it sets the instance variable using the return of the 
+block.  To literally define the writer with the block, use config_attr.
 
-As you can see here:
+  class ConfigAttrClass
+    include Configurable
 
-  c = ConfigClass.new
-  c.key                       # => 'VALUE'
+    config_attr :key, 'value' do |input|
+      @key = input.upcase
+    end
+  end
 
-  c.config[:key] = 'new value'
-  c.key                       # => 'NEW VALUE'
+Literally defines methods:
 
-  c.key = 'another value'
-  c.config[:key]              # => 'ANOTHER VALUE'
+  class RegularClass
+    attr_reader :key
+
+    def key=(input)
+      @key = input.upcase
+    end
+  end
+
+=== Validation
+
+When configurations are parsed from the command line, the config writers will
+inevitably receive a string (even though the code may want a different object).
+The {Validation}[link:classes/Configurable/Validation.html] module provides 
+standard blocks for validating and transforming string inputs and is accessible
+in classes via the <tt>c</tt> method (ex: <tt>c.integer</tt> or 
+<tt>c.regexp</tt>).  These blocks (generally) load string inputs as YAML and 
+validate that the result is the correct class; non-string inputs are simply
+validated.
+
+  class ValidatingClass
+    include Configurable
+
+    config :int, 1, &c.integer                 # assures the input is an integer
+    config :int_or_nil, 1, &c.integer_or_nil   # integer or nil only
+    config :array, [], &c.array                # you get the idea
+  end
+
+  vc = ValidatingClass.new
+
+  vc.array = [:a, :b, :c]
+  vc.array                                     # => [:a, :b, :c]
+
+  vc.array = "[1, 2, 3]"
+  vc.array                                     # => [1, 2, 3]
+
+  vc.array = "string"                          # !> ValidationError
+
+Validation blocks sometimes imply metadata.  For instance <tt>c.flag</tt> causes
+the config to appear as a flag on the command line.  Metadata can be manually
+specified in the options:
+
+  class ManualMetadata
+    include Configurable
+
+    config :key, 'default', :type => :flag do
+      # this block is only called if --key
+      # is specified, and will not take a
+      # value
+    end
+  end
+
+=== Documentation
+
+Documentation on the command line is pulled from the code directly using
+Lazydoc[http://tap.rubyforge.org/lazydoc/].  Documentation is a kind of
+metadata for configurations, and may be specified manually as an option:
+
+  class ManualDocumentation
+    include Configurable
+    config :key, 'default', :desc => 'this is the command line description'
+  end
 
 == Installation
 

@@ -270,6 +270,16 @@ class ConfigParserTest < Test::Unit::TestCase
     assert_equal(["a", "b"], argv)
   end
   
+  def test_parse_splits_string_argvs_using_Shellwords
+    value_in_block = nil
+    c.on('--opt VALUE') {|value| value_in_block = value}
+    
+    args = c.parse("a --opt value b")
+    
+    assert_equal("value", value_in_block)
+    assert_equal(["a", "b"], args)
+  end
+  
   #
   # parse using config test
   #

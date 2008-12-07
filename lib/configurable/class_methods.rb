@@ -3,6 +3,8 @@ require 'configurable/delegate_hash'
 require 'configurable/validation'
 require 'configurable/indifferent_access'
 
+autoload(:ConfigParser, 'config_parser')
+
 module Configurable
   
   # ClassMethods extends classes that include Configurable and
@@ -40,17 +42,15 @@ module Configurable
       super
     end
 
-    # Returns the lazydoc for self.  Resolve will recursively
-    # resolve superclass lazydocs.
-    #--
-    # what about nested configurables?
-    #
-    # def lazydoc(resolve=true)
-    #   if resolve 
-    #     Lazydoc.resolve_comments(config_comments)
-    #   end
-    #   super
-    # end
+    def parser
+      ConfigParser.new do |parser|
+        configurations.to_a.sort_by do |(key, config)| 
+          config.attributes[:order] || 0
+        end.each do |(key, config)|
+          parser.define(key, config.default, config.attributes)
+        end
+      end
+    end
 
     # Loads the contents of path as YAML. Returns an empty hash if the path
     # is empty, does not exist, or is not a file.
@@ -98,7 +98,7 @@ module Configurable
       options[:desc] ||= Lazydoc.register_caller
       
       if block_given?
-        options = Validation::ATTRIBUTES[block].merge(options)
+        options = default_options(block).merge!(options)
 
         instance_variable = "@#{key}".to_sym
         config_attr(key, value, options) do |input|
@@ -135,10 +135,7 @@ module Configurable
     #   end
     #
     def config_attr(key, value=nil, options={}, &block)
-      options = Validation::ATTRIBUTES[block].merge(
-        :reader => true, 
-        :writer => true
-      ).merge!(options)
+      options = default_options(block).merge!(options)
 
       # define the default public reader method
       reader = options.delete(:reader)
@@ -286,7 +283,14 @@ module Configurable
     end
 
     private
-
+    
+    def default_options(block)
+      Validation::ATTRIBUTES[block].merge(
+        :reader => true, 
+        :writer => true,
+        :order => configurations.length)
+    end
+    
     # helper to recursively check a set of 
     # configurations for an infinite nest
     def check_infinite_nest(configurations) # :nodoc:
