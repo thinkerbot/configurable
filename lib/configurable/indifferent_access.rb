@@ -9,10 +9,6 @@ module Configurable
       super(convert(key), value)
     end
   
-    def key?(key)
-      super(convert(key))
-    end
-  
     private
   
     def convert(key)

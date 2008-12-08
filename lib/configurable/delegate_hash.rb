@@ -27,6 +27,13 @@ module Configurable
   #   dhash.store                # => {:not_delegated => 'value'}
   #   dhash.to_hash              # => {:key => 'another', :not_delegated => 'value'}
   #
+  # === IndifferentAccess
+  #
+  # The delegates hash maps keys to Delegate objects.  In cases where multiple
+  # keys need to map to the same delegate (for example when you want indifferent
+  # access for strings and symbols), simply extend the delegate hash so that the
+  # [] method returns the correct delegate in all cases.
+  #
   class DelegateHash
 
     # The bound receiver
@@ -41,8 +48,8 @@ module Configurable
   
     # Initializes a new DelegateHash.  Note that initialize simply sets the
     # receiver, it does NOT map stored values the same way bind does.
-    # This allows quick, implicit binding where the bound store is set
-    # up beforehand.
+    # This allows quick, implicit binding when the store is set up 
+    # beforehand.
     #
     # For more standard binding use: DelegateHash.new.bind(receiver)
     def initialize(delegates={}, store={}, receiver=nil)
@@ -109,7 +116,7 @@ module Configurable
 
     # True if the key is assigned in self.
     def has_key?(key)
-      (bound? && delegates.has_key?(key)) || store.has_key?(key) 
+      (bound? && delegates[key]) || store.has_key?(key) 
     end
 
     # Calls block once for each key-value pair stored in self.

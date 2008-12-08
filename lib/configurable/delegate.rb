@@ -24,7 +24,7 @@ module Configurable
 
     # An array of metadata for self, used to present the 
     # delegate in different contexts (ex on the command
-    # line or web).
+    # line, in a web form, or a desktop app).
     attr_reader :attributes
 
     # Initializes a new Delegate with the specified key 
