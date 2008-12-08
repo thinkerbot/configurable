@@ -1,6 +1,7 @@
 require 'configurable/class_methods'
 
-# Configurable enables the specification of configurations within a class definition.
+# Configurable enables the specification of configurations within a class 
+# definition.
 #
 #   class ConfigClass
 #     include Configurable
@@ -18,8 +19,9 @@ require 'configurable/class_methods'
 #   c.config.class         # => Configurable::DelegateHash
 #   c.config               # => {:one => 'one', :two => 'two', :three => 'three'}
 #
-# The <tt>config</tt> object acts as a forwarding hash; declared configurations
-# map to accessors while undeclared configurations are stored internally:
+# Instances have a <tt>config</tt> object that acts like a forwarding hash; 
+# declared configurations delegate to accessors while undeclared configurations
+# are stored internally:
 #
 #   c.config[:one] = 'ONE'
 #   c.one                  # => 'ONE'
@@ -32,7 +34,7 @@ require 'configurable/class_methods'
 #
 # The writer for a configuration can be defined by providing a block to config.  
 # The Validation module provides a number of common validation/transform 
-# blocks which can be accessed through the class method 'c':
+# blocks accessible through the class method 'c':
 #
 #   class SubClass < ConfigClass
 #     config(:one, 'one') {|v| v.upcase }
@@ -52,6 +54,34 @@ require 'configurable/class_methods'
 #   s.two = nil            # !> ValidationError
 #   s.two = 'str'          # !> ValidationError
 # 
+# Note that config blocks are defined in class-context and will have access
+# to variables outside the block (as you would expect).  These are analagous
+# declarations:
+#
+#   class ClassConfig
+#     config :key, 'value' do |input|
+#       input.upcase
+#     end
+#   end
+#
+#   class AnalagousClass
+#     block = lambda {|input| input.upcase}
+#
+#     define_method(:key=) do |input|
+#       @key = block.call(input)
+#     end
+#   end
+#
+# To have the block literally define the writer, use the config_attr method.
+# Blocks provided to config_attr will have instance context and must set 
+# the instance variable themselves.
+#
+#   class ConfigClass
+#     config_attr :key, 'value' do |input|
+#       @key = input.upcase
+#     end
+#   end
+#
 # Configurations are inherited from the parent and may be overridden in
 # subclasses.
 #
@@ -89,8 +119,8 @@ require 'configurable/class_methods'
 #   alt.set_sym('two')
 #   alt.config[:sym]          # => :two
 #
-# Idiosyncratically, true, false, and nil may also be provided as 
-# reader/writer options. 
+# Idiosyncratically, true, false, and nil may also be provided as reader/writer
+# options. 
 #
 #   true     Same as using the defaults, accessors are defined.
 #
@@ -102,6 +132,14 @@ require 'configurable/class_methods'
 #            that does not map to the instance, but will be
 #            present in instance.config
 #
+# Metadata for configurations is specified in options as well.  Options like
+# :desc, and :type are used by ConfigParser, for instance, to determine how
+# to represent the configuration on the command line.  These options are
+# unstructured so they can accomodate metadata for multiple contexts 
+# (ex a web or desktop interface), as needed.
+#
+# All non-reader/writer options are stored in the config attributes.
+#
 module Configurable
 
   # Extends including classes with Configurable::ClassMethods
@@ -109,11 +147,11 @@ module Configurable
     mod.extend ClassMethods if mod.kind_of?(Class)
   end
 
-  # A ConfigHash bound to self
+  # A DelegateHash bound to self
   attr_reader :config
 
-  # Reconfigures self with the given overrides. Only the specified configs
-  # are modified. Keys are symbolized.
+  # Reconfigures self with the given overrides. Only the 
+  # specified configs are modified.
   #
   # Returns self.
   def reconfigure(overrides={})
