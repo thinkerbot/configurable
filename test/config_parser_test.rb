@@ -90,6 +90,31 @@ configurations:
         --flag                       a flag
 }
     assert_equal expected, "\nconfigurations:\n#{psr.to_s}"
+    
+    ####
+    psr = ConfigParser.new
+
+    e = assert_raise(ArgumentError) do
+      psr.on("--delay N", 
+      Float,
+      "Delay N seconds before executing")
+    end
+    assert_equal "conflicting desc options: [Float, \"Delay N seconds before executing\"]", e.message
+
+    psr.on("--delay N", "Delay N seconds before executing") do |value|
+      value.to_f
+    end
+
+    e = assert_raise(ArgumentError) do
+      psr.on("-i", "--inplace [EXTENSION]",
+      "Edit ARGV files in place",
+      "  (make backup if EXTENSION supplied)")
+    end
+    assert_equal "conflicting desc options: [\"Edit ARGV files in place\", \"  (make backup if EXTENSION supplied)\"]", e.message
+
+    # correct
+    psr.on("-i", "--inplace EXTENSION", 
+    "Edit ARGV files in place\n  (make backup if EXTENSION supplied)")
   end
   
   #
@@ -165,12 +190,6 @@ configurations:
     assert_equal 'ARG_NAME', opt.arg_name
     assert_equal 'Description for the Option', opt.desc
     
-    opt = c.on("   some description   ", "-o", "--key   argument name    ")
-    assert_equal '-o', opt.short
-    assert_equal '--key', opt.long
-    assert_equal 'argument name', opt.arg_name
-    assert_equal 'some description', opt.desc
-    
     opt = c.on("--compound-long")
     assert_equal nil, opt.short
     assert_equal '--compound-long', opt.long
@@ -180,13 +199,13 @@ configurations:
   
   def test_on_raises_error_for_conflicting_option_attributes
     e = assert_raise(ArgumentError) { c.on('--long', '--alt') }
-    assert_equal "conflicting long options: [--long, --alt]", e.message
+    assert_equal "conflicting long options: [\"--long\", \"--alt\"]", e.message
     
     e = assert_raise(ArgumentError) { c.on('-s', '-o') }
-    assert_equal "conflicting short options: [-s, -o]", e.message
+    assert_equal "conflicting short options: [\"-s\", \"-o\"]", e.message
     
     e = assert_raise(ArgumentError) { c.on('desc one', 'desc two') }
-    assert_equal "conflicting desc options: [desc one, desc two]", e.message
+    assert_equal "conflicting desc options: [\"desc one\", \"desc two\"]", e.message
   end
   
   def test_on_creates_Switch_option_with_switch_long
@@ -197,6 +216,40 @@ configurations:
   #
   # define test
   #
+  
+  module SpecialType
+    def setup_special(key, default_value, options)
+      # modify options if necessary
+      options[:long] = "--#{key}"
+      options[:arg_name] = 'ARG_NAME'
+
+      # return a block handling the input
+      lambda {|input| config[key] = input.reverse }
+    end
+  end
+  
+  def test_define_documentation
+    psr = ConfigParser.new
+    psr.define(:one, 'default')
+    psr.define(:two, 'default', :long => '--long', :short => '-s')
+  
+    psr.parse("--one one --long two")
+    assert_equal({:one => 'one', :two => 'two'}, psr.config)
+  
+    psr = ConfigParser.new
+    psr.define(:flag, false, :type => :flag)
+    psr.define(:switch, false, :type => :switch)
+    psr.define(:list, [], :type => :list)
+  
+    psr.parse("--flag --switch --list one --list two --list three")
+    assert_equal({:flag => true, :switch => true, :list => ['one', 'two', 'three']}, psr.config)
+  
+    psr = ConfigParser.new.extend SpecialType
+    psr.define(:opt, false, :type => :special)
+  
+    psr.parse("--opt value")
+    assert_equal({:opt => 'eulav'}, psr.config)
+  end
   
   def test_define_adds_and_returns_an_option
     opt = c.define(:key)

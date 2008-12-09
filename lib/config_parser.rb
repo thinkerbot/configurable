@@ -80,26 +80,34 @@ autoload(:Shellwords, 'shellwords')
 #
 # ==== Simplifications
 #
-# Unlike OptionParser, ConfigParser.on does not support automatic conversion of
-# values, gets rid of 'optional' argument for options, and only supports a 
+# Unlike OptionParser, ConfigParser#on does not support automatic conversion of
+# values, gets rid of 'optional' arguments for options, and only supports a 
 # single description string.  Hence:
 #
 #   psr = ConfigParser.new
 #  
-#   # incorrect
-#   psr.on("--delay N", Float, "Delay N seconds before executing") do |value
-#   end
+#   # incorrect, raises error as this will look
+#   # like multiple descriptions are specified
+#   psr.on("--delay N", 
+#          Float,
+#          "Delay N seconds before executing")        # !> ArgumentError
 #
 #   # correct
 #   psr.on("--delay N", "Delay N seconds before executing") do |value|
 #     value.to_f
 #   end
 #
-#   # this is OK syntactically, but ALWAYS requires the
-#   # argument and uses the LAST string as the description.
+#   # this ALWAYS requires the argument and raises
+#   # an error because multiple descriptions are
+#   # specified
 #   psr.on("-i", "--inplace [EXTENSION]",
 #          "Edit ARGV files in place",
-#          "  (make backup if EXTENSION supplied)")
+#          "  (make backup if EXTENSION supplied)")   # !> ArgumentError
+#
+#   # correct
+#   psr.on("-i", "--inplace EXTENSION", 
+#          "Edit ARGV files in place\n  (make backup if EXTENSION supplied)")
+#
 #
 class ConfigParser
   class << self
@@ -141,11 +149,15 @@ class ConfigParser
   
   include Utils
 
-  # A hash of (switch, Option) pairs mapping switches to options.
+  # A hash of (switch, Option) pairs mapping command line
+  # switches like '-s' or '--long' to the Option that
+  # handles them.
   attr_reader :switches
   
+  # The most recent hash of configurations produced by parse.
   attr_reader :config
   
+  # A hash of default configurations merged into parsed configs.
   attr_reader :default_config
 
   def initialize
@@ -157,20 +169,20 @@ class ConfigParser
     yield(self) if block_given?
   end
 
-  # Returns an array of options registered with self.
+  # Returns an array of the options registered with self.
   def options
     @options.select do |opt|
       opt.kind_of?(Option)
     end
   end
 
-  # Adds a separator string to self.
+  # Adds a separator string to self, used in to_s.
   def separator(str)
     @options << str
   end
 
   # Registers the option with self by adding opt to options and mapping
-  # the opt switches. Raises an error for conflicting keys and switches.
+  # the opt switches. Raises an error for conflicting switches.
   def register(opt)
     @options << opt unless @options.include?(opt)
 
@@ -185,13 +197,49 @@ class ConfigParser
     opt
   end
   
+  # Constructs an Option using args and registers it with self.  Args may
+  # contain (in any order) a short switch, a long switch, and a description
+  # string.  Either the short or long switch may signal that the option
+  # should take an argument by providing an argument name.
+  #
+  #   psr = ConfigParser.new
+  #
+  #   # this option takes an argument
+  #   psr.on('-s', '--long ARG_NAME', 'description') do |value|
+  #     # ...
+  #   end
+  #
+  #   # so does this one
+  #   psr.on('-o ARG_NAME', 'description') do |value|
+  #     # ...
+  #   end
+  #   
+  #   # this option does not
+  #   psr.on('-f', '--flag') do
+  #     # ...
+  #   end
+  #
+  # A 'switch' option can be specified by prefixing the long switch with
+  # '--[no-]'.  Switch options will pass true to the block for the positive
+  # form and false for the negative form.
+  #
+  #   psr.on('--[no-]switch') do |value|
+  #     # ...
+  #   end
+  #
+  # Args may also contain a trailing hash defining all or part of the option:
+  #
+  #   psr.on('-k', :long => '--key', :desc => 'description')
+  #     # ...
+  #   end
+  #
   def on(*args, &block)
     options = args.last.kind_of?(Hash) ? args.pop : {}
     args.each do |arg|
       # split switch arguments... descriptions
       # still won't match as a switch even
       # after a split
-      switch, arg_name = arg.split(' ', 2)
+      switch, arg_name = arg.kind_of?(String) ? arg.split(' ', 2) : arg
       
       # determine the kind of argument specified
       key = case switch
@@ -202,16 +250,16 @@ class ConfigParser
       
       # check for conflicts
       if options[key]
-        raise ArgumentError, "conflicting #{key} options: [#{options[key]}, #{arg}]"
+        raise ArgumentError, "conflicting #{key} options: [#{options[key].inspect}, #{arg.inspect}]"
       end
       
       # set the option
       case key
       when :long, :short
         options[key] = switch
-        options[:arg_name] = arg_name.strip if arg_name
+        options[:arg_name] = arg_name if arg_name
       else
-        options[key] = arg.strip
+        options[key] = arg
       end
     end
     
@@ -228,7 +276,53 @@ class ConfigParser
     register klass.new(options, &block) 
   end
   
-  # Defines and registers a config with self.
+  # Defines and registers a configuration option with self.  Define does not
+  # take a block; the default value will be added to config, and any parsed
+  # value will override the default.  Normally the key will be turned into
+  # the long switch; specify an alternate long, a short, description, etc
+  # using options.
+  #
+  #   psr = ConfigParser.new
+  #   psr.define(:one, 'default')
+  #   psr.define(:two, 'default', :long => '--long', :short => '-s')
+  #
+  #   psr.parse("--one one --long two")
+  #   psr.config             # => {:one => 'one', :two => 'two'}
+  #
+  # Define support several types of configurations that define a special 
+  # block to handle the values parsed from the command line.  See the 
+  # 'setup_<type>' methods in Utils.  Any type with a corresponding setup
+  # method is valid:
+  #   
+  #   psr = ConfigParser.new
+  #   psr.define(:flag, false, :type => :flag)
+  #   psr.define(:switch, false, :type => :switch)
+  #   psr.define(:list, [], :type => :list)
+  #
+  #   psr.parse("--flag --switch --list one --list two --list three")
+  #   psr.config             # => {:flag => true, :switch => true, :list => ['one', 'two', 'three']}
+  #
+  # New, valid types may be added by implementing new setup_<type> methods
+  # following this pattern:
+  #
+  #   module SpecialType
+  #     def setup_special(key, default_value, options)
+  #       # modify options if necessary
+  #       options[:long] = "--#{key}"
+  #       options[:arg_name] = 'ARG_NAME'
+  # 
+  #       # return a block handling the input
+  #       lambda {|input| config[key] = input.reverse }
+  #     end
+  #   end
+  #
+  #   psr = ConfigParser.new.extend SpecialType
+  #   psr.define(:opt, false, :type => :special)
+  #
+  #   psr.parse("--opt value")
+  #   psr.config             # => {:opt => 'eulav'}
+  #
+  # Define raises an error if key is already set by a different option.
   def define(key, default_value=nil, options={})
     # check for conflicts and register
     if default_config.has_key?(key)
@@ -241,10 +335,12 @@ class ConfigParser
     when :flag   then setup_flag(key, default_value, options)
     when :list   then setup_list(key, options)
     when nil     then setup_option(key, options)
-    when respond_to?("setup_#{options[:type]}")
-      send("setup_#{options[:type]}", key, default_value, options)
-    else 
-      raise ArgumentError, "unsupported type: #{options[:type]}"
+    else
+      if respond_to?("setup_#{options[:type]}")
+        send("setup_#{options[:type]}", key, default_value, options)
+      else
+        raise ArgumentError, "unsupported type: #{options[:type]}"
+      end
     end
     
     on(options, &block)
