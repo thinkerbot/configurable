@@ -1,8 +1,11 @@
 require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'config_parser'
+require 'configurable'
 
 class ConfigParserTest < Test::Unit::TestCase
   Option = ConfigParser::Option
+  Delegate = Configurable::Delegate
+  DelegateHash = Configurable::DelegateHash
   
   attr_reader :c
   
@@ -148,6 +151,58 @@ class ConfigParserTest < Test::Unit::TestCase
     
     e = assert_raise(ArgumentError) { c.define(:key) }
     assert_equal "already set by a different option: :key", e.message
+  end
+  
+  #
+  # add test
+  #
+  
+  def test_add_adds_a_set_of_delegates_in_declaration_order
+    delegates = {
+      :one => Delegate.new(:one, :one=, 'one', :declaration_order => 1),
+      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0),
+    }
+    
+    c.add(delegates)
+    assert_equal(["--two", "--one"], c.options.collect {|opt| opt.long })
+    assert_equal({:one => 'one', :two => 'two'}, c.default_config)
+  end
+  
+  def test_add_nests_delegates_according_to_nest
+    delegates = {
+      :one => Delegate.new(:one, :one=, 'one', :declaration_order => 1),
+      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0),
+    }
+    
+    c.add(delegates, "nest")
+    assert_equal(["--nest:two", "--nest:one"], c.options.collect {|opt| opt.long })
+    assert_equal({"nest:one" => 'one', "nest:two" => 'two'}, c.default_config)
+  end
+  
+  def test_add_recusively_adds_delegates_from_delegates_with_a_delegate_hash_default
+    delegate_hash = DelegateHash.new(
+      :one => Delegate.new(:one, :one=, 'one', :declaration_order => 1),
+      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0)
+    )
+    delegates = {
+      :one => Delegate.new(:one, :one=, delegate_hash, :declaration_order => 1),
+      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0)
+    }
+    
+    c.add(delegates)
+    assert_equal(["--two", "--one:two", "--one:one"], c.options.collect {|opt| opt.long })
+    assert_equal({:two => 'two', "one:one" => 'one', "one:two" => 'two'}, c.default_config)
+  end
+  
+  def test_add_raises_error_for_nesting_conflict
+    delegate_hash = DelegateHash.new(:one => Delegate.new(:one))
+    delegates = {
+      :one => Delegate.new(:one, :one=, delegate_hash, :declaration_order => 1),
+      'one:one' => Delegate.new(:two, :two=, 'two', :declaration_order => 0)
+    }
+    
+    e = assert_raise(ArgumentError) { c.add(delegates) }
+    assert_equal "already set by a different option: \"one:one\"", e.message
   end
   
   #
