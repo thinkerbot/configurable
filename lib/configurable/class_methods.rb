@@ -284,11 +284,10 @@ module Configurable
 
     private
     
-    def default_options(block)
-      Validation::ATTRIBUTES[block].merge(
-        :reader => true, 
-        :writer => true,
-        :order => configurations.length)
+    # a helper method to make the default options
+    # for the specified block.
+    def default_options(block) # :nodoc:
+      DEFAULT_OPTIONS[nil].merge(DEFAULT_OPTIONS[block]).merge!(:order => configurations.length)
     end
     
     # helper to recursively check a set of 

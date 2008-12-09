@@ -27,12 +27,12 @@ module Configurable
   #   dhash.store                # => {:not_delegated => 'value'}
   #   dhash.to_hash              # => {:key => 'another', :not_delegated => 'value'}
   #
-  # === IndifferentAccess
+  # ==== IndifferentAccess
   #
   # The delegates hash maps keys to Delegate objects.  In cases where multiple
   # keys need to map to the same delegate (for example when you want indifferent
   # access for strings and symbols), simply extend the delegate hash so that the
-  # [] method returns the correct delegate in all cases.
+  # AGET ([]) method returns the correct delegate in all cases.
   #
   class DelegateHash
 

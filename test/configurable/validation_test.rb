@@ -41,8 +41,11 @@ class ValidationTest < Test::Unit::TestCase
   end
   
   def test_validate_raises_error_for_non_array_or_nil_inputs
-    assert_raise(ArgumentError) { validate("str", "str") }
-    assert_raise(ArgumentError) { validate("str", 1) }
+    e = assert_raise(ArgumentError) { validate("str", "str") }
+    assert_equal "validations must be nil, or an array of valid inputs", e.message
+    
+    e = assert_raise(ArgumentError) { validate("str", 1) }
+    assert_equal "validations must be nil, or an array of valid inputs", e.message
   end
   
   #
@@ -53,11 +56,8 @@ class ValidationTest < Test::Unit::TestCase
     m = check(Integer)
     assert_equal Proc, m.class
     assert_equal 1, m.call(1)
-    assert_raise(ValidationError) { m.call(nil) }
-  end
-  
-  def test_check_raises_error_if_no_validations_are_specified
-    assert_raise(ArgumentError) { check }
+    e = assert_raise(ValidationError) { m.call(nil) }
+    assert_equal "expected [Integer] but was: nil", e.message
   end
   
   #
@@ -82,12 +82,11 @@ class ValidationTest < Test::Unit::TestCase
     assert_raise(ValidationError) { m.call("str") }
   end
   
-  def test_yaml_is_not_validated_when_validations_are_not_specified
+  def test_yaml_simply_returns_loaded_input_when_validations_are_not_specified
     m = yaml
-    assert_nothing_raised do
-      assert_equal nil, m.call(nil)
-      assert_equal "str", m.call("str")
-    end
+    assert_equal nil, m.call(nil)
+    assert_equal "str", m.call("str")
+    assert_equal [1,2,3], m.call("[1, 2, 3]")
   end
   
   #
