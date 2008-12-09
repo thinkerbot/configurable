@@ -141,8 +141,7 @@ class ConfigParser
   
   include Utils
 
-  # A hash of (switch, Option) pairs mapping switches to
-  # options.
+  # A hash of (switch, Option) pairs mapping switches to options.
   attr_reader :switches
   
   attr_reader :config
@@ -184,28 +183,6 @@ class ConfigParser
     end
 
     opt
-  end
-
-  # Defines and registers a config with self.
-  def define(key, default_value=nil, options={})
-    # check for conflicts and register
-    if default_config.has_key?(key)
-      raise ArgumentError, "already set by a different option: #{key.inspect}"
-    end
-    default_config[key] = default_value
-    
-    block = case options[:type]
-    when :switch then setup_switch(key, default_value, options)
-    when :flag   then setup_flag(key, default_value, options)
-    when :list   then setup_list(key, options)
-    when nil     then setup_option(key, options)
-    when respond_to?("setup_#{options[:type]}")
-      send("setup_#{options[:type]}", key, default_value, options)
-    else 
-      raise ArgumentError, "unsupported type: #{options[:type]}"
-    end
-    
-    on(options, &block)
   end
   
   def on(*args, &block)
@@ -249,6 +226,43 @@ class ConfigParser
     
     # instantiate and register the new option
     register klass.new(options, &block) 
+  end
+  
+  # Defines and registers a config with self.
+  def define(key, default_value=nil, options={})
+    # check for conflicts and register
+    if default_config.has_key?(key)
+      raise ArgumentError, "already set by a different option: #{key.inspect}"
+    end
+    default_config[key] = default_value
+    
+    block = case options[:type]
+    when :switch then setup_switch(key, default_value, options)
+    when :flag   then setup_flag(key, default_value, options)
+    when :list   then setup_list(key, options)
+    when nil     then setup_option(key, options)
+    when respond_to?("setup_#{options[:type]}")
+      send("setup_#{options[:type]}", key, default_value, options)
+    else 
+      raise ArgumentError, "unsupported type: #{options[:type]}"
+    end
+    
+    on(options, &block)
+  end
+  
+  def add(delegates, nesting=nil)
+    delegates.to_a.sort_by do |(key, delegate)| 
+      delegate.attributes[:declaration_order] || 0
+    end.each do |(key, delegate)|
+      key = nesting ? "#{nesting}:#{key}" : key
+      default = delegate.default(false)
+      
+      if default.kind_of?(Configurable::DelegateHash)
+        add(default.delegates, key)
+      else
+        define(key, default, delegate.attributes)
+      end
+    end
   end
   
   # Parse is non-destructive to argv.  If a string argv is provided, parse

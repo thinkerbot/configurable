@@ -12,7 +12,7 @@ module Configurable
   module ClassMethods
     include Lazydoc::Attributes
 
-    # A hash holding the class configurations.
+    # A hash of (key, Delegate) pairs defining the class configurations.
     attr_reader :configurations
 
     def self.extended(base) # :nodoc:
@@ -41,14 +41,12 @@ module Configurable
       child.instance_variable_set(:@configurations, configurations)
       super
     end
-
+    
+    # Generates a new ConfigParser with the class configurations
+    # added in declaration order.
     def parser
       ConfigParser.new do |parser|
-        configurations.to_a.sort_by do |(key, config)| 
-          config.attributes[:order] || 0
-        end.each do |(key, config)|
-          parser.define(key, config.default, config.attributes)
-        end
+        parser.add(configurations)
       end
     end
 
@@ -61,10 +59,14 @@ module Configurable
     end
     
     protected
-
+    
+    # Sets configurations to symbolize keys for AGET ([]) and ASET([]=)
+    # operations, or not.  By default, configurations will use
+    # indifferent access.
     def use_indifferent_access(value=true)
       current = @configurations
-      @configurations = value ? HashWithIndifferentAccess.new : {}
+      @configurations = {}
+      @configurations.extend IndifferentAccess if value
       current.each_pair do |key, value|
         @configurations[key] = value
       end
@@ -94,12 +96,12 @@ module Configurable
     #   end
     #
     def config(key, value=nil, options={}, &block)
+      options = default_options(block).merge!(options)
+      
       # register with Lazydoc
       options[:desc] ||= Lazydoc.register_caller
       
       if block_given?
-        options = default_options(block).merge!(options)
-
         instance_variable = "@#{key}".to_sym
         config_attr(key, value, options) do |input|
           instance_variable_set(instance_variable, yield(input))
@@ -136,7 +138,10 @@ module Configurable
     #
     def config_attr(key, value=nil, options={}, &block)
       options = default_options(block).merge!(options)
-
+      
+      # register with Lazydoc
+      options[:desc] ||= Lazydoc.register_caller
+      
       # define the default public reader method
       reader = options.delete(:reader)
 
@@ -165,16 +170,14 @@ module Configurable
         writer = "#{key}="
       end
   
-      # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller
-      
       configurations[key] = Delegate.new(reader, writer, value, options)
     end
 
     # Adds a configuration to self accessing the configurations for the
     # configurable class.  Unlike config_attr and config, nest does not
     # create accessors; the configurations must be accessed through
-    # the instance config method.
+    # the instance config method.  Moreover, default options are not 
+    # merged with the the input options.
     #
     #   class A
     #     include Configurable
@@ -230,12 +233,14 @@ module Configurable
     #
     # Nest checks for recursive nesting and raises an error if
     # a recursive nest is detected.
-    #
     def nest(key, configurable_class, options={})
       unless configurable_class.kind_of?(Configurable::ClassMethods)
         raise ArgumentError, "not a Configurable class: #{configurable_class}" 
       end
-
+      
+      # register with Lazydoc
+      options[:desc] ||= Lazydoc.register_caller
+      
       reader = options.delete(:reader)
       writer = options.delete(:writer)
   
@@ -267,9 +272,6 @@ module Configurable
       else
         reader = writer = nil
       end
-  
-      # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller
       
       value = DelegateHash.new(configurable_class.configurations).update
       configurations[key] = Delegate.new(reader, writer, value, options)
@@ -284,10 +286,16 @@ module Configurable
 
     private
     
-    # a helper method to make the default options
-    # for the specified block.
-    def default_options(block) # :nodoc:
-      DEFAULT_OPTIONS[nil].merge(DEFAULT_OPTIONS[block]).merge!(:order => configurations.length)
+    # a helper method to make the default options for the specified block.  
+    # Merges the default options for no block (nil) with the options
+    # for the specified block, then adds a flag indicating the 
+    # declaration_order of the config (annoying, but necessary pre 1.9)
+    def default_options(block=nil) # :nodoc:
+      if block 
+        DEFAULT_OPTIONS[nil].merge(DEFAULT_OPTIONS[block])
+      else
+        DEFAULT_OPTIONS[nil].dup
+      end.merge!(:declaration_order => configurations.length)
     end
     
     # helper to recursively check a set of 

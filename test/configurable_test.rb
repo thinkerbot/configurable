@@ -6,29 +6,6 @@ class ConfigurableTest < Test::Unit::TestCase
   DelegateHash = Configurable::DelegateHash
   Validation = Configurable::Validation
   
-  # sample class repeatedly used in tests
-  class Sample
-    include Configurable
-    
-    def initialize
-      initialize_config
-    end
-    
-    config(:one, 'one') {|v| v.upcase }
-    config :two, 'two'
-  end
-  
-  def test_sample
-    assert_equal({
-      :one => Delegate.new('one', 'one=', 'one'), 
-      :two => Delegate.new('two', 'two=', 'two')
-    }, Sample.configurations)
-    
-    s = Sample.new
-    s.one = 'one'
-    assert_equal 'ONE', s.one
-  end
-  
   #
   # documentation test
   #
@@ -128,7 +105,7 @@ class ConfigurableTest < Test::Unit::TestCase
   # config declaration tests
   #
 
-  class SampleClass
+  class DeclarationClass
     include Configurable
     
     def initialize
@@ -156,11 +133,11 @@ class ConfigurableTest < Test::Unit::TestCase
       :two =>   Delegate.new('two', 'two=', 'two'),
       :three => Delegate.new('three', 'three=', nil)
     },
-    SampleClass.configurations)
+    DeclarationClass.configurations)
   end
   
   def test_config_generates_accessors
-    t = SampleClass.new
+    t = DeclarationClass.new
     [:zero, :one, :two, :three].each do |config|
       assert t.respond_to?(config)
       assert t.respond_to?("#{config}=")
@@ -168,21 +145,21 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_reader_reads_instance_variable
-    t = SampleClass.new
+    t = DeclarationClass.new
     assert_nil t.three
     t.instance_variable_set(:@three, 'three')
     assert_equal 'three', t.three
   end
   
   def test_config_writer_writes_instance_variable
-    t = SampleClass.new
+    t = DeclarationClass.new
     assert_nil t.instance_variable_get(:@three)
     t.three = 'three'
     assert_equal 'three', t.instance_variable_get(:@three)
   end
   
   def test_config_with_block_uses_block_return_to_set_instance_variable
-    t = SampleClass.new
+    t = DeclarationClass.new
     
     assert_nil t.one
     t.one = 'one'
@@ -195,7 +172,7 @@ class ConfigurableTest < Test::Unit::TestCase
   # config_attr test
   #
   
-  class OptionClass
+  class ConfigAttrClass
     include Configurable
   
     config_attr :trues, 'value', :reader => true, :writer => true
@@ -204,43 +181,43 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_attr_reader_and_writer_true
-    o = OptionClass.new
+    o = ConfigAttrClass.new
     assert o.respond_to?(:trues)
     assert o.respond_to?(:trues=)
     
-    config = OptionClass.configurations[:trues]
+    config = ConfigAttrClass.configurations[:trues]
     assert_equal :trues, config.reader
     assert_equal :trues=, config.writer
   end
   
   def test_config_attr_reader_and_writer_false
-    o = OptionClass.new
+    o = ConfigAttrClass.new
     assert !o.respond_to?(:falses)
     assert !o.respond_to?(:falses=)
     
-    config = OptionClass.configurations[:falses]
+    config = ConfigAttrClass.configurations[:falses]
     assert_equal :falses, config.reader
     assert_equal :falses=, config.writer
   end
   
   def test_config_attr_reader_and_writer_nil
-    o = OptionClass.new
+    o = ConfigAttrClass.new
     assert !o.respond_to?(:nils)
     assert !o.respond_to?(:nils=)
     
-    config = OptionClass.configurations[:nils]
+    config = ConfigAttrClass.configurations[:nils]
     assert_equal nil, config.reader
     assert_equal nil, config.writer
   end
   
   def test_block_without_writer_true_raises_error
-    e = assert_raise(ArgumentError) { OptionClass.send(:config_attr, :key, 'val', :writer => :alt) {} }
+    e = assert_raise(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => :alt) {} }
     assert_equal "a block may not be specified without writer == true", e.message
     
-    e = assert_raise(ArgumentError) { OptionClass.send(:config_attr, :key, 'val', :writer => false) {} }
+    e = assert_raise(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => false) {} }
     assert_equal "a block may not be specified without writer == true", e.message
     
-    e = assert_raise(ArgumentError) { OptionClass.send(:config_attr, :key, 'val', :writer => nil) {} }
+    e = assert_raise(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => nil) {} }
     assert_equal "a block may not be specified without writer == true", e.message
   end
   
@@ -248,7 +225,7 @@ class ConfigurableTest < Test::Unit::TestCase
   # config context test
   #
   
-  class ContextCheck
+  class ContextClass
     include Configurable
     
     class << self
@@ -271,172 +248,125 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_block_context_is_class
-    c = ContextCheck.new
+    c = ContextClass.new
     c.config_context = nil
     assert_equal "Class", c.config_context
   end
   
   def test_config_attr_block_context_is_instance
-    c = ContextCheck.new
+    c = ContextClass.new
     c.config_attr_context = nil
     assert_equal "Instance", c.config_attr_context 
   end
   
   #
-  # nest test
+  # indifferent access test
   #
   
-  class A
+  class IndifferentAccessClass
     include Configurable
-    config :key, 'value'
-
-    def initialize(overrides={})
-      initialize_config(overrides)
-    end
-  end
-
-  class B
-    include Configurable
-    nest :a, A
-
-    def initialize(overrides={})
-      initialize_config(overrides)
-    end
-  end
-  
-  class C
-    include Configurable
-    nest(:a, A) {|overrides| A.new(overrides) }
-
-    def initialize(overrides={})
-      initialize_config(overrides)
-    end
-  end
-  
-  def test_nest_documentation
-    b = B.new
-    assert_equal({:key => 'value'}, b.config[:a])
-  
-    c = C.new
-    assert_equal("value", c.a.key)
     
-    c.a.key = "one"
-    assert_equal({:key => 'one'}, c.config[:a].to_hash)
-
-    c.config[:a][:key] = 'two'
-    assert_equal("two", c.a.key)
-  
-    c.config[:a] = {:key => 'three'}
-    assert_equal("three", c.a.key)
-  end
-  
-  class NestChild
-    include Configurable    
-    def initialize(overrides={})
-      initialize_config(overrides)
+    def initialize
+      initialize_config
     end
     
-    config :key, 'value'
+    config(:one, 'one') {|v| v.upcase }
   end
   
-  class NestParent
+  def test_access_is_indifferent_through_config
+    s = IndifferentAccessClass.new
+    
+    s.config['one'] = 'value'
+    assert_equal 'VALUE', s.one
+    assert_equal 'VALUE', s.config['one']
+    assert_equal 'VALUE', s.config[:one]
+    
+    s.config[:one] = 'alt'
+    assert_equal 'ALT', s.one
+    assert_equal 'ALT', s.config['one']
+    assert_equal 'ALT', s.config[:one]
+  end
+  
+  class NonIndifferentAccessClass
     include Configurable
-    def initialize(overrides={})
-      initialize_config(overrides)
+    
+    def initialize
+      initialize_config
     end
     
-    nest :key, NestChild do |overrides|
-      NestChild.new(overrides)
-    end
+    config(:one, 'one') {|v| v.upcase }
+    use_indifferent_access(false)
+  end
+  
+  def test_indifferent_access_may_be_turned_off
+    s = NonIndifferentAccessClass.new
     
-    nest :blockless, NestChild
-  end
-  
-  def test_nest_creates_reader_initialized_to_subclass
-    p = NestParent.new
-    assert p.respond_to?(:key)
-    assert_equal NestChild,  p.key.class
-  end
-  
-  def test_nest_without_block_does_not_define_accessors
-    p = NestParent.new
-    assert !p.respond_to?(:blockless)
-  end
-  
-  def test_define_adds_configs_by_key_to_configurations
-    assert NestParent.configurations.key?(:key)
-    config = NestParent.configurations[:key]
+    s.config['one'] = 'value'
+    assert_equal 'ONE', s.one
+    assert_equal 'value', s.config['one']
+    assert_equal 'ONE', s.config[:one]
     
-    assert_equal :key_config, config.reader
-    assert_equal :key_config=, config.writer
-    assert_equal DelegateHash, config.default.class
-    assert_equal NestChild.configurations, config.default.delegates
-    
-    assert NestParent.configurations.key?(:blockless)
-    config = NestParent.configurations[:blockless]
-    assert_equal nil, config.reader
-    assert_equal nil, config.writer
-    assert_equal DelegateHash, config.default.class
-    assert_equal NestChild.configurations, config.default.delegates
+    s.config[:one] = 'alt'
+    assert_equal 'ALT', s.one
+    assert_equal 'value', s.config['one']
+    assert_equal 'ALT', s.config[:one]
   end
   
-  def test_instance_is_initialized_with_defaults
-    p = NestParent.new 
-    assert_equal({:key => {:key => 'value'}, :blockless => {:key => 'value'}}, p.config.to_hash)
-    assert_equal({:key => 'value'}, p.key.config.to_hash)
+  class IndifferentSubClass < IndifferentAccessClass
   end
   
-  def test_instance_is_initialized_with_overrides
-    p = NestParent.new :key => {:key => 'one'}
-    assert_equal({:key => {:key => 'one'}, :blockless => {:key => 'value'}}, p.config.to_hash)
-    assert_equal({:key => 'one'}, p.key.config.to_hash)
+  class NonIndifferentSubClass < NonIndifferentAccessClass
   end
   
-  def test_modification_of_configs_adjusts_instance_configs_and_vice_versa
-    p = NestParent.new
-    assert_equal({:key => 'value'}, p.key.config.to_hash)
-    
-    p.config[:key][:key] = 'zero'
-    assert_equal({:key => 'zero'}, p.key.config.to_hash)
-    
-    p.config[:key] = {:key => 'two'}
-    assert_equal({:key => 'two'}, p.key.config.to_hash)
-      
-    p.key.key = "two"
-    assert_equal({:key => 'two'}, p.config[:key])
-    
-    p.key.reconfigure(:key => 'one')
-    assert_equal({:key => 'one'}, p.config[:key])
-    
-    p.key.config[:key] = 'zero'
-    assert_equal({:key => 'zero'}, p.config[:key])
+  def test_indifferent_access_is_inherited
+    assert IndifferentSubClass.configurations.kind_of?(Configurable::IndifferentAccess)
+    assert !NonIndifferentSubClass.configurations.kind_of?(Configurable::IndifferentAccess)
   end
   
-  def test_nest_raises_error_for_non_configurable_input
-    e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
-    assert_equal "not a Configurable class: b", e.message
-  end
+  #
+  # inheritance test
+  #
   
-  class RecursiveA
+  class IncludeBase
     include Configurable
+    config :one, 'one'
   end
   
-  class RecursiveB
-    include Configurable
-    nest :a, RecursiveA
+  class IncludeSubclass < IncludeBase
+    config :two, 'two'
   end
   
-  class RecursiveC
-    include Configurable
-    nest :b, RecursiveB
+  class OverrideSubclass < IncludeBase 
+    config(:one, 'ONE') 
   end
   
-  def test_nest_raises_error_for_infinite_nest
-    e = assert_raise(RuntimeError) { RecursiveA.send(:nest, :A, RecursiveA) }
-    assert_equal "infinite nest detected", e.message
+  class ChangeDefaultSubclass < IncludeBase 
+  end
+  
+  def test_subclasses_inherit_configurations
+    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({
+      :one => Delegate.new(:one, :one=, 'one'), 
+      :two => Delegate.new(:two, :two=, 'two')
+    }, IncludeSubclass.configurations)
+  end
+  
+  def test_subclasses_inherit_accessors
+    t = IncludeSubclass.new
+    assert t.respond_to?(:one)
+    assert t.respond_to?("one=")
+  end
+  
+  def test_inherited_configurations_can_be_overridden
+    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({:one => Delegate.new(:one, :one=, 'ONE')}, OverrideSubclass.configurations)
+  end
+  
+  def test_manual_changes_to_inherited_configurations_do_not_propogate_to_superclass
+    ChangeDefaultSubclass.configurations[:one].default = 'two'
     
-    e = assert_raise(RuntimeError) { RecursiveA.send(:nest, :C, RecursiveC) }
-    assert_equal "infinite nest detected", e.message
+    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
+    assert_equal({:one => Delegate.new(:one, :one=, 'two')}, ChangeDefaultSubclass.configurations)
   end
   
   #
@@ -477,30 +407,41 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # indifferent access test
+  # DEFAULT_OPTIONS test
   #
   
-  def test_access_is_indifferent_through_config
-    s = Sample.new
-    
-    s.config['one'] = 'value'
-    assert_equal 'VALUE', s.one
-    assert_equal 'VALUE', s.config['one']
-    assert_equal 'VALUE', s.config[:one]
-    
-    s.config[:one] = 'alt'
-    assert_equal 'ALT', s.one
-    assert_equal 'ALT', s.config['one']
-    assert_equal 'ALT', s.config[:one]
+  class DefaultOptionsClassOne
+    include Configurable
+  end
+  
+  class DefaultOptionsClassTwo
+    include Configurable
+    DEFAULT_OPTIONS = DEFAULT_OPTIONS.dup
+    DEFAULT_OPTIONS[:key] = 'value'
+  end
+  
+  def test_default_attributes_may_be_overridden
+    assert_equal({}, DefaultOptionsClassOne::DEFAULT_OPTIONS[:key])
+    assert_equal('value', DefaultOptionsClassTwo::DEFAULT_OPTIONS[:key])
   end
   
   #
   # initialize_config test
   #
   
+  class Sample
+    include Configurable
+    
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+    
+    config(:one, 'one') {|v| v.upcase }
+    config :two, 'two'
+  end
+  
   def test_initialize_config_merges_class_defaults_with_overrides
-    t = Sample.new
-    t.send(:initialize_config, {:two => 2})
+    t = Sample.new(:two => 2)
     assert_equal({:one => 'ONE', :two => 2}, t.config)
   end
   
