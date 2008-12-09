@@ -1,5 +1,6 @@
 require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'config_parser'
+require 'configurable'
 
 class ConfigParserTest < Test::Unit::TestCase
   Option = ConfigParser::Option
@@ -25,6 +26,68 @@ class ConfigParserTest < Test::Unit::TestCase
       {'key' => {}},
       {'key' => {'overlap' => 'value'}}]
     assert options.include?(ConfigParser.nest('key' => {}, 'key:overlap' => 'value'))
+  end
+  
+  #
+  # documentation test
+  #
+  
+  class ConfigClass
+    include Configurable
+
+    config :long, 'default', :short => 's'  # a standard option
+    config :switch, false, &c.switch        # a switch
+    config :flag, false, &c.flag            # a flag
+  end
+  
+  def test_documentation
+    opts = {}
+    psr = ConfigParser.new do |psr|
+      psr.on "-s", "--long LONG", "a standard option" do |value|
+        opts[:long] = value
+      end
+    
+      psr.on "--[no-]switch", "a switch" do |value|
+        opts[:switch] = value
+      end
+  
+      psr.on "--flag", "a flag" do
+        # note: no value is parsed; the block 
+        # only executes if the flag is found
+        opts[:flag] = true
+      end
+    end
+  
+    assert_equal ['a', 'b', 'c'], psr.parse("a b --long arg --switch --flag c")
+    assert_equal({:long => 'arg', :switch => true, :flag => true}, opts)
+  
+    psr = ConfigParser.new
+    psr.define(:key, 'default', :desc => 'a standard option')
+  
+    assert_equal ['a', 'b', 'c'], psr.parse('a b --key option c')
+    assert_equal({:key => 'option'}, psr.config)
+  
+    assert_equal ['a', 'b', 'c'], psr.parse('a b c')
+    assert_equal({:key => 'default'}, psr.config)
+  
+    psr = ConfigClass.parser
+  
+    assert_equal ['a', 'b', 'c'], psr.parse("a b --long arg --switch --flag c")
+    assert_equal({:long => 'arg', :switch => true, :flag => true}, psr.config)
+  
+    assert_equal ['a', 'b', 'c'], psr.parse("a b --long=arg --no-switch c")
+    assert_equal({:long => 'arg', :switch => false, :flag => false}, psr.config)
+  
+    assert_equal ['a', 'b', 'c'], psr.parse("a b -sarg c")
+    assert_equal({:long => 'arg', :switch => false, :flag => false}, psr.config)
+  
+    expected = %q{
+configurations:
+    -s, --long LONG                  a standard option
+        --[no-]switch                a switch
+        --flag                       a flag
+}
+    assert_equal expected, "\nconfigurations:\n#{psr.to_s}"
   end
   
   #

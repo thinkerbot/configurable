@@ -3,6 +3,104 @@ require 'config_parser/switch'
 
 autoload(:Shellwords, 'shellwords')
 
+# ConfigParser is the Configurable equivalent of OptionParser and uses a
+# similar, simplified (see below) syntax to declare options.
+#
+#   opts = {}
+#   psr = ConfigParser.new do |psr|
+#     psr.on "-s", "--long LONG", "a standard option" do |value|
+#       opts[:long] = value
+#     end
+#   
+#     psr.on "--[no-]switch", "a switch" do |value|
+#       opts[:switch] = value
+#     end
+#
+#     psr.on "--flag", "a flag" do
+#       # note: no value is parsed; the block 
+#       # only executes if the flag is found
+#       opts[:flag] = true
+#     end
+#   end
+#
+#   psr.parse("a b --long arg --switch --flag c")   # => ['a', 'b', 'c']
+#   opts             # => {:long => 'arg', :switch => true, :flag => true}
+#
+# ConfigParser builds in this pattern of setting values in a hash as they
+# occur, and adds the ability to specify default values.  The syntax is
+# not quite as friendly as for ordinary options, but meshes well with
+# Configurable classes:
+#
+#   psr = ConfigParser.new
+#   psr.define(:key, 'default', :desc => 'a standard option')
+#
+#   psr.parse('a b --key option c')                 # => ['a', 'b', 'c']
+#   psr.config                                      # => {:key => 'option'}
+#
+#   psr.parse('a b c')                              # => ['a', 'b', 'c']
+#   psr.config                                      # => {:key => 'default'}
+#
+# And now directly from a Configurable class, an equivalent to the
+# original example:
+#
+#   class ConfigClass
+#     include Configurable
+#
+#     config :long, 'default', :short => 's'  # a standard option
+#     config :switch, false, &c.switch        # a switch
+#     config :flag, false, &c.flag            # a flag
+#   end
+#
+#   psr = ConfigClass.parser
+#
+#   psr.parse("a b --long arg --switch --flag c")   # => ['a', 'b', 'c']
+#   psr.config    # => {:long => 'arg', :switch => true, :flag => true}
+#
+#   psr.parse("a b --long=arg --no-switch c")       # => ['a', 'b', 'c']
+#   psr.config    # => {:long => 'arg', :switch => false, :flag => false}
+#
+#   psr.parse("a b -sarg c")                        # => ['a', 'b', 'c']
+#   psr.config    # => {:long => 'arg', :switch => false, :flag => false}
+#
+# As you might expect, the options for configurations become the options 
+# for define. In configurations like :switch, the block implies the 
+# {:type => :switch} option and the config is converted into a switch
+# by ConfigParser.
+#
+# Use the to_s method to convert a ConfigParser into command line
+# documentation:
+#
+#   "\nconfigurations:\n#{psr.to_s}"
+#   # => %q{
+#   # configurations:
+#   #    -s, --long LONG    a standard option
+#   #        --[no-]switch  a switch
+#   #        --flag         a flag
+#   # }
+#
+# ==== Simplifications
+#
+# Unlike OptionParser, ConfigParser.on does not support automatic conversion of
+# values, gets rid of 'optional' argument for options, and only supports a 
+# single description string.  Hence:
+#
+#   psr = ConfigParser.new
+#  
+#   # incorrect
+#   psr.on("--delay N", Float, "Delay N seconds before executing") do |value
+#   end
+#
+#   # correct
+#   psr.on("--delay N", "Delay N seconds before executing") do |value|
+#     value.to_f
+#   end
+#
+#   # this is OK syntactically, but ALWAYS requires the
+#   # argument and uses the LAST string as the description.
+#   psr.on("-i", "--inplace [EXTENSION]",
+#          "Edit ARGV files in place",
+#          "  (make backup if EXTENSION supplied)")
+#
 class ConfigParser
   class << self
     # Splits and nests compound keys of a hash.
