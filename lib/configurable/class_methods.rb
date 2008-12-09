@@ -61,10 +61,14 @@ module Configurable
     end
     
     protected
-
+    
+    # Sets configurations to symbolize keys for AGET ([]) and ASET([]=)
+    # operations, or not.  By default, configurations will use
+    # indifferent access.
     def use_indifferent_access(value=true)
       current = @configurations
-      @configurations = value ? HashWithIndifferentAccess.new : {}
+      @configurations = {}
+      @configurations.extend IndifferentAccess if value
       current.each_pair do |key, value|
         @configurations[key] = value
       end
