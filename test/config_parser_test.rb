@@ -129,6 +129,15 @@ configurations:
   end
   
   #
+  # nested_config test
+  #
+  
+  def test_nested_config_returns_the_nested_version_of_config
+    c.config['nest:key'] = 'value'
+    assert_equal({'nest' => {'key' => 'value'}}, c.nested_config)
+  end
+  
+  #
   # register test
   #
   
@@ -271,6 +280,19 @@ configurations:
   #
   # add test
   #
+  
+  def test_add_documentation
+    delegate_hash = DelegateHash.new(:key => Delegate.new(:reader))
+    delegates = {}
+    delegates[:nest] = Delegate.new(:reader, :writer=, delegate_hash)
+  
+    psr = ConfigParser.new
+    psr.add(delegates)
+    psr.parse('--nest:key value')
+    
+    assert_equal({'nest:key' => 'value'}, psr.config)
+    assert_equal({'nest' => {'key' => 'value'}}, psr.nested_config)
+  end
   
   def test_add_adds_a_set_of_delegates_in_declaration_order
     delegates = {

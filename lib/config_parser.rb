@@ -160,6 +160,8 @@ class ConfigParser
   # A hash of default configurations merged into parsed configs.
   attr_reader :default_config
 
+  # Initializes a new ConfigParser and passes it to the block,
+  # if given.
   def initialize
     @options = []
     @switches = {}
@@ -167,6 +169,12 @@ class ConfigParser
     @default_config = {}
   
     yield(self) if block_given?
+  end
+  
+  # Returns the nested form of config (see ConfigParser.nest).  Primarily
+  # useful when nested configurations have been added with add.
+  def nested_config
+    ConfigParser.nest(config)
   end
 
   # Returns an array of the options registered with self.
@@ -346,6 +354,36 @@ class ConfigParser
     on(options, &block)
   end
   
+  # Adds a hash of delegates (for example the configurations for a Configurable
+  # class) to self.  Delegates will be sorted by their :declaration_order
+  # attribute, then added like:
+  #
+  #   define(key, delegate.default, delegate.attributes)
+  #
+  # ==== Nesting
+  #
+  # When you nest Configurable classes, a special syntax is necessary to
+  # specify nested configurations in a flat format compatible with the
+  # command line.  As such, nested delegates, ie delegates with a 
+  # DelegateHash as a default value, are recursively added with their
+  # key as a prefix.  For instance:
+  #
+  #   delegate_hash = DelegateHash.new(:key => Delegate.new(:reader))
+  #   delegates = {}
+  #   delegates[:nest] = Delegate.new(:reader, :writer=, delegate_hash)
+  #
+  #   psr = ConfigParser.new
+  #   psr.add(delegates)
+  #   psr.parse('--nest:key value')
+  #
+  #   psr.config                 # => {'nest:key' => 'value'}
+  #   psr.nested_config          # => {'nest' => {'key' => 'value'}}
+  #
+  # Side note: The fact that all the keys end up as strings underscores
+  # the importance of having indifferent access for delegates.  If you
+  # set use_indifferent_access(false), be prepared to symbolize nested
+  # keys as necessary.
+  #
   def add(delegates, nesting=nil)
     delegates.to_a.sort_by do |(key, delegate)| 
       delegate.attributes[:declaration_order] || 0
@@ -361,8 +399,13 @@ class ConfigParser
     end
   end
   
-  # Parse is non-destructive to argv.  If a string argv is provided, parse
-  # splits it into an array using Shellwords.
+  # Parses options from argv in a non-destructive manner and returns an
+  # array of arguments remaining after options have been removed. If a 
+  # string argv is provided, it will be splits into an array using 
+  # Shellwords.
+  #
+  # A config may be provided to receive configurations; it will be set
+  # as self.config.
   #
   def parse(argv=ARGV, config={})
     @config = config
@@ -409,7 +452,9 @@ class ConfigParser
   def parse!(argv=ARGV, config={})
     argv.replace(parse(argv, config))
   end
-
+  
+  # Converts the options and separators in self into a help string suitable for
+  # display on the command line.
   def to_s
     comments = @options.collect do |option|
       next unless option.respond_to?(:desc)
