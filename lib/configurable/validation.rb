@@ -225,14 +225,20 @@ module Configurable
     #   array.call('str')         # => ValidationError
     #
     def array(); ARRAY; end
+    
+    # default options {:arg_name => "'[a, b, c]'"}
     ARRAY = yaml(Array)
+    register ARRAY, :arg_name => "'[a, b, c]'"
 
     # Same as array but allows nil:
     #
     #   array_or_nil.call('~')    # => nil
     #   array_or_nil.call(nil)    # => nil
     def array_or_nil(); ARRAY_OR_NIL; end
+    
+    # default options {:arg_name => "'[a, b, c]'"}
     ARRAY_OR_NIL = yaml(Array, nil)
+    register ARRAY_OR_NIL, :arg_name => "'[a, b, c]'"
 
     # Returns a block that checks the input is an array,
     # then yamlizes each string value of the array.
@@ -264,14 +270,20 @@ module Configurable
     #   hash.call('str')               # => ValidationError
     #
     def hash(); HASH; end
+    
+    # default options {:arg_name => "'{one: 1, two: 2}'"}
     HASH = yaml(Hash)
+    register HASH, :arg_name => "'{one: 1, two: 2}'"
 
     # Same as hash but allows nil:
     #
     #   hash_or_nil.call('~')          # => nil
     #   hash_or_nil.call(nil)          # => nil
     def hash_or_nil(); HASH_OR_NIL; end
+    
+    # default options {:arg_name => "'{one: 1, two: 2}'"}
     HASH_OR_NIL = yaml(Hash, nil)
+    register HASH_OR_NIL, :arg_name => "'{one: 1, two: 2}'"
 
     # Returns a block that checks the input is an integer.
     # String inputs are loaded as yaml first.

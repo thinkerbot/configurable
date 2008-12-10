@@ -5,7 +5,7 @@ require 'tempfile'
 class DescriptionTest < Test::Unit::TestCase
   Description =  Configurable::Description
   
-  def test_description_to_s_resolves_and_returns_trailer
+  def test_to_s_resolves_and_returns_trailer
     tempfile = Tempfile.new('desc_test')
     tempfile << %q{
 # comment content
@@ -23,5 +23,12 @@ class DescriptionTest < Test::Unit::TestCase
     assert_equal "trailer", desc.to_s
     assert_equal "trailer", desc.trailer
     assert doc.resolved
+  end
+  
+  def test_to_s_returns_empty_string_even_if_resolve_fails
+    desc = Description.new
+    assert_equal nil, desc.trailer
+    assert_equal "", desc.to_s
+    assert_equal nil, desc.trailer
   end
 end

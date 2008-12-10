@@ -12,7 +12,7 @@ module Configurable
     # Self-resolves as necessary and returns the trailer.
     def to_s
       document.resolve unless document == nil || document.resolved
-      trailer
+      trailer.to_s
     end
   end
 end
