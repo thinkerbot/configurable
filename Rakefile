@@ -89,3 +89,9 @@ Rake::TestTask.new(:test) do |t|
   t.warning = true
 end
 
+desc "run checks"
+Rake::TestTask.new(:check) do |t|
+  t.test_files = Dir.glob( File.join('test', ENV['pattern'] || '**/*_check.rb') )
+  t.verbose = true
+  t.warning = true
+end
