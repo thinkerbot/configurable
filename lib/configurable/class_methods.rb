@@ -41,14 +41,6 @@ module Configurable
       child.instance_variable_set(:@configurations, configurations)
       super
     end
-    
-    # Generates a new ConfigParser with the class configurations
-    # added in declaration order.
-    def parser
-      ConfigParser.new do |parser|
-        parser.add(configurations)
-      end
-    end
 
     # Loads the contents of path as YAML. Returns an empty hash if the path
     # is empty, does not exist, or is not a file.

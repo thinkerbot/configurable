@@ -51,7 +51,8 @@ autoload(:Shellwords, 'shellwords')
 #     config :flag, false, &c.flag            # a flag
 #   end
 #
-#   psr = ConfigClass.parser
+#   psr = ConfigParser.new
+#   psr.add(ConfigClass.configurations)
 #
 #   psr.parse("a b --long arg --switch --flag c")   # => ['a', 'b', 'c']
 #   psr.config    # => {:long => 'arg', :switch => true, :flag => true}

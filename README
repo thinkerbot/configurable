@@ -43,10 +43,11 @@ module) or you can write your own.
     end
   end
   
-Configurable classes come with a parser that pulls configurations from command
-line arguments and may be converted to a help string, with documentation:
+Configurations are easily added to a ConfigParser to parse configurations from
+command line arguments and generate a help string, with documentation:
 
-  parser = ConfigClass.parser
+  parser = ConfigParser.new
+  parser.add(ConfigClass.configurations)
   parser.parse "one two --key=value --flag --no-switch --num 8 --range a..z three"  
   # => ['one', 'two', 'three']
   

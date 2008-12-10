@@ -21,8 +21,8 @@ class ReadmeTest < Test::Unit::TestCase
   end
   
   def test_quickstart
-    parser = ConfigClass.parser
-    assert_equal ConfigParser, parser.class
+    parser = ConfigParser.new
+    parser.add(ConfigClass.configurations)
 
     expected = %Q{
     -k, --key KEY                    a simple config with short

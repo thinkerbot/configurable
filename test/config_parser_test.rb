@@ -72,7 +72,8 @@ class ConfigParserTest < Test::Unit::TestCase
     assert_equal ['a', 'b', 'c'], psr.parse('a b c')
     assert_equal({:key => 'default'}, psr.config)
   
-    psr = ConfigClass.parser
+    psr = ConfigParser.new
+    psr.add(ConfigClass.configurations)
   
     assert_equal ['a', 'b', 'c'], psr.parse("a b --long arg --switch --flag c")
     assert_equal({:long => 'arg', :switch => true, :flag => true}, psr.config)
