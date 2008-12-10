@@ -41,6 +41,26 @@ module Configurable
       child.instance_variable_set(:@configurations, configurations)
       super
     end
+    
+    # Parses configurations from argv in a non-destructive manner by generating
+    # a ConfigParser using the configurations for self.  Parsed configs are 
+    # added to config (note that you must keep a separate reference to 
+    # config as it is not returned by parse).  The parser will is yielded to the
+    # block, if given, to register additonal options.  Returns an array of the 
+    # arguments that remain after parsing.
+    #
+    # See ConfigParser#parse for more information.
+    def parse(argv=ARGV, config={})
+      ConfigParser.new do |parser|
+        parser.add(configurations)
+        yield(parser) if block_given?
+      end.parse(argv, config)
+    end
+    
+    # Same as parse, but removes parsed args from argv.
+    def parse!(argv=ARGV, config={})
+      argv.replace(parse(argv, config))
+    end
 
     # Loads the contents of path as YAML. Returns an empty hash if the path
     # is empty, does not exist, or is not a file.

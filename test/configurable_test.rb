@@ -260,6 +260,43 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
+  # parse test
+  #
+  
+  class ParseClass
+    include Configurable
+    config(:one, 'one') {|v| v.upcase }
+  end
+  
+  def test_parse_yields_configured_config_parser_to_block_if_given
+    was_in_block = false
+    ParseClass.parse do |psr|
+       assert_equal ConfigParser, psr.class
+       assert_equal ["--one"], psr.switches.keys
+       was_in_block = true
+    end
+    assert was_in_block
+  end
+  
+  def test_parse_parses_configs_from_argv
+    config = {}
+    assert_equal ["a", "b", "c"], ParseClass.parse("a b --one value c", config)
+    assert_equal({:one => 'value'}, config)
+  end
+  
+  def test_parse_is_non_destructive_to_argv
+    argv = ["a", "b", "--one", "value", "c"]
+    assert_equal ["a", "b", "c"], ParseClass.parse(argv)
+    assert_equal ["a", "b", "--one", "value", "c"], argv
+  end
+  
+  def test_parse_bang_is_destructive_to_argv
+    argv = ["a", "b", "--one", "value", "c"]
+    assert_equal ["a", "b", "c"], ParseClass.parse!(argv)
+    assert_equal ["a", "b", "c"], argv
+  end
+  
+  #
   # indifferent access test
   #
   

@@ -17,7 +17,7 @@ class OptparseCheck < Test::Unit::TestCase
     opts.parse ["-b", "one", "-a", "two"]
     
     assert_equal ["one", "two", "one", "two"], values
-    assert_equal %Q{Usage: optparse_check [options]
+    assert_equal %Q{Usage: rake_test_loader [options]
     -a, --option-a INPUT
     -b, --option-b INPUT
 }, opts.to_s
@@ -34,7 +34,7 @@ class OptparseCheck < Test::Unit::TestCase
     opts.parse ["-b", "one", "-a", "two"]
     
     assert_equal ["one", "two", "one", "two"], values
-    assert_equal %Q{Usage: optparse_check [options]
+    assert_equal %Q{Usage: rake_test_loader [options]
     -b, --option-b INPUT
     -a, --option-a INPUT
 }, opts.to_s
@@ -52,7 +52,7 @@ class OptparseCheck < Test::Unit::TestCase
     
     assert_equal ["one", "two", "one", "two"], values
     
-    assert_equal %Q{Usage: optparse_check [options]
+    assert_equal %Q{Usage: rake_test_loader [options]
     -b, --option-b INPUT
     -a, --option-a INPUT
 }, opts.to_s
