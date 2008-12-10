@@ -26,7 +26,7 @@ autoload(:Shellwords, 'shellwords')
 #   psr.parse("a b --long arg --switch --flag c")   # => ['a', 'b', 'c']
 #   opts             # => {:long => 'arg', :switch => true, :flag => true}
 #
-# ConfigParser builds in this pattern of setting values in a hash as they
+# ConfigParser formalizes this pattern of setting values in a hash as they
 # occur, and adds the ability to specify default values.  The syntax is
 # not quite as friendly as for ordinary options, but meshes well with
 # Configurable classes:
@@ -40,7 +40,7 @@ autoload(:Shellwords, 'shellwords')
 #   psr.parse('a b c')                              # => ['a', 'b', 'c']
 #   psr.config                                      # => {:key => 'default'}
 #
-# And now directly from a Configurable class, an equivalent to the
+# And now directly from a Configurable class, the equivalent of the
 # original example:
 #
 #   class ConfigClass
@@ -73,9 +73,9 @@ autoload(:Shellwords, 'shellwords')
 #   "\nconfigurations:\n#{psr.to_s}"
 #   # => %q{
 #   # configurations:
-#   #    -s, --long LONG    a standard option
-#   #        --[no-]switch  a switch
-#   #        --flag         a flag
+#   #     -s, --long LONG                  a standard option
+#   #         --[no-]switch                a switch
+#   #         --flag                       a flag
 #   # }
 #
 # ==== Simplifications

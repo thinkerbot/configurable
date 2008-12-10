@@ -1,4 +1,6 @@
 class ConfigParser
+  
+  # A medly of methods used throughout the ConfigParser classes.
   module Utils
     module_function
     
@@ -34,8 +36,8 @@ class ConfigParser
     # an error if the option does not match SHORT_OPTION.  Nils
     # are returned directly.
     #
-    #   ConfigParser.shortify("-o")         # => '-o'
-    #   ConfigParser.shortify(:o)           # => '-o'
+    #   shortify("-o")         # => '-o'
+    #   shortify(:o)           # => '-o'
     #
     def shortify(str)
       return nil if str == nil
@@ -52,9 +54,9 @@ class ConfigParser
     # are converted to hyphens. Raises an error if the option does
     # not match LONG_OPTION.  Nils are returned directly.
     #
-    #   ConfigParser.longify("--opt")       # => '--opt'
-    #   ConfigParser.longify(:opt)          # => '--opt'
-    #   ConfigParser.longify(:opt_ion)      # => '--opt-ion'
+    #   longify("--opt")       # => '--opt'
+    #   longify(:opt)          # => '--opt'
+    #   longify(:opt_ion)      # => '--opt-ion'
     #
     def longify(str)
       return nil if str == nil
