@@ -395,7 +395,7 @@ class ConfigurableTest < Test::Unit::TestCase
     
     [:one, :three, :five].each do |doc_config|
       desc = LazydocClass.configurations[doc_config].attributes[:desc]
-      assert_equal Lazydoc::Comment, desc.class
+      assert_equal Configurable::Description, desc.class
       assert_equal "with documentation", desc.trailer
     end
     

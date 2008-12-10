@@ -71,8 +71,7 @@ class ConfigParser
     # Formats self as a help string for use on the command line.
     def to_s
       short_str = short ? short + ',' : '   '
-      desc_str = desc.kind_of?(Lazydoc::Comment) ? desc.trailer : desc
-      "%-37s%-43s" % ["    #{short_str} #{long} #{arg_name}", desc_str]
+      "%-37s%-43s" % ["    #{short_str} #{long} #{arg_name}", desc]
     end
   end
 end

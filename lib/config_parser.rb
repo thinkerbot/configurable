@@ -456,12 +456,6 @@ class ConfigParser
   # Converts the options and separators in self into a help string suitable for
   # display on the command line.
   def to_s
-    comments = @options.collect do |option|
-      next unless option.respond_to?(:desc)
-      option.desc.kind_of?(Lazydoc::Comment) ? option.desc : nil
-    end.compact
-    Lazydoc.resolve_comments(comments)
-    
     @options.collect do |option|
       option.to_s.rstrip
     end.join("\n") + "\n"

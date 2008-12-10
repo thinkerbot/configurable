@@ -38,8 +38,7 @@ class ConfigParser
     def to_s
       short_str = short ? short + ',' : '   '
       long_str = long ? "--[no-]#{long[2,long.length-2]}" : ''
-      desc_str = desc.kind_of?(Lazydoc::Comment) ? desc.trailer : desc
-      "%-37s%-43s" % ["    #{short_str} #{long_str}", desc_str]
+      "%-37s%-43s" % ["    #{short_str} #{long_str}", desc]
     end
   end
 end

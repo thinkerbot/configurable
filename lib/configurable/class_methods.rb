@@ -1,7 +1,7 @@
-require 'lazydoc/attributes'
 require 'configurable/delegate_hash'
-require 'configurable/validation'
+require 'configurable/description'
 require 'configurable/indifferent_access'
+require 'configurable/validation'
 
 autoload(:ConfigParser, 'config_parser')
 
@@ -99,7 +99,7 @@ module Configurable
       options = default_options(block).merge!(options)
       
       # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller
+      options[:desc] ||= Lazydoc.register_caller(Description)
       
       if block_given?
         instance_variable = "@#{key}".to_sym
@@ -140,7 +140,7 @@ module Configurable
       options = default_options(block).merge!(options)
       
       # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller
+      options[:desc] ||= Lazydoc.register_caller(Description)
       
       # define the default public reader method
       reader = options.delete(:reader)
@@ -239,7 +239,7 @@ module Configurable
       end
       
       # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller
+      options[:desc] ||= Lazydoc.register_caller(Description)
       
       reader = options.delete(:reader)
       writer = options.delete(:writer)

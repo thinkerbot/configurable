@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "configurable"
-  s.version = "0.1.0"
+  s.version = "0.2.0"
   s.author = "Simon Chiang"
   s.email = "simon.a.chiang@gmail.com"
   s.homepage = "http://tap.rubyforge.org/configurable"
@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.require_path = "lib"
   s.rubyforge_project = "tap"
   s.has_rdoc = true
-  s.add_dependency("lazydoc", ">= 0.2.0")
+  s.add_dependency("lazydoc", ">= 0.3.0")
   s.add_development_dependency("tap", ">= 0.11.1")
   
   # list extra rdoc files here.
@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
     lib/configurable/class_methods.rb
     lib/configurable/delegate.rb
     lib/configurable/delegate_hash.rb
+    lib/configurable/description.rb
     lib/configurable/indifferent_access.rb
     lib/configurable/validation.rb
   }
