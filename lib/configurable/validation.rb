@@ -40,7 +40,7 @@ module Configurable
       end
     end
 
-    # Raised when yamlization fails.
+    # Raised when Validation#yamlize fails.
     class YamlizationError < ArgumentError
       def initialize(input, error)
         super "#{error} ('#{input}')"
