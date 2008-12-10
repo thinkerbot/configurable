@@ -10,8 +10,7 @@ Gem::Specification.new do |s|
   s.rubyforge_project = "tap"
   s.has_rdoc = true
   s.add_dependency("lazydoc", ">= 0.3.0")
-  s.add_development_dependency("tap", ">= 0.11.1")
-  
+
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{
     MIT-LICENSE
