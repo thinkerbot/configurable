@@ -61,14 +61,6 @@ module Configurable
     def parse!(argv=ARGV, config={})
       argv.replace(parse(argv, config))
     end
-
-    # Loads the contents of path as YAML. Returns an empty hash if the path
-    # is empty, does not exist, or is not a file.
-    def load_config(path)
-      # the last check prevents YAML from auto-loading itself for empty files
-      return {} if path == nil || !File.file?(path) || File.size(path) == 0
-      YAML.load_file(path) || {}
-    end
     
     protected
     
