@@ -67,8 +67,8 @@ module Configurable
     # Sets configurations to symbolize keys for AGET ([]) and ASET([]=)
     # operations, or not.  By default, configurations will use
     # indifferent access.
-    def use_indifferent_access(value=true)
-      if value
+    def use_indifferent_access(input=true)
+      if input
          @configurations.extend IndifferentAccess
       else
         current = @configurations
@@ -240,7 +240,7 @@ module Configurable
     #
     # Nest checks for recursive nesting and raises an error if
     # a recursive nest is detected.
-    def nest(key, configurable_class, attributes={})
+    def nest(key, configurable_class, attributes={}, &block)
       unless configurable_class.kind_of?(Configurable::ClassMethods)
         raise ArgumentError, "not a Configurable class: #{configurable_class}" 
       end
@@ -250,7 +250,6 @@ module Configurable
       
       # add some tracking attributes
       attributes[:receiver] ||= configurable_class
-      attributes[:declaration_order] ||= configurations.length
       
       reader = attributes.delete(:reader)
       writer = attributes.delete(:writer)
@@ -276,7 +275,7 @@ module Configurable
           if instance_variable_defined?(instance_var) 
             instance_variable_get(instance_var).reconfigure(value)
           else
-            instance_variable_set(instance_var, yield(value))
+            instance_variable_set(instance_var, block.call(value))
           end
         end
         private(reader, writer)
@@ -299,14 +298,13 @@ module Configurable
     
     # a helper method to make the default attributes for the specified block.  
     # Merges the default attributes for no block (nil) with the attributes
-    # for the specified block, then adds a flag indicating the 
-    # declaration_order of the config (annoying, but necessary pre 1.9)
+    # for the specified block
     def default_attributes(block=nil) # :nodoc:
       if block 
         DEFAULT_ATTRIBUTES[nil].merge(DEFAULT_ATTRIBUTES[block])
       else
         DEFAULT_ATTRIBUTES[nil].dup
-      end.merge!(:declaration_order => configurations.length)
+      end
     end
     
     # helper to recursively check a set of 

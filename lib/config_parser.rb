@@ -8,7 +8,7 @@ autoload(:Shellwords, 'shellwords')
 # and uses a similar, simplified (see below) syntax to declare options.
 #
 #   opts = {}
-#   psr = ConfigParser.new do |psr|
+#   parser = ConfigParser.new do |psr|
 #     psr.on "-s", "--long LONG", "a standard option" do |value|
 #       opts[:long] = value
 #     end
@@ -24,7 +24,7 @@ autoload(:Shellwords, 'shellwords')
 #     end
 #   end
 #
-#   psr.parse("a b --long arg --switch --flag c")   # => ['a', 'b', 'c']
+#   parser.parse("a b --long arg --switch --flag c")   # => ['a', 'b', 'c']
 #   opts             # => {:long => 'arg', :switch => true, :flag => true}
 #
 # ConfigParser formalizes this pattern of setting values in a hash as they
@@ -386,9 +386,7 @@ class ConfigParser
   # keys as necessary.
   #
   def add(delegates, nesting=nil)
-    delegates.to_a.sort_by do |(key, delegate)| 
-      delegate[:declaration_order, 0]
-    end.each do |(key, delegate)|
+    delegates.each_pair do |key, delegate|
       key = nesting ? "#{nesting}:#{key}" : key
       default = delegate.default(false)
       

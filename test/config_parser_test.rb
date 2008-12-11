@@ -44,7 +44,7 @@ class ConfigParserTest < Test::Unit::TestCase
   
   def test_documentation
     opts = {}
-    psr = ConfigParser.new do |psr|
+    parser = ConfigParser.new do |psr|
       psr.on "-s", "--long LONG", "a standard option" do |value|
         opts[:long] = value
       end
@@ -60,7 +60,7 @@ class ConfigParserTest < Test::Unit::TestCase
       end
     end
   
-    assert_equal ['a', 'b', 'c'], psr.parse("a b --long arg --switch --flag c")
+    assert_equal ['a', 'b', 'c'], parser.parse("a b --long arg --switch --flag c")
     assert_equal({:long => 'arg', :switch => true, :flag => true}, opts)
   
     psr = ConfigParser.new
@@ -295,40 +295,27 @@ configurations:
     assert_equal({'nest' => {'key' => 'value'}}, psr.nested_config)
   end
   
-  def test_add_adds_a_set_of_delegates_in_declaration_order
-    delegates = {
-      :one => Delegate.new(:one, :one=, 'one', :declaration_order => 1),
-      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0),
-    }
-    
-    c.add(delegates)
-    assert_equal(["--two", "--one"], c.options.collect {|opt| opt.long })
-    assert_equal({:one => 'one', :two => 'two'}, c.default_config)
-  end
-  
   def test_add_nests_delegates_according_to_nest
     delegates = {
-      :one => Delegate.new(:one, :one=, 'one', :declaration_order => 1),
-      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0),
+      :one => Delegate.new(:one, :one=, 'one'),
+      :two => Delegate.new(:two, :two=, 'two'),
     }
     
     c.add(delegates, "nest")
-    assert_equal(["--nest:two", "--nest:one"], c.options.collect {|opt| opt.long })
     assert_equal({"nest:one" => 'one', "nest:two" => 'two'}, c.default_config)
   end
   
   def test_add_recusively_adds_delegates_from_delegates_with_a_delegate_hash_default
     delegate_hash = DelegateHash.new(
-      :one => Delegate.new(:one, :one=, 'one', :declaration_order => 1),
-      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0)
+      :one => Delegate.new(:one, :one=, 'one'),
+      :two => Delegate.new(:two, :two=, 'two')
     )
     delegates = {
-      :one => Delegate.new(:one, :one=, delegate_hash, :declaration_order => 1),
-      :two => Delegate.new(:two, :two=, 'two', :declaration_order => 0)
+      :one => Delegate.new(:one, :one=, delegate_hash),
+      :two => Delegate.new(:two, :two=, 'two')
     }
     
     c.add(delegates)
-    assert_equal(["--two", "--one:two", "--one:one"], c.options.collect {|opt| opt.long })
     assert_equal({:two => 'two', "one:one" => 'one', "one:two" => 'two'}, c.default_config)
   end
   

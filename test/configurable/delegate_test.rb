@@ -87,17 +87,6 @@ class DelegateTest < Test::Unit::TestCase
     assert a.frozen?
   end
   
-  def test_non_freezable_objects_are_not_frozen
-    c.default = 1
-    assert !c.default.frozen?
-    
-    c.default = :sym
-    assert !c.default.frozen?
-    
-    c.default = nil
-    assert !c.default.frozen?
-  end
-  
   #
   # default test
   #
