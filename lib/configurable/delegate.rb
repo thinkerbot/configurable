@@ -22,7 +22,7 @@ module Configurable
     # The writer method, by default key=
     attr_reader :writer
 
-    # An array of metadata for self, used to present the 
+    # An hash of metadata for self, used to present the 
     # delegate in different contexts (ex on the command
     # line, in a web form, or a desktop app).
     attr_reader :attributes
@@ -35,6 +35,12 @@ module Configurable
       self.writer = writer
   
       @attributes = attributes
+    end
+    
+    # Returns the value for the specified attribute, or
+    # default, if the attribute is unspecified.
+    def [](key, default=nil)
+      attributes.has_key?(key) ? attributes[key] : default
     end
 
     # Sets the default value for self.

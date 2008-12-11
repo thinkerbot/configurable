@@ -57,6 +57,20 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   #
+  # AGET test
+  #
+  
+  def test_AGET_returns_attribute_value_if_specified
+    c.attributes[:key] = 'value'
+    assert_equal 'value', c[:key]
+  end
+  
+  def test_AGET_returns_default_value_if_attribute_is_not_specified
+    assert !c.attributes.has_key?(:key)
+    assert_equal 'value', c[:key, 'value']
+  end
+  
+  #
   # default= test
   #
   
