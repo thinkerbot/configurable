@@ -20,7 +20,7 @@ require 'configurable/class_methods'
 #   c.config               # => {:one => 'one', :two => 'two', :three => 'three'}
 #
 # Instances have a <tt>config</tt> object that acts like a forwarding hash; 
-# declared configurations delegate to accessors while undeclared configurations
+# configuration keys delegate to accessors while undeclared key-value pairs
 # are stored internally:
 #
 #   c.config[:one] = 'ONE'
@@ -55,8 +55,8 @@ require 'configurable/class_methods'
 #   s.two = 'str'          # !> ValidationError
 # 
 # Note that config blocks are defined in class-context and will have access
-# to variables outside the block (as you would expect).  These are analagous
-# declarations:
+# to variables outside the block (as you would expect).  For instance, these
+# are analagous declarations:
 #
 #   class ClassConfig
 #     config :key, 'value' do |input|
@@ -82,12 +82,11 @@ require 'configurable/class_methods'
 #     end
 #   end
 #
-# Configurations are inherited from the parent and may be overridden in
-# subclasses.
+# Configurations are inherited and may be overridden in subclasses.
 #
-# === Options
+# === Attributes
 #
-# Alternative reader and writer methods may be specified as options to config.
+# Alternative reader and writer methods may be specified as config attributes.
 # When alternate methods are specified, Configurable assumes the methods are 
 # declared elsewhere and will not define accessors.  
 # 
@@ -132,13 +131,13 @@ require 'configurable/class_methods'
 #            that does not map to the instance, but will be
 #            present in instance.config
 #
-# Metadata for configurations is specified in options as well.  Options like
-# :desc, and :type are used by ConfigParser, for instance, to determine how
-# to represent the configuration on the command line.  These options are
-# unstructured so they can accomodate metadata for multiple contexts 
-# (ex a web or desktop interface), as needed.
+# ==== Non-reader/writer attributes
 #
-# All non-reader/writer options are stored in the config attributes.
+# Metadata for a config may be specified in attributes as well.  Attributes like
+# :desc, and :type are used by ConfigParser, for instance, to determine how to
+# represent the configuration on the command line.  Attributes are unstructured
+# so they can accomodate metadata for multiple contexts (ex a web or desktop 
+# interface), as needed.
 #
 module Configurable
 

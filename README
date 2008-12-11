@@ -7,8 +7,7 @@ Tap[http://tap.rubyforge.org] framework.
 
 Configurable allows the declaration of inheritable class configurations that
 delegate to methods but also have hash-like access.  Configurable facilitates 
-the use of configuration files, and parsing configurations from the command
-line.
+the parsing configurations from the command line through ConfigParser.
 
 Check out these links for development, and bug tracking.
 
@@ -44,7 +43,7 @@ module) or you can write your own.
   end
   
 Configurations are easily added to a ConfigParser to parse configurations from
-command line arguments and generate a help string, with documentation:
+command line arguments and to generate a documented help string:
 
   parser = ConfigParser.new
   parser.add(ConfigClass.configurations)

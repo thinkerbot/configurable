@@ -444,7 +444,7 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # DEFAULT_OPTIONS test
+  # DEFAULT_ATTRIBUTES test
   #
   
   class DefaultOptionsClassOne
@@ -453,13 +453,13 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class DefaultOptionsClassTwo
     include Configurable
-    DEFAULT_OPTIONS = DEFAULT_OPTIONS.dup
-    DEFAULT_OPTIONS[:key] = 'value'
+    DEFAULT_ATTRIBUTES = DEFAULT_ATTRIBUTES.dup
+    DEFAULT_ATTRIBUTES[:key] = 'value'
   end
   
   def test_default_attributes_may_be_overridden
-    assert_equal({}, DefaultOptionsClassOne::DEFAULT_OPTIONS[:key])
-    assert_equal('value', DefaultOptionsClassTwo::DEFAULT_OPTIONS[:key])
+    assert_equal({}, DefaultOptionsClassOne::DEFAULT_ATTRIBUTES[:key])
+    assert_equal('value', DefaultOptionsClassTwo::DEFAULT_ATTRIBUTES[:key])
   end
   
   #

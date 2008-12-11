@@ -3,8 +3,9 @@ require 'config_parser/switch'
 
 autoload(:Shellwords, 'shellwords')
 
-# ConfigParser is the Configurable equivalent of OptionParser and uses a
-# similar, simplified (see below) syntax to declare options.
+# ConfigParser is the Configurable equivalent of 
+# {OptionParser}[http://www.ruby-doc.org/core/classes/OptionParser.html]
+# and uses a similar, simplified (see below) syntax to declare options.
 #
 #   opts = {}
 #   psr = ConfigParser.new do |psr|
@@ -63,10 +64,10 @@ autoload(:Shellwords, 'shellwords')
 #   psr.parse("a b -sarg c")                        # => ['a', 'b', 'c']
 #   psr.config    # => {:long => 'arg', :switch => false, :flag => false}
 #
-# As you might expect, the options for configurations become the options 
-# for define. In configurations like :switch, the block implies the 
-# {:type => :switch} option and the config is converted into a switch
-# by ConfigParser.
+# As you might expect, config attributes are used by ConfigParser to 
+# correctly build a corresponding option.  In configurations like :switch, 
+# the block implies the {:type => :switch} attribute and so the
+# config is made into a switch-style option by ConfigParser.
 #
 # Use the to_s method to convert a ConfigParser into command line
 # documentation:
@@ -81,9 +82,9 @@ autoload(:Shellwords, 'shellwords')
 #
 # ==== Simplifications
 #
-# Unlike OptionParser, ConfigParser#on does not support automatic conversion of
-# values, gets rid of 'optional' arguments for options, and only supports a 
-# single description string.  Hence:
+# ConfigParser simplifies the OptionParser syntax for 'on'.  ConfigParser does
+# not support automatic conversion of values, gets rid of 'optional' arguments
+# for options, and only supports a single description string.  Hence:
 #
 #   psr = ConfigParser.new
 #  
@@ -161,8 +162,7 @@ class ConfigParser
   # A hash of default configurations merged into parsed configs.
   attr_reader :default_config
 
-  # Initializes a new ConfigParser and passes it to the block,
-  # if given.
+  # Initializes a new ConfigParser and passes it to the block, if given.
   def initialize
     @options = []
     @switches = {}
@@ -228,7 +228,7 @@ class ConfigParser
   #     # ...
   #   end
   #
-  # A 'switch' option can be specified by prefixing the long switch with
+  # A switch-style option can be specified by prefixing the long switch with
   # '--[no-]'.  Switch options will pass true to the block for the positive
   # form and false for the negative form.
   #
@@ -243,7 +243,7 @@ class ConfigParser
   #   end
   #
   def on(*args, &block)
-    options = args.last.kind_of?(Hash) ? args.pop : {}
+    attributes = args.last.kind_of?(Hash) ? args.pop : {}
     args.each do |arg|
       # split switch arguments... descriptions
       # still won't match as a switch even
@@ -258,38 +258,38 @@ class ConfigParser
       end
       
       # check for conflicts
-      if options[key]
-        raise ArgumentError, "conflicting #{key} options: [#{options[key].inspect}, #{arg.inspect}]"
+      if attributes[key]
+        raise ArgumentError, "conflicting #{key} options: [#{attributes[key].inspect}, #{arg.inspect}]"
       end
       
-      # set the option
+      # set the option attributes
       case key
       when :long, :short
-        options[key] = switch
-        options[:arg_name] = arg_name if arg_name
+        attributes[key] = switch
+        attributes[:arg_name] = arg_name if arg_name
       else
-        options[key] = arg
+        attributes[key] = arg
       end
     end
     
-    # check if the option is specifying a Switch
+    # check if a switch-style option is specified
     klass = case
-    when options[:long].to_s =~ /^--\[no-\](.*)$/ 
-      options[:long] = "--#{$1}"
+    when attributes[:long].to_s =~ /^--\[no-\](.*)$/ 
+      attributes[:long] = "--#{$1}"
       Switch
     else 
       Option
     end
     
     # instantiate and register the new option
-    register klass.new(options, &block) 
+    register klass.new(attributes, &block) 
   end
   
-  # Defines and registers a configuration option with self.  Define does not
+  # Defines and registers a config-style option with self.  Define does not
   # take a block; the default value will be added to config, and any parsed
   # value will override the default.  Normally the key will be turned into
   # the long switch; specify an alternate long, a short, description, etc
-  # using options.
+  # using attributes.
   #
   #   psr = ConfigParser.new
   #   psr.define(:one, 'default')
@@ -315,10 +315,10 @@ class ConfigParser
   # following this pattern:
   #
   #   module SpecialType
-  #     def setup_special(key, default_value, options)
-  #       # modify options if necessary
-  #       options[:long] = "--#{key}"
-  #       options[:arg_name] = 'ARG_NAME'
+  #     def setup_special(key, default_value, attributes)
+  #       # modify attributes if necessary
+  #       attributes[:long] = "--#{key}"
+  #       attributes[:arg_name] = 'ARG_NAME'
   # 
   #       # return a block handling the input
   #       lambda {|input| config[key] = input.reverse }
@@ -332,27 +332,27 @@ class ConfigParser
   #   psr.config             # => {:opt => 'eulav'}
   #
   # Define raises an error if key is already set by a different option.
-  def define(key, default_value=nil, options={})
+  def define(key, default_value=nil, attributes={})
     # check for conflicts and register
     if default_config.has_key?(key)
       raise ArgumentError, "already set by a different option: #{key.inspect}"
     end
     default_config[key] = default_value
     
-    block = case options[:type]
-    when :switch then setup_switch(key, default_value, options)
-    when :flag   then setup_flag(key, default_value, options)
-    when :list   then setup_list(key, options)
-    when nil     then setup_option(key, options)
+    block = case attributes[:type]
+    when :switch then setup_switch(key, default_value, attributes)
+    when :flag   then setup_flag(key, default_value, attributes)
+    when :list   then setup_list(key, attributes)
+    when nil     then setup_option(key, attributes)
     else
-      if respond_to?("setup_#{options[:type]}")
-        send("setup_#{options[:type]}", key, default_value, options)
+      if respond_to?("setup_#{attributes[:type]}")
+        send("setup_#{attributes[:type]}", key, default_value, attributes)
       else
-        raise ArgumentError, "unsupported type: #{options[:type]}"
+        raise ArgumentError, "unsupported type: #{attributes[:type]}"
       end
     end
     
-    on(options, &block)
+    on(attributes, &block)
   end
   
   # Adds a hash of delegates (for example the configurations for a Configurable
@@ -387,7 +387,7 @@ class ConfigParser
   #
   def add(delegates, nesting=nil)
     delegates.to_a.sort_by do |(key, delegate)| 
-      delegate.attributes[:declaration_order] || 0
+      delegate[:declaration_order, 0]
     end.each do |(key, delegate)|
       key = nesting ? "#{nesting}:#{key}" : key
       default = delegate.default(false)

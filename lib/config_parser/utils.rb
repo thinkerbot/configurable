@@ -70,58 +70,58 @@ class ConfigParser
       str
     end
     
-    # Options:
+    # Attributes:
     #
     #   :long      the long key ("--key") 
     #   :arg_name  the argument name ("KEY") 
     #
-    def setup_option(key, options={})
-      options[:long] ||= "--#{key}"
-      options[:long].to_s =~ /^(--)?(.*)$/ 
-      options[:arg_name] ||= $2.upcase
+    def setup_option(key, attributes={})
+      attributes[:long] ||= "--#{key}"
+      attributes[:long].to_s =~ /^(--)?(.*)$/ 
+      attributes[:arg_name] ||= $2.upcase
       
       lambda {|value| config[key] = value }
     end
     
-    # Options:
+    # Attributes:
     #
     #   :long      the long key ("--key") 
     #
-    def setup_flag(key, default=true, options={})
-      options[:long] ||= "--#{key}"
+    def setup_flag(key, default=true, attributes={})
+      attributes[:long] ||= "--#{key}"
       
       lambda {config[key] = !default }
     end
     
-    # Options:
+    # Attributes:
     #
     #   :long      the long key ("--[no-]key") 
     #
-    def setup_switch(key, default=true, options={})
-      options[:long] ||= "--#{key}"
-      options[:long].to_s =~ /^(--)?(\[no-\])?(.*)$/ 
-      options[:long] = "--[no-]#{$3}" unless $2
+    def setup_switch(key, default=true, attributes={})
+      attributes[:long] ||= "--#{key}"
+      attributes[:long].to_s =~ /^(--)?(\[no-\])?(.*)$/ 
+      attributes[:long] = "--[no-]#{$3}" unless $2
       
       lambda {|value| config[key] = (value ? !default : default) }
     end
     
-    # Options:
+    # Attributes:
     #
     #   :long      the long key ("--key")
     #   :arg_name  the argument name ("KEY" or "A,B,C" for a comma split) 
     #   :split     the split character
     #
-    def setup_list(key, options={})
-      options[:long] ||= "--#{key}"
+    def setup_list(key, attributes={})
+      attributes[:long] ||= "--#{key}"
       
-      if split = options[:split]
-        options[:arg_name] ||= %w{A B C}.join(split)
+      if split = attributes[:split]
+        attributes[:arg_name] ||= %w{A B C}.join(split)
       else
-        options[:long].to_s =~ /^(--)?(.*)$/ 
-        options[:arg_name] ||= $2.upcase
+        attributes[:long].to_s =~ /^(--)?(.*)$/ 
+        attributes[:arg_name] ||= $2.upcase
       end
       
-      n = options[:n]
+      n = attributes[:n]
       
       lambda do |value|
         array = (config[key] ||= [])

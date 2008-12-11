@@ -228,10 +228,10 @@ configurations:
   #
   
   module SpecialType
-    def setup_special(key, default_value, options)
-      # modify options if necessary
-      options[:long] = "--#{key}"
-      options[:arg_name] = 'ARG_NAME'
+    def setup_special(key, default_value, attributes)
+      # modify attributes if necessary
+      attributes[:long] = "--#{key}"
+      attributes[:arg_name] = 'ARG_NAME'
 
       # return a block handling the input
       lambda {|input| config[key] = input.reverse }

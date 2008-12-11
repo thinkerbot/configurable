@@ -68,11 +68,14 @@ module Configurable
     # operations, or not.  By default, configurations will use
     # indifferent access.
     def use_indifferent_access(value=true)
-      current = @configurations
-      @configurations = {}
-      @configurations.extend IndifferentAccess if value
-      current.each_pair do |key, value|
-        @configurations[key] = value
+      if value
+         @configurations.extend IndifferentAccess
+      else
+        current = @configurations
+        @configurations = {}
+        current.each_pair do |key, value|
+          @configurations[key] = value
+        end
       end
     end
 
@@ -99,19 +102,19 @@ module Configurable
     #     end
     #   end
     #
-    def config(key, value=nil, options={}, &block)
-      options = default_options(block).merge!(options)
+    def config(key, value=nil, attributes={}, &block)
+      attributes = default_attributes(block).merge!(attributes)
       
       # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller(Description)
+      attributes[:desc] ||= Lazydoc.register_caller(Description)
       
       if block_given?
         instance_variable = "@#{key}".to_sym
-        config_attr(key, value, options) do |input|
+        config_attr(key, value, attributes) do |input|
           instance_variable_set(instance_variable, yield(input))
         end
       else
-        config_attr(key, value, options)
+        config_attr(key, value, attributes)
       end
     end
 
@@ -140,14 +143,14 @@ module Configurable
     #     end
     #   end
     #
-    def config_attr(key, value=nil, options={}, &block)
-      options = default_options(block).merge!(options)
+    def config_attr(key, value=nil, attributes={}, &block)
+      attributes = default_attributes(block).merge!(attributes)
       
       # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller(Description)
+      attributes[:desc] ||= Lazydoc.register_caller(Description)
       
       # define the default public reader method
-      reader = options.delete(:reader)
+      reader = attributes.delete(:reader)
 
       case reader
       when true
@@ -159,7 +162,7 @@ module Configurable
       end
 
       # define the default public writer method
-      writer = options.delete(:writer)
+      writer = attributes.delete(:writer)
 
       if block_given? && writer != true
         raise ArgumentError, "a block may not be specified without writer == true"
@@ -174,14 +177,14 @@ module Configurable
         writer = "#{key}="
       end
   
-      configurations[key] = Delegate.new(reader, writer, value, options)
+      configurations[key] = Delegate.new(reader, writer, value, attributes)
     end
 
     # Adds a configuration to self accessing the configurations for the
     # configurable class.  Unlike config_attr and config, nest does not
     # create accessors; the configurations must be accessed through
-    # the instance config method.  Moreover, default options are not 
-    # merged with the the input options.
+    # the instance config method.  Moreover, default attributes are not 
+    # merged with the the input attributes.
     #
     #   class A
     #     include Configurable
@@ -233,20 +236,24 @@ module Configurable
     # Nesting with an initialization block creates private methods
     # that config[:a] uses to read and write the instance configurations;
     # these methods are "#{key}_config" and "#{key}_config=" by default, 
-    # but they may be renamed using the :reader and :writer options.
+    # but they may be renamed using the :reader and :writer attributes.
     #
     # Nest checks for recursive nesting and raises an error if
     # a recursive nest is detected.
-    def nest(key, configurable_class, options={})
+    def nest(key, configurable_class, attributes={})
       unless configurable_class.kind_of?(Configurable::ClassMethods)
         raise ArgumentError, "not a Configurable class: #{configurable_class}" 
       end
       
       # register with Lazydoc
-      options[:desc] ||= Lazydoc.register_caller(Description)
+      attributes[:desc] ||= Lazydoc.register_caller(Description)
       
-      reader = options.delete(:reader)
-      writer = options.delete(:writer)
+      # add some tracking attributes
+      attributes[:receiver] ||= configurable_class
+      attributes[:declaration_order] ||= configurations.length
+      
+      reader = attributes.delete(:reader)
+      writer = attributes.delete(:writer)
   
       if block_given?
         # define instance accessor methods
@@ -278,7 +285,7 @@ module Configurable
       end
       
       value = DelegateHash.new(configurable_class.configurations).update
-      configurations[key] = Delegate.new(reader, writer, value, options)
+      configurations[key] = Delegate.new(reader, writer, value, attributes)
   
       check_infinite_nest(configurable_class.configurations)
     end
@@ -290,15 +297,15 @@ module Configurable
 
     private
     
-    # a helper method to make the default options for the specified block.  
-    # Merges the default options for no block (nil) with the options
+    # a helper method to make the default attributes for the specified block.  
+    # Merges the default attributes for no block (nil) with the attributes
     # for the specified block, then adds a flag indicating the 
     # declaration_order of the config (annoying, but necessary pre 1.9)
-    def default_options(block=nil) # :nodoc:
+    def default_attributes(block=nil) # :nodoc:
       if block 
-        DEFAULT_OPTIONS[nil].merge(DEFAULT_OPTIONS[block])
+        DEFAULT_ATTRIBUTES[nil].merge(DEFAULT_ATTRIBUTES[block])
       else
-        DEFAULT_OPTIONS[nil].dup
+        DEFAULT_ATTRIBUTES[nil].dup
       end.merge!(:declaration_order => configurations.length)
     end
     

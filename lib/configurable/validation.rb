@@ -1,10 +1,10 @@
 autoload(:YAML, 'yaml')
 
 module Configurable
-  # A hash of (block, default options) for config blocks.  The 
-  # options for nil will be merged with those for the block.
-  DEFAULT_OPTIONS = Hash.new({})
-  DEFAULT_OPTIONS[nil] = {:reader => true, :writer => true}
+  # A hash of (block, default attributes) for config blocks.  The 
+  # attributes for nil will be merged with those for the block.
+  DEFAULT_ATTRIBUTES = Hash.new({})
+  DEFAULT_ATTRIBUTES[nil] = {:reader => true, :writer => true}
   
   # Validation generates blocks for common validations and transformations of 
   # configurations set through Configurable.  In general these blocks load
@@ -49,10 +49,10 @@ module Configurable
 
     module_function
 
-    # Registers the default options with the specified block
-    # in Configurable::DEFAULT_OPTIONS.
-    def register(block, options)
-      DEFAULT_OPTIONS[block] = options
+    # Registers the default attributes with the specified block
+    # in Configurable::DEFAULT_ATTRIBUTES.
+    def register(block, attributes)
+      DEFAULT_ATTRIBUTES[block] = attributes
     end
     
     # Returns input if it matches any of the validations as in would in a case
@@ -204,14 +204,14 @@ module Configurable
     # Same as boolean.
     def switch(); SWITCH; end
     
-    # default options {:type => :switch}
+    # default attributes {:type => :switch}
     SWITCH = yaml(true, false, nil)
     register SWITCH, :type => :switch
     
     # Same as boolean.
     def flag(); FLAG; end
     
-    # default options {:type => :flag}
+    # default attributes {:type => :flag}
     FLAG = yaml(true, false, nil)
     register FLAG, :type => :flag
 
@@ -226,7 +226,7 @@ module Configurable
     #
     def array(); ARRAY; end
     
-    # default options {:arg_name => "'[a, b, c]'"}
+    # default attributes {:arg_name => "'[a, b, c]'"}
     ARRAY = yaml(Array)
     register ARRAY, :arg_name => "'[a, b, c]'"
 
@@ -236,7 +236,7 @@ module Configurable
     #   array_or_nil.call(nil)    # => nil
     def array_or_nil(); ARRAY_OR_NIL; end
     
-    # default options {:arg_name => "'[a, b, c]'"}
+    # default attributes {:arg_name => "'[a, b, c]'"}
     ARRAY_OR_NIL = yaml(Array, nil)
     register ARRAY_OR_NIL, :arg_name => "'[a, b, c]'"
 
@@ -256,7 +256,7 @@ module Configurable
       end
     end
     
-    # default options {:type => :list, :split => ','}
+    # default attributes {:type => :list, :split => ','}
     LIST = list_block
     register LIST, :type => :list, :split => ','
     
@@ -271,7 +271,7 @@ module Configurable
     #
     def hash(); HASH; end
     
-    # default options {:arg_name => "'{one: 1, two: 2}'"}
+    # default attributes {:arg_name => "'{one: 1, two: 2}'"}
     HASH = yaml(Hash)
     register HASH, :arg_name => "'{one: 1, two: 2}'"
 
@@ -281,7 +281,7 @@ module Configurable
     #   hash_or_nil.call(nil)          # => nil
     def hash_or_nil(); HASH_OR_NIL; end
     
-    # default options {:arg_name => "'{one: 1, two: 2}'"}
+    # default attributes {:arg_name => "'{one: 1, two: 2}'"}
     HASH_OR_NIL = yaml(Hash, nil)
     register HASH_OR_NIL, :arg_name => "'{one: 1, two: 2}'"
 
