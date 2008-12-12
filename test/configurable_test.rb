@@ -368,13 +368,11 @@ class ConfigurableTest < Test::Unit::TestCase
     
     [:one, :three, :five].each do |doc_config|
       desc = LazydocClass.configurations[doc_config].attributes[:desc]
-      assert_equal Configurable::Description, desc.class
-      assert_equal "with documentation", desc.trailer
+      assert_equal "with documentation", desc.to_s
     end
     
     [:two, :four, :six].each do |nodoc_config|
       desc = LazydocClass.configurations[nodoc_config].attributes[:desc]
-      assert_equal String, desc.class
       assert_equal "description", desc.to_s
     end
   end

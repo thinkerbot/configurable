@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.require_path = "lib"
   s.rubyforge_project = "tap"
   s.has_rdoc = true
+  s.rdoc_options.concat %w{--title Configurable --main README --line-numbers --inline-source}
   s.add_dependency("lazydoc", ">= 0.3.0")
 
   # list extra rdoc files here.
@@ -28,7 +29,6 @@ Gem::Specification.new do |s|
     lib/configurable/class_methods.rb
     lib/configurable/delegate.rb
     lib/configurable/delegate_hash.rb
-    lib/configurable/description.rb
     lib/configurable/indifferent_access.rb
     lib/configurable/validation.rb
   }
