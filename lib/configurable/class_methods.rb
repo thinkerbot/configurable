@@ -96,10 +96,7 @@ module Configurable
     #   end
     #
     def config(key, value=nil, attributes={}, &block)
-      attributes = default_attributes(block).merge!(attributes)
-      
-      # register with Lazydoc
-      attributes[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attributes = merge_attributes(block, attributes)
       
       if block_given?
         instance_variable = "@#{key}".to_sym
@@ -137,10 +134,7 @@ module Configurable
     #   end
     #
     def config_attr(key, value=nil, attributes={}, &block)
-      attributes = default_attributes(block).merge!(attributes)
-      
-      # register with Lazydoc
-      attributes[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attributes = merge_attributes(block, attributes)
       
       # define the default public reader method
       reader = attributes.delete(:reader)
@@ -257,10 +251,7 @@ module Configurable
     # Nest checks for recursive nesting and raises an error if
     # a recursive nest is detected.
     def nest(key, configurable_class, attributes={}, &block)
-      attributes = default_attributes(block).merge!(attributes)
-      
-      # register with Lazydoc
-      attributes[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attributes = merge_attributes(block, attributes)
       
       if block_given?
         instance_variable = "@#{key}".to_sym
@@ -301,10 +292,7 @@ module Configurable
         raise ArgumentError, "not a Configurable class: #{configurable_class}" 
       end
       
-      attributes = default_attributes(block).merge!(attributes)
-      
-      # register with Lazydoc
-      attributes[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attributes = merge_attributes(block, attributes)
       
       # add some tracking attributes
       attributes[:receiver] ||= configurable_class
@@ -363,7 +351,9 @@ module Configurable
 
     private
     
-    def boolean_select(value, default)
+    # a helper to select a value or the default, if the default is true,
+    # false, or nil.  used by nest_attr to handle attributes
+    def boolean_select(value, default) # :nodoc:
       case value
       when true, false, nil then default
       else value
@@ -371,32 +361,33 @@ module Configurable
     end
     
     # a helper to initialize configurations for the first time,
-    # mainly implemented as a hook for the OrderedHash patch
+    # mainly implemented as a hook for OrderedHashPatch
     def initialize_configurations # :nodoc:
       @configurations ||= {}
     end
     
-    # a helper method to make the default attributes for the specified block.  
-    # Merges the default attributes for no block (nil) with the attributes
-    # for the specified block
-    def default_attributes(block=nil) # :nodoc:
-      if block 
-        DEFAULT_ATTRIBUTES[nil].merge(DEFAULT_ATTRIBUTES[block])
-      else
-        DEFAULT_ATTRIBUTES[nil].dup
-      end
+    # a helper method to merge the default attributes for the block with
+    # the input attributes.  also registers a Trailer description.
+    def merge_attributes(block, attributes) # :nodoc:
+      defaults = DEFAULT_ATTRIBUTES[nil].dup
+      defaults.merge!(DEFAULT_ATTRIBUTES[block]) if block
+      defaults.merge!(attributes)
+      
+      # register with Lazydoc
+      defaults[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer, 2)
+      
+      defaults
     end
     
-    # helper to recursively check a set of 
-    # configurations for an infinite nest
-    def check_infinite_nest(configurations) # :nodoc:
-      raise "infinite nest detected" if configurations == self.configurations
-  
-      configurations.each_pair do |key, config|
-        config_hash = config.default(false)
+    # helper to recursively check for an infinite nest
+    def check_infinite_nest(delegates) # :nodoc:
+      raise "infinite nest detected" if delegates == self.configurations
+      
+      delegates.each_pair do |key, delegate|
+        default = delegate.default(false)
     
-        if config_hash.kind_of?(DelegateHash)
-          check_infinite_nest(config_hash.delegates)
+        if default.kind_of?(DelegateHash)
+          check_infinite_nest(default.delegates)
         end
       end
     end
@@ -404,20 +395,32 @@ module Configurable
 end
 
 module Configurable
+  
+  # Beginning with ruby 1.9, Hash tracks the order of insertion and methods
+  # like each_pair return pairs in order.  Configurable leverages this feature
+  # to keep configurations in order for the command line documentation produced
+  # by ConfigParser.
+  #
+  # Pre-1.9 ruby implementations require a patched Hash that tracks insertion
+  # order.  This very thin subclass of hash does that for ASET insertions and
+  # each_pair.  It is used exclusively as the configurations object in 
+  # Configurable classes.
   class OrderedHashPatch < Hash
     def initialize
       super
-      @key_order = []
+      @insertion_order = []
     end
     
+    # ASET insertion, tracking insertion order.
     def []=(key, value)
-      @key_order << key unless @key_order.include?(key)
+      @insertion_order << key unless @insertion_order.include?(key)
       super
     end
-  
+    
+    # Yields each key-value pair to the block in insertion order.
     def each_pair
       keys.sort_by do |key|
-        @key_order.index(key)
+        @insertion_order.index(key)
       end.each do |key|
         yield(key, fetch(key))
       end
@@ -425,7 +428,7 @@ module Configurable
   end
   
   module ClassMethods
-    # a helper to initialize configurations for the first time
+    # applies OrderedHashPatch
     def initialize_configurations # :nodoc:
       @configurations ||= OrderedHashPatch.new
     end
