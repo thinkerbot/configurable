@@ -40,13 +40,6 @@ module Configurable
       end
     end
 
-    # Raised when Validation#yamlize fails.
-    class YamlizationError < ArgumentError
-      def initialize(input, error)
-        super "#{error} ('#{input}')"
-      end
-    end
-
     module_function
 
     # Registers the default attributes with the specified block
@@ -84,14 +77,9 @@ module Configurable
       end
     end
 
-    # Attempts to load the input as YAML.  Raises a YamlizationError
-    # for errors.
+    # Attempts to load the input as YAML.
     def yamlize(input)
-      begin
-        YAML.load(input)
-      rescue
-        raise YamlizationError.new(input, $!.message)
-      end
+      YAML.load(input)
     end
 
     # Returns a block that calls validate using the block input
@@ -114,16 +102,10 @@ module Configurable
     # If no validations are specified, the result will be 
     # returned without validation.
     def yaml(*validations)
-      if validations.empty?
-        lambda do |input|
-          input = yamlize(input) if input.kind_of?(String)
-          input
-        end
-      else
-        lambda do |input|
-          input = yamlize(input) if input.kind_of?(String)
-          validate(input, validations)
-        end
+      validations = nil if validations.empty?
+      lambda do |input|
+        input = yamlize(input) if input.kind_of?(String)
+        validate(input, validations)
       end
     end
 
