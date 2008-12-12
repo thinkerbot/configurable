@@ -283,7 +283,7 @@ module Configurable
     #     end
     #
     #     def initialize(overrides={})
-    #       @a = send(:a_initializer, overrides[:a] || {})
+    #       @a = send(:a_initialize, overrides[:a] || {})
     #     end
     #   end
     #
@@ -428,6 +428,8 @@ module Configurable
   end
   
   module ClassMethods
+    undef_method :initialize_configurations
+    
     # applies OrderedHashPatch
     def initialize_configurations # :nodoc:
       @configurations ||= OrderedHashPatch.new
