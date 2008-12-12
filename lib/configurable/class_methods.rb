@@ -176,8 +176,7 @@ module Configurable
     # Adds a configuration to self accessing the configurations for the
     # configurable class.  Unlike config_attr and config, nest does not
     # create accessors; the configurations must be accessed through
-    # the instance config method.  Moreover, default attributes are not 
-    # merged with the the input attributes.
+    # the instance config method.
     #
     #   class A
     #     include Configurable
@@ -200,10 +199,10 @@ module Configurable
     #   b = B.new
     #   b.config[:a]                   # => {:key => 'value'}
     #
-    # Nest may be provided a block which receives the first value for
-    # the nested config and is expected to initialize an instance of
-    # configurable_class.  In this case a reader for the instance is
-    # created and access becomes quite natural.
+    # Nest may be provided a block which receives the nested config 
+    # and is expected to initialize an instance of configurable_class.  
+    # In this case a reader for the instance is created and access 
+    # becomes quite natural.
     #
     #   class C
     #     include Configurable
@@ -225,18 +224,84 @@ module Configurable
     #
     #   c.config[:a] = {:key => 'three'}
     #   c.a.key                        # => "three"
-    # 
-    # Nesting with an initialization block creates private methods
-    # that config[:a] uses to read and write the instance configurations;
-    # these methods are "#{key}_config" and "#{key}_config=" by default, 
-    # but they may be renamed using the :reader and :writer attributes.
+    #
+    # The initialize block for nest executes in class context, much
+    # like config.
+    #
+    #   # An equivalent class to illustrate class-context
+    #   class EquivalentClass
+    #     attr_reader :a, A
+    #
+    #     INITIALIZE_BLOCK = lambda {|overrides| A.new(overrides) }
+    #
+    #     def initialize(overrides={})
+    #       @a = INITIALIZE_BLOCK.call(overrides[:a] || {})
+    #     end
+    #   end
+    #
+    # ==== Attributes
+    #
+    # Nesting with an initialization block creates the public reader for the 
+    # instance, and private methods to read and write the instance 
+    # configurations, and to initialize the nested instance. The default names
+    # for these methods are listed with the attributes to override them:
+    #
+    #   :instance_reader         key
+    #   :instance_initializer    "#{key}_initialize"
+    #   :reader                  "#{key}_config_reader"
+    #   :writer                  "#{key}_config_writer"
+    #
+    # These attributes are ignored if no block is given; true/false/nil
+    # values are meaningless and will be treated as the default.
     #
     # Nest checks for recursive nesting and raises an error if
     # a recursive nest is detected.
     def nest(key, configurable_class, attributes={}, &block)
+      attributes = default_attributes(block).merge!(attributes)
+      
+      # register with Lazydoc
+      attributes[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      
+      if block_given?
+        instance_variable = "@#{key}".to_sym
+        nest_attr(key, configurable_class, attributes) do |input|
+          instance_variable_set(instance_variable, yield(input))
+        end
+      else
+        nest_attr(key, configurable_class, attributes)
+      end
+    end  
+    
+    # Same as nest, except the initialize block executes in instance-context.
+    #
+    #   class C
+    #     include Configurable
+    #     nest(:a, A) {|overrides| A.new(overrides) }
+    #
+    #     def initialize(overrides={})
+    #       initialize_config(overrides)
+    #     end
+    #   end
+    #
+    #   # An equivalent class to illustrate instance-context
+    #   class EquivalentClass
+    #     attr_reader :a, A
+    #
+    #     def a_initialize(overrides)
+    #       A.new(overrides)
+    #     end
+    #
+    #     def initialize(overrides={})
+    #       @a = send(:a_initializer, overrides[:a] || {})
+    #     end
+    #   end
+    #
+    def nest_attr(key, configurable_class, attributes={}, &block)
       unless configurable_class.kind_of?(Configurable::ClassMethods)
         raise ArgumentError, "not a Configurable class: #{configurable_class}" 
       end
+      
+      attributes = default_attributes(block).merge!(attributes)
       
       # register with Lazydoc
       attributes[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
@@ -244,19 +309,28 @@ module Configurable
       # add some tracking attributes
       attributes[:receiver] ||= configurable_class
       
+      # remove attributes modifiying method defaults
+      instance_reader = attributes.delete(:instance_reader)
+      initializer = attributes.delete(:instance_initializer)
       reader = attributes.delete(:reader)
       writer = attributes.delete(:writer)
-  
+      
       if block_given?
         # define instance accessor methods
-        instance_var = "@#{key}".to_sym
-        reader = "#{key}_config" unless reader
-        writer = "#{key}_config=" unless writer
-    
+        instance_reader = boolean_select(instance_reader, key)
+        instance_var = "@#{instance_reader}".to_sym
+        
+        initializer = boolean_select(reader, "#{key}_initialize")
+        reader = boolean_select(reader, "#{key}_config_reader")
+        writer = boolean_select(writer, "#{key}_config_writer")
+        
         # the public accessor
-        attr_reader key
-        public(key)
-  
+        attr_reader instance_reader
+        public(instance_reader)
+        
+        # the initializer
+        define_method(initializer, &block)
+
         # the reader returns the config for the instance
         define_method(reader) do
           instance_variable_get(instance_var).config
@@ -268,7 +342,7 @@ module Configurable
           if instance_variable_defined?(instance_var) 
             instance_variable_get(instance_var).reconfigure(value)
           else
-            instance_variable_set(instance_var, block.call(value))
+            instance_variable_set(instance_var, send(initializer, value))
           end
         end
         private(reader, writer)
@@ -288,6 +362,13 @@ module Configurable
     end
 
     private
+    
+    def boolean_select(value, default)
+      case value
+      when true, false, nil then default
+      else value
+      end
+    end
     
     # a helper to initialize configurations for the first time,
     # mainly implemented as a hook for the OrderedHash patch
@@ -323,7 +404,7 @@ module Configurable
 end
 
 module Configurable
-  class OrderedHash < Hash
+  class OrderedHashPatch < Hash
     def initialize
       super
       @key_order = []
@@ -346,7 +427,7 @@ module Configurable
   module ClassMethods
     # a helper to initialize configurations for the first time
     def initialize_configurations # :nodoc:
-      @configurations ||= OrderedHash.new
+      @configurations ||= OrderedHashPatch.new
     end
   end
 end if RUBY_VERSION < '1.9'

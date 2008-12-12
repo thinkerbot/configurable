@@ -89,8 +89,8 @@ class NestTest < Test::Unit::TestCase
     assert NestParent.configurations.key?(:key)
     config = NestParent.configurations[:key]
     
-    assert_equal :key_config, config.reader
-    assert_equal :key_config=, config.writer
+    assert_equal :key_config_reader, config.reader
+    assert_equal :key_config_writer, config.writer
     assert_equal DelegateHash, config.default.class
     assert_equal NestChild.configurations, config.default.delegates
     
