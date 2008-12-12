@@ -16,29 +16,26 @@ module Configurable
     attr_reader :configurations
 
     def self.extended(base) # :nodoc:
-      caller.each_with_index do |line, index|
-        case line
-        when /\/configurable.rb/ then next
-        when Lazydoc::CALLER_REGEXP
-          base.instance_variable_set(:@source_file, File.expand_path($1))
-          break
-        end
+      unless base.instance_variable_defined?(:@source_file)
+        caller[2] =~ Lazydoc::CALLER_REGEXP
+        base.instance_variable_set(:@source_file, File.expand_path($1)) 
       end
-  
-      configurations = {}.extend IndifferentAccess
-      base.instance_variable_set(:@configurations, configurations)
+      
+      base.send(:initialize_configurations).extend(IndifferentAccess)
     end
 
     def inherited(child) # :nodoc:
       unless child.instance_variable_defined?(:@source_file)
-        caller.first =~ Lazydoc::CALLER_REGEXP
+        caller[0] =~ Lazydoc::CALLER_REGEXP
         child.instance_variable_set(:@source_file, File.expand_path($1)) 
       end
-  
-      configurations = {}
-      configurations.extend IndifferentAccess if @configurations.kind_of?(IndifferentAccess)
-      @configurations.each_pair {|key, config| configurations[key] = config.dup } 
-      child.instance_variable_set(:@configurations, configurations)
+
+      # deep duplicate configurations
+      unless child.instance_variable_defined?(:@configurations)
+        duplicate = child.instance_variable_set(:@configurations, configurations.dup)
+        duplicate.each_pair {|key, config| duplicate[key] = config.dup }
+        duplicate.extend(IndifferentAccess) if configurations.kind_of?(IndifferentAccess)
+      end
       super
     end
     
@@ -69,13 +66,9 @@ module Configurable
     # indifferent access.
     def use_indifferent_access(input=true)
       if input
-         @configurations.extend IndifferentAccess
+        @configurations.extend(IndifferentAccess)
       else
-        current = @configurations
-        @configurations = {}
-        current.each_pair do |key, value|
-          @configurations[key] = value
-        end
+        @configurations = configurations.dup
       end
     end
 
@@ -296,6 +289,12 @@ module Configurable
 
     private
     
+    # a helper to initialize configurations for the first time,
+    # mainly implemented as a hook for the OrderedHash patch
+    def initialize_configurations # :nodoc:
+      @configurations ||= {}
+    end
+    
     # a helper method to make the default attributes for the specified block.  
     # Merges the default attributes for no block (nil) with the attributes
     # for the specified block
@@ -322,3 +321,32 @@ module Configurable
     end
   end
 end
+
+module Configurable
+  class OrderedHash < Hash
+    def initialize
+      super
+      @key_order = []
+    end
+    
+    def []=(key, value)
+      @key_order << key unless @key_order.include?(key)
+      super
+    end
+  
+    def each_pair
+      keys.sort_by do |key|
+        @key_order.index(key)
+      end.each do |key|
+        yield(key, fetch(key))
+      end
+    end
+  end
+  
+  module ClassMethods
+    # a helper to initialize configurations for the first time
+    def initialize_configurations # :nodoc:
+      @configurations ||= OrderedHash.new
+    end
+  end
+end if RUBY_VERSION < '1.9'
