@@ -103,7 +103,7 @@ class DelegateTest < Test::Unit::TestCase
     c.default = a
   
     assert_equal a, c.default
-    assert_not_equal a.object_id, c.default.object_id
+    assert a.object_id != c.default.object_id
   end
   
   def test_default_does_not_duplicate_if_specified

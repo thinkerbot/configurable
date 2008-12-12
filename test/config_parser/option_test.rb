@@ -37,23 +37,23 @@ class OptionTest < Test::Unit::TestCase
     assert_equal '-s', o.short
   end
   
-  def test_initialization_raises_error_for_bad_switches
-    e = assert_raise(ArgumentError) { Option.new(:long => '') }
+  def test_initialization_raisess_error_for_bad_switches
+    e = assert_raises(ArgumentError) { Option.new(:long => '') }
     assert_equal "invalid long option: --", e.message
     
-    e = assert_raise(ArgumentError) { Option.new(:long => '1') }
+    e = assert_raises(ArgumentError) { Option.new(:long => '1') }
     assert_equal "invalid long option: --1", e.message
     
-    e = assert_raise(ArgumentError) { Option.new(:long => '---long') }
+    e = assert_raises(ArgumentError) { Option.new(:long => '---long') }
     assert_equal "invalid long option: ---long", e.message
     
-    e = assert_raise(ArgumentError) { Option.new(:short => '--long') }
+    e = assert_raises(ArgumentError) { Option.new(:short => '--long') }
     assert_equal "invalid short option: --long", e.message
     
-    e = assert_raise(ArgumentError) { Option.new(:short => '1') }
+    e = assert_raises(ArgumentError) { Option.new(:short => '1') }
     assert_equal "invalid short option: -1", e.message
     
-    e = assert_raise(ArgumentError) { Option.new(:short => '') }
+    e = assert_raises(ArgumentError) { Option.new(:short => '') }
     assert_equal "invalid short option: -", e.message
   end
   
@@ -102,10 +102,10 @@ class OptionTest < Test::Unit::TestCase
     assert_equal 'return value', opt.parse('--switch', nil, [])
   end
   
-  def test_parse_with_no_arg_name_raises_error_if_value_is_provided
+  def test_parse_with_no_arg_name_raisess_error_if_value_is_provided
     opt = Option.new
     
-    e = assert_raise(RuntimeError) { opt.parse('--switch', 'value', []) }
+    e = assert_raises(RuntimeError) { opt.parse('--switch', 'value', []) }
     assert_equal "value specified for flag", e.message
   end
   
@@ -141,10 +141,10 @@ class OptionTest < Test::Unit::TestCase
     assert_equal 'return value', opt.parse('--switch', 'value', [])
   end
   
-  def test_parse_with_arg_name_raises_error_if_no_value_is_provided_and_argv_is_empty
+  def test_parse_with_arg_name_raisess_error_if_no_value_is_provided_and_argv_is_empty
     opt = Option.new(:arg_name => 'ARG')
     
-    e = assert_raise(RuntimeError) { opt.parse('--switch', nil, []) }
+    e = assert_raises(RuntimeError) { opt.parse('--switch', nil, []) }
     assert_equal "no value provided for: --switch", e.message
   end
   

@@ -68,10 +68,10 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal(-2, s.two)
     s.two = "3"
     assert_equal 3, s.two
-    e = assert_raise(Validation::ValidationError) { s.two = nil }
+    e = assert_raises(Validation::ValidationError) { s.two = nil }
     assert_equal "expected [Integer] but was: nil", e.message
     
-    e = assert_raise(Validation::ValidationError) { s.two = 'str' }
+    e = assert_raises(Validation::ValidationError) { s.two = 'str' }
     assert_equal "expected [Integer] but was: \"str\"", e.message
     
     alt = DocAlternativeClass.new
@@ -210,14 +210,14 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal nil, config.writer
   end
   
-  def test_block_without_writer_true_raises_error
-    e = assert_raise(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => :alt) {} }
+  def test_block_without_writer_true_raisess_error
+    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => :alt) {} }
     assert_equal "a block may not be specified without writer == true", e.message
     
-    e = assert_raise(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => false) {} }
+    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => false) {} }
     assert_equal "a block may not be specified without writer == true", e.message
     
-    e = assert_raise(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => nil) {} }
+    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => nil) {} }
     assert_equal "a block may not be specified without writer == true", e.message
   end
   
@@ -294,70 +294,6 @@ class ConfigurableTest < Test::Unit::TestCase
     argv = ["a", "b", "--one", "value", "c"]
     assert_equal ["a", "b", "c"], ParseClass.parse!(argv)
     assert_equal ["a", "b", "c"], argv
-  end
-  
-  #
-  # indifferent access test
-  #
-  
-  class IndifferentAccessClass
-    include Configurable
-    
-    def initialize
-      initialize_config
-    end
-    
-    config(:one, 'one') {|v| v.upcase }
-  end
-  
-  def test_access_is_indifferent_through_config
-    s = IndifferentAccessClass.new
-    
-    s.config['one'] = 'value'
-    assert_equal 'VALUE', s.one
-    assert_equal 'VALUE', s.config['one']
-    assert_equal 'VALUE', s.config[:one]
-    
-    s.config[:one] = 'alt'
-    assert_equal 'ALT', s.one
-    assert_equal 'ALT', s.config['one']
-    assert_equal 'ALT', s.config[:one]
-  end
-  
-  class NonIndifferentAccessClass
-    include Configurable
-    
-    def initialize
-      initialize_config
-    end
-    
-    config(:one, 'one') {|v| v.upcase }
-    use_indifferent_access(false)
-  end
-  
-  def test_indifferent_access_may_be_turned_off
-    s = NonIndifferentAccessClass.new
-    
-    s.config['one'] = 'value'
-    assert_equal 'ONE', s.one
-    assert_equal 'value', s.config['one']
-    assert_equal 'ONE', s.config[:one]
-    
-    s.config[:one] = 'alt'
-    assert_equal 'ALT', s.one
-    assert_equal 'value', s.config['one']
-    assert_equal 'ALT', s.config[:one]
-  end
-  
-  class IndifferentSubClass < IndifferentAccessClass
-  end
-  
-  class NonIndifferentSubClass < NonIndifferentAccessClass
-  end
-  
-  def test_indifferent_access_is_inherited
-    assert IndifferentSubClass.configurations.kind_of?(Configurable::IndifferentAccess)
-    assert !NonIndifferentSubClass.configurations.kind_of?(Configurable::IndifferentAccess)
   end
   
   #
@@ -490,7 +426,7 @@ class ConfigurableTest < Test::Unit::TestCase
     t1 = Sample.new
     t2 = t1.dup
     
-    assert_not_equal t1.config.object_id, t2.config.object_id
+    assert t1.config.object_id != t2.config.object_id
     
     t1.two = 2
     t2.two = 'two'

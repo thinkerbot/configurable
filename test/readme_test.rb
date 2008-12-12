@@ -64,7 +64,7 @@ class ReadmeTest < Test::Unit::TestCase
     c.upcase = 'fiNal Value'
     assert_equal 'FINAL VALUE', c.config[:upcase]
 
-    assert_raise(Configurable::Validation::ValidationError) { c.num = 'blue' }
+    assert_raises(Configurable::Validation::ValidationError) { c.num = 'blue' }
 
     yaml_str = %Q{
     key: a new value
@@ -101,6 +101,6 @@ class ReadmeTest < Test::Unit::TestCase
     vc.array = "[1, 2, 3]"
     assert_equal [1, 2, 3], vc.array
     
-    assert_raise(Configurable::Validation::ValidationError) { vc.array = "string" }
+    assert_raises(Configurable::Validation::ValidationError) { vc.array = "string" }
   end
 end

@@ -134,8 +134,8 @@ class NestTest < Test::Unit::TestCase
     assert_equal({:key => 'zero'}, p.config[:key])
   end
   
-  def test_nest_raises_error_for_non_configurable_input
-    e = assert_raise(ArgumentError) { NestParent.send(:nest, :a, :b) }
+  def test_nest_raisess_error_for_non_configurable_input
+    e = assert_raises(ArgumentError) { NestParent.send(:nest, :a, :b) }
     assert_equal "not a Configurable class: b", e.message
   end
   
@@ -153,11 +153,11 @@ class NestTest < Test::Unit::TestCase
     nest :b, RecursiveB
   end
   
-  def test_nest_raises_error_for_infinite_nest
-    e = assert_raise(RuntimeError) { RecursiveA.send(:nest, :A, RecursiveA) }
+  def test_nest_raisess_error_for_infinite_nest
+    e = assert_raises(RuntimeError) { RecursiveA.send(:nest, :A, RecursiveA) }
     assert_equal "infinite nest detected", e.message
     
-    e = assert_raise(RuntimeError) { RecursiveA.send(:nest, :C, RecursiveC) }
+    e = assert_raises(RuntimeError) { RecursiveA.send(:nest, :C, RecursiveC) }
     assert_equal "infinite nest detected", e.message
   end
 end

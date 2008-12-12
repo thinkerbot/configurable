@@ -13,7 +13,7 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal(Proc, integer.class)
     assert_equal 1, integer.call(1)
     assert_equal 1, integer.call('1')
-    assert_raise(ValidationError) { integer.call(nil) }
+    assert_raises(ValidationError) { integer.call(nil) }
   end
   
   #
@@ -21,17 +21,17 @@ class ValidationTest < Test::Unit::TestCase
   #
   
   def test_validate
-    assert_raise(ValidationError) { validate(nil, []) }
+    assert_raises(ValidationError) { validate(nil, []) }
     
     assert_equal 1, validate(1, [Integer])
-    assert_raise(ValidationError) { validate(nil, [Integer]) }
+    assert_raises(ValidationError) { validate(nil, [Integer]) }
     
     assert_equal 1, validate(1, [Integer, nil])
     assert_equal 1, validate(1, [1, nil])
     assert_equal nil, validate(nil, [Integer, nil])
     
     assert_equal "str", validate("str", [/str/])
-    assert_raise(ValidationError) { validate("str", [/non/]) }
+    assert_raises(ValidationError) { validate("str", [/non/]) }
   end
   
   def test_all_inputs_are_valid_if_validations_is_nil
@@ -40,11 +40,11 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal nil, validate(nil, nil)
   end
   
-  def test_validate_raises_error_for_non_array_or_nil_inputs
-    e = assert_raise(ArgumentError) { validate("str", "str") }
+  def test_validate_raisess_error_for_non_array_or_nil_inputs
+    e = assert_raises(ArgumentError) { validate("str", "str") }
     assert_equal "validations must be nil, or an array of valid inputs", e.message
     
-    e = assert_raise(ArgumentError) { validate("str", 1) }
+    e = assert_raises(ArgumentError) { validate("str", 1) }
     assert_equal "validations must be nil, or an array of valid inputs", e.message
   end
   
@@ -56,7 +56,7 @@ class ValidationTest < Test::Unit::TestCase
     m = check(Integer)
     assert_equal Proc, m.class
     assert_equal 1, m.call(1)
-    e = assert_raise(ValidationError) { m.call(nil) }
+    e = assert_raises(ValidationError) { m.call(nil) }
     assert_equal "expected [Integer] but was: nil", e.message
   end
   
@@ -70,7 +70,7 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal 1, b.call(1)
     assert_equal 1, b.call("1")
     assert_equal nil, b.call(nil)
-    assert_raise(ValidationError) { b.call("str") }
+    assert_raises(ValidationError) { b.call("str") }
   end
   
   def test_yaml_block_loads_strings_as_yaml_and_checks_result
@@ -78,8 +78,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal Proc, m.class
     assert_equal 1, m.call(1)
     assert_equal 1, m.call("1")
-    assert_raise(ValidationError) { m.call(nil) }
-    assert_raise(ValidationError) { m.call("str") }
+    assert_raises(ValidationError) { m.call(nil) }
+    assert_raises(ValidationError) { m.call("str") }
   end
   
   def test_yaml_simply_returns_loaded_input_when_validations_are_not_specified
@@ -99,8 +99,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal "\n", string.call('\n') 
     assert_equal "\n", string.call("\n") 
     assert_equal "%s", string.call("%s") 
-    assert_raise(ValidationError) { string.call(nil) }
-    assert_raise(ValidationError) { string.call(:sym) }
+    assert_raises(ValidationError) { string.call(nil) }
+    assert_raises(ValidationError) { string.call(:sym) }
   end
   
   #
@@ -120,8 +120,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal Proc, symbol.class
     assert_equal :sym, symbol.call(:sym)
     assert_equal :sym, symbol.call(':sym')
-    assert_raise(ValidationError) { symbol.call(nil) }
-    assert_raise(ValidationError) { symbol.call('str') }
+    assert_raises(ValidationError) { symbol.call(nil) }
+    assert_raises(ValidationError) { symbol.call('str') }
   end
 
   #
@@ -147,8 +147,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal nil, boolean.call(nil) 
     assert_equal false,boolean.call('FALSE')
 
-    assert_raise(ValidationError) { boolean.call(1) }
-    assert_raise(ValidationError) { boolean.call("str") }
+    assert_raises(ValidationError) { boolean.call(1) }
+    assert_raises(ValidationError) { boolean.call("str") }
   end
 
   def test_boolean_block_converts_input_to_boolean_using_yaml_and_checks_result
@@ -165,8 +165,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal false, boolean.call('FALSE')
     assert_equal false, boolean.call('no')
 
-    assert_raise(ValidationError) { boolean.call(10) }
-    assert_raise(ValidationError) { boolean.call("str") }
+    assert_raises(ValidationError) { boolean.call(10) }
+    assert_raises(ValidationError) { boolean.call("str") }
   end
 
   #
@@ -177,8 +177,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal Proc, array.class
     assert_equal [1,2,3], array.call([1,2,3])
     assert_equal [1,2,3], array.call('[1, 2, 3]')
-    assert_raise(ValidationError) { array.call(nil) }
-    assert_raise(ValidationError) { array.call('str') }
+    assert_raises(ValidationError) { array.call(nil) }
+    assert_raises(ValidationError) { array.call('str') }
   end
 
   #
@@ -198,8 +198,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal Proc, list.class
     assert_equal [1,2,3], list.call([1,2,3])
     assert_equal [1,'str'], list.call(['1', 'str'])
-    assert_raise(ValidationError) { list.call('str') }
-    assert_raise(ValidationError) { list.call(nil) }
+    assert_raises(ValidationError) { list.call('str') }
+    assert_raises(ValidationError) { list.call(nil) }
   end
 
   #
@@ -210,8 +210,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal Proc, hash.class
     assert_equal({'key' => 'value'}, hash.call({'key' => 'value'}))
     assert_equal({'key' => 'value'}, hash.call('key: value'))
-    assert_raise(ValidationError) { hash.call(nil) }
-    assert_raise(ValidationError) { hash.call('str') }
+    assert_raises(ValidationError) { hash.call(nil) }
+    assert_raises(ValidationError) { hash.call('str') }
   end
 
   #
@@ -231,9 +231,9 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal Proc, integer.class
     assert_equal 1, integer.call(1)
     assert_equal 1, integer.call('1')
-    assert_raise(ValidationError) { integer.call(1.1) }
-    assert_raise(ValidationError) { integer.call(nil) }
-    assert_raise(ValidationError) { integer.call('str') }
+    assert_raises(ValidationError) { integer.call(1.1) }
+    assert_raises(ValidationError) { integer.call(nil) }
+    assert_raises(ValidationError) { integer.call('str') }
   end
 
   #
@@ -254,9 +254,9 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal 1.1, float.call(1.1)
     assert_equal 1.1, float.call('1.1')
     assert_equal 1e6, float.call('1.0e+6')
-    assert_raise(ValidationError) { float.call(1) }
-    assert_raise(ValidationError) { float.call(nil) }
-    assert_raise(ValidationError) { float.call('str') }
+    assert_raises(ValidationError) { float.call(1) }
+    assert_raises(ValidationError) { float.call(nil) }
+    assert_raises(ValidationError) { float.call('str') }
   end
   
   #
@@ -279,8 +279,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal 1e6, num.call(1e6)
     assert_equal 1.1, num.call('1.1')
     assert_equal 1e6, num.call('1.0e+6')
-    assert_raise(ValidationError) { num.call(nil) }
-    assert_raise(ValidationError) { num.call('str') }
+    assert_raises(ValidationError) { num.call(nil) }
+    assert_raises(ValidationError) { num.call('str') }
   end
   
   #
@@ -322,9 +322,9 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal 1..10, range.call('1..10')
     assert_equal 'a'..'z', range.call('a..z')
     assert_equal(-10...10, range.call('-10...10'))
-    assert_raise(ValidationError) { range.call(nil) }
-    assert_raise(ValidationError) { range.call('1.10') }
-    assert_raise(ValidationError) { range.call('a....z') }
+    assert_raises(ValidationError) { range.call(nil) }
+    assert_raises(ValidationError) { range.call('1.10') }
+    assert_raises(ValidationError) { range.call('a....z') }
   end
 
   #
@@ -349,8 +349,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal '2008/08/08 12:00:00', time.call('2008-08-08 20:00:00.00 +08:00').getutc.strftime('%Y/%m/%d %H:%M:%S')
     assert_equal '2008/08/08 00:00:00', time.call('2008-08-08').strftime('%Y/%m/%d %H:%M:%S')
 
-    assert_raise(ValidationError) { time.call(1) }
-    assert_raise(ValidationError) { time.call(nil) }
+    assert_raises(ValidationError) { time.call(1) }
+    assert_raises(ValidationError) { time.call(nil) }
     
     assert_equal Time.now.strftime('%Y/%m/%d %H:%M:%S'), time.call('str').strftime('%Y/%m/%d %H:%M:%S')
   end

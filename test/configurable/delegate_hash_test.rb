@@ -117,14 +117,14 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal 2, r.key
   end
   
-  def test_bind_raises_error_for_nil_receiver
-    e = assert_raise(ArgumentError) { d.bind(nil) }
+  def test_bind_raisess_error_for_nil_receiver
+    e = assert_raises(ArgumentError) { d.bind(nil) }
     assert_equal "receiver cannot be nil", e.message
   end
   
-  def test_bind_raises_error_if_already_bound
+  def test_bind_raisess_error_if_already_bound
     d.bind(r)
-    e = assert_raise(ArgumentError) { d.bind(Receiver.new) }
+    e = assert_raises(ArgumentError) { d.bind(Receiver.new) }
     assert_equal "already bound to: #{r}", e.message
   end
   
@@ -328,7 +328,7 @@ class DelegateHashTest < Test::Unit::TestCase
   
   def test_duplicate_store_is_distinct_from_parent
     duplicate = d.dup
-    assert_not_equal d.store.object_id, duplicate.store.object_id
+    assert d.store.object_id != duplicate.store.object_id
   end
   
   def test_duplicate_is_unbound
@@ -367,7 +367,7 @@ class DelegateHashTest < Test::Unit::TestCase
     
     assert_equal({:one => 'one', :key => 'value'}, d.store)
     assert_equal({:one => 'one', :key => 'value'}, d.to_hash)
-    assert_not_equal d.store.object_id, d.to_hash.object_id
+    assert d.store.object_id != d.to_hash.object_id
   end
   
   def test_to_hash_returns_hash_with_mapped_and_unmapped_values_when_bound

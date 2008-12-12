@@ -58,13 +58,13 @@ class OptparseCheck < Test::Unit::TestCase
 }, opts.to_s
   end
   
-  def test_option_parser_does_not_raise_error_for_double_assignment
+  def test_option_parser_does_not_raises_error_for_double_assignment
     values = []
 
     opts = OptionParser.new
     opts.on("-a", "--option-a INPUT") {|value| values << value}
 
-    assert_nothing_raised { opts.parse ["-a", "one", "-a", "two"] }
+    opts.parse ["-a", "one", "-a", "two"]
     assert_equal ["one", "two"], values
   end
 end

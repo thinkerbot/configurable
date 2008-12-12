@@ -95,7 +95,7 @@ configurations:
     ####
     psr = ConfigParser.new
 
-    e = assert_raise(ArgumentError) do
+    e = assert_raises(ArgumentError) do
       psr.on("--delay N", 
       Float,
       "Delay N seconds before executing")
@@ -106,7 +106,7 @@ configurations:
       value.to_f
     end
 
-    e = assert_raise(ArgumentError) do
+    e = assert_raises(ArgumentError) do
       psr.on("-i", "--inplace [EXTENSION]",
       "Edit ARGV files in place",
       "  (make backup if EXTENSION supplied)")
@@ -156,20 +156,20 @@ configurations:
     assert_equal({'--long' => opt, '-s' => opt}, c.switches)
   end
   
-  def test_register_raises_error_for_conflicting_switches
+  def test_register_raisess_error_for_conflicting_switches
     c.register(Option.new(:long => 'key', :short => 'k'))
     
-    e = assert_raise(ArgumentError) { c.register(Option.new(:long => 'key')) }
+    e = assert_raises(ArgumentError) { c.register(Option.new(:long => 'key')) }
     assert_equal "switch is already mapped to a different option: --key", e.message
     
-    e = assert_raise(ArgumentError) { c.register(Option.new(:short => 'k')) }
+    e = assert_raises(ArgumentError) { c.register(Option.new(:short => 'k')) }
     assert_equal "switch is already mapped to a different option: -k", e.message
   end
   
-  def test_register_does_not_raise_errors_for_registering_an_option_twice
+  def test_register_does_not_raises_errors_for_registering_an_option_twice
     opt = Option.new(:long => 'key', :short => 'k')
     c.register(opt)
-    assert_nothing_raised { c.register(opt) }
+    c.register(opt)
   end
   
   #
@@ -207,14 +207,14 @@ configurations:
     assert_equal nil, opt.desc
   end
   
-  def test_on_raises_error_for_conflicting_option_attributes
-    e = assert_raise(ArgumentError) { c.on('--long', '--alt') }
+  def test_on_raisess_error_for_conflicting_option_attributes
+    e = assert_raises(ArgumentError) { c.on('--long', '--alt') }
     assert_equal "conflicting long options: [\"--long\", \"--alt\"]", e.message
     
-    e = assert_raise(ArgumentError) { c.on('-s', '-o') }
+    e = assert_raises(ArgumentError) { c.on('-s', '-o') }
     assert_equal "conflicting short options: [\"-s\", \"-o\"]", e.message
     
-    e = assert_raise(ArgumentError) { c.on('desc one', 'desc two') }
+    e = assert_raises(ArgumentError) { c.on('desc one', 'desc two') }
     assert_equal "conflicting desc options: [\"desc one\", \"desc two\"]", e.message
   end
   
@@ -271,10 +271,10 @@ configurations:
     assert_equal({:key => 'value'}, c.default_config)
   end
   
-  def test_define_raises_error_for_conflicting_keys
+  def test_define_raisess_error_for_conflicting_keys
     c.define(:key)
     
-    e = assert_raise(ArgumentError) { c.define(:key) }
+    e = assert_raises(ArgumentError) { c.define(:key) }
     assert_equal "already set by a different option: :key", e.message
   end
   
@@ -319,14 +319,14 @@ configurations:
     assert_equal({:two => 'two', "one:one" => 'one', "one:two" => 'two'}, c.default_config)
   end
   
-  def test_add_raises_error_for_nesting_conflict
+  def test_add_raisess_error_for_nesting_conflict
     delegate_hash = DelegateHash.new(:one => Delegate.new(:one))
     delegates = {
       :one => Delegate.new(:one, :one=, delegate_hash, :declaration_order => 1),
       'one:one' => Delegate.new(:two, :two=, 'two', :declaration_order => 0)
     }
     
-    e = assert_raise(ArgumentError) { c.add(delegates) }
+    e = assert_raises(ArgumentError) { c.add(delegates) }
     assert_equal "already set by a different option: \"one:one\"", e.message
   end
   
@@ -404,9 +404,9 @@ configurations:
     assert_equal(["a", "b"], args)
   end
   
-  def test_parse_raises_error_if_no_value_is_available
+  def test_parse_raisess_error_if_no_value_is_available
     c.on('--opt VALUE')
-    assert_raise(RuntimeError) { c.parse(["--opt"]) }
+    assert_raises(RuntimeError) { c.parse(["--opt"]) }
   end
   
   def test_parse_stops_parsing_on_option_break
@@ -539,8 +539,8 @@ configurations:
     assert_equal nil, was_in_block
   end
   
-  def test_switch_raises_error_when_arg_name_is_specified
-    e = assert_raise(ArgumentError) { c.on('--[no-]opt VALUE') }
+  def test_switch_raisess_error_when_arg_name_is_specified
+    e = assert_raises(ArgumentError) { c.on('--[no-]opt VALUE') }
     assert_equal "arg_name specified for switch: VALUE", e.message
   end
   
@@ -564,9 +564,9 @@ configurations:
     assert_equal(["a", "b"], args)
   end
   
-  def test_parse_list_with_limit_raises_error_for_too_many_entries
+  def test_parse_list_with_limit_raisess_error_for_too_many_entries
     c.define('opt', [], :type => :list, :n => 1)
-    e = assert_raise(RuntimeError) { c.parse(["a", "--opt", "one", "--opt", "three", "b"]) }
+    e = assert_raises(RuntimeError) { c.parse(["a", "--opt", "one", "--opt", "three", "b"]) }
     assert_equal "too many assignments: \"opt\"", e.message
   end
   

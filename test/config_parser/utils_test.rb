@@ -128,14 +128,14 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal nil, shortify(nil)
   end
   
-  def test_shortify_raises_error_for_invalid_short
-    e = assert_raise(ArgumentError) { shortify("-long") }
+  def test_shortify_raisess_error_for_invalid_short
+    e = assert_raises(ArgumentError) { shortify("-long") }
     assert_equal "invalid short option: -long", e.message
     
-    e = assert_raise(ArgumentError) { shortify("-1") }
+    e = assert_raises(ArgumentError) { shortify("-1") }
     assert_equal "invalid short option: -1", e.message
     
-    e = assert_raise(ArgumentError) { shortify("") }
+    e = assert_raises(ArgumentError) { shortify("") }
     assert_equal "invalid short option: -", e.message
   end
   
@@ -159,14 +159,14 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal nil, longify(nil)
   end
   
-  def test_longify_raises_error_for_invalid_long
-    e = assert_raise(ArgumentError) { longify("-long") }
+  def test_longify_raisess_error_for_invalid_long
+    e = assert_raises(ArgumentError) { longify("-long") }
     assert_equal "invalid long option: ---long", e.message
     
-    e = assert_raise(ArgumentError) { longify("1") }
+    e = assert_raises(ArgumentError) { longify("1") }
     assert_equal "invalid long option: --1", e.message
     
-    e = assert_raise(ArgumentError) { longify("") }
+    e = assert_raises(ArgumentError) { longify("") }
     assert_equal "invalid long option: --", e.message
   end
   
@@ -289,12 +289,12 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal({:key => %w{a b c d e} }, config)
   end
   
-  def test_setup_list_block_raises_error_for_assignments_past_n
+  def test_setup_list_block_raisess_error_for_assignments_past_n
     block = setup_list(:key, :n => 2)
     block.call(1)
     block.call(2)
     
-    e = assert_raise(RuntimeError) { block.call(3) }
+    e = assert_raises(RuntimeError) { block.call(3) }
     assert_equal "too many assignments: :key", e.message 
   end
 end
