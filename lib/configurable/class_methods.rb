@@ -1,4 +1,4 @@
-require 'lazydoc/attributes'
+require 'lazydoc'
 require 'configurable/delegate_hash'
 require 'configurable/indifferent_access'
 require 'configurable/validation'
