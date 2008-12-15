@@ -21,6 +21,9 @@ Gem::Specification.new do |s|
   # list the files you want to include here. you can
   # check this manifest using 'rake :print_manifest'
   s.files = %W{
+    lib/cdoc.rb
+    lib/cdoc/cdoc_html_generator.rb
+    lib/cdoc/cdoc_html_template.rb
     lib/config_parser.rb
     lib/config_parser/option.rb
     lib/config_parser/switch.rb
