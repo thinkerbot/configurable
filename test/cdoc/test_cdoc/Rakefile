@@ -1,0 +1,14 @@
+require 'rake'
+require 'rake/rdoctask'
+
+$:.unshift "../../../lib"
+
+Rake::RDocTask.new(:rdoc) do |rdoc|
+  require 'cdoc'
+  
+  rdoc.template = 'cdoc/cdoc_html_template'
+  rdoc.options << '--fmt' << 'cdoc' << '--quiet'
+
+  # specify whatever else you need
+  rdoc.rdoc_files.include Dir.glob("lib/*.rb")
+end
