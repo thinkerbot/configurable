@@ -33,12 +33,12 @@ class ConfigParser
       value = (switch == negative_long ? false : true)
       block ? block.call(value) : value
     end
+
+    private
     
-    # Formats self as a help string for use on the command line.
-    def to_s
-      short_str = short ? short + ',' : '   '
-      long_str = long ? "--[no-]#{long[2,long.length-2]}" : ''
-      "%-37s%-43s" % ["    #{short_str} #{long_str}", desc]
+    # helper returning long formatted for to_s
+    def long_str # :nodoc:
+      long ? "--[no-]#{long[2,long.length-2]}" : ''
     end
   end
 end

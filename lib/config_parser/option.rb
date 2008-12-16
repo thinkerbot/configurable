@@ -5,6 +5,9 @@ class ConfigParser
   # Represents an option registered with ConfigParser.
   class Option
     
+    # A format string used by to_s
+    LINE_FORMAT = "%-36s %-43s"
+    
     # The short switch mapping to self
     attr_reader :short 
     
@@ -70,8 +73,29 @@ class ConfigParser
     
     # Formats self as a help string for use on the command line.
     def to_s
-      short_str = short ? short + ',' : '   '
-      "%-37s%-43s" % ["    #{short_str} #{long} #{arg_name}", desc]
+      lines = Lazydoc::Utils.wrap(desc.to_s, 43)
+      
+      header =  "    #{short_str} #{long_str} #{arg_name}"
+      header = header.length > 36 ? header.ljust(80) : (LINE_FORMAT % [header, lines.shift])
+      
+      if lines.empty?
+        header
+      else
+        lines.collect! {|line| LINE_FORMAT % [nil, line] }
+        "#{header}\n#{lines.join("\n")}"
+      end
+    end
+    
+    private
+    
+    # helper returning short formatted for to_s
+    def short_str # :nodoc:
+      short ? short + ',' : '   '
+    end
+    
+    # helper returning long formatted for to_s
+    def long_str # :nodoc:
+      long
     end
   end
 end

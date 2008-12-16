@@ -159,4 +159,30 @@ class OptionTest < Test::Unit::TestCase
     opt = Option.new(:long => 'long', :short => 's', :arg_name => 'KEY', :desc => "description of key")
     assert_equal "    -s, --long KEY                   description of key                         ", opt.to_s
   end
+  
+  def test_to_s_wraps_long_descriptions
+    opt = Option.new(:long => 'long', :desc => "a really long description of key " * 4)
+    
+    expected = %q{
+        --long                       a really long description of key a really  
+                                     long description of key a really long      
+                                     description of key a really long           
+                                     description of key                         }
+                                     
+    assert_equal expected, "\n" + opt.to_s
+  end
+  
+  def test_to_s_indents_long_headers
+    opt = Option.new(
+      :short => 's',
+      :long => '--a:nested:and-really-freaky-long-option', 
+      :desc => "a really long description of key " * 2)
+      
+    expected = %q{
+    -s, --a:nested:and-really-freaky-long-option                                
+                                     a really long description of key a really  
+                                     long description of key                    }
+                                     
+    assert_equal expected, "\n" + opt.to_s
+  end
 end
