@@ -171,6 +171,15 @@ class UtilsTest < Test::Unit::TestCase
   end
   
   #
+  # prefix_long test
+  #
+  
+  def test_prefix_long_documentation
+    assert_equal '--no-opt', prefix_long("--opt", 'no-')
+    assert_equal '--nested:no-opt', prefix_long("--nested:opt", 'no-')
+  end
+  
+  #
   # setup_option test
   #
   

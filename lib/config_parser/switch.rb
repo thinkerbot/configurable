@@ -16,7 +16,7 @@ class ConfigParser
       super
       raise ArgumentError, "arg_name specified for switch: #{arg_name}" if arg_name
       raise ArgumentError, "no long specified" unless long
-      @negative_long = Utils.longify("no-#{long[2,long.length-2]}")
+      @negative_long = Utils.prefix_long(long, 'no-')
     end
     
     # Returns an array of non-nil switches mapping to self (ie 
@@ -38,7 +38,7 @@ class ConfigParser
     
     # helper returning long formatted for to_s
     def long_str # :nodoc:
-      long ? "--[no-]#{long[2,long.length-2]}" : ''
+      long ? Utils.prefix_long(long, '[no-]') : ''
     end
   end
 end

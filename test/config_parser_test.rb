@@ -305,6 +305,15 @@ configurations:
     assert_equal({"nest:one" => 'one', "nest:two" => 'two'}, c.default_config)
   end
   
+  def test_add_nests_switches_properly
+    delegates = {
+      :one => Delegate.new(:one, :one=, 'one', :type => :switch)
+    }
+    
+    c.add(delegates, "nest")
+    assert_equal(["--nest:one", "--nest:no-one"], c.switches.keys)
+  end
+  
   def test_add_recusively_adds_delegates_from_delegates_with_a_delegate_hash_default
     delegate_hash = DelegateHash.new(
       :one => Delegate.new(:one, :one=, 'one'),
@@ -319,7 +328,7 @@ configurations:
     assert_equal({:two => 'two', "one:one" => 'one', "one:two" => 'two'}, c.default_config)
   end
   
-  def test_add_raisess_error_for_nesting_conflict
+  def test_add_raises_error_for_nesting_conflict
     delegate_hash = DelegateHash.new(:one => Delegate.new(:one))
     delegates = {
       :one => Delegate.new(:one, :one=, delegate_hash, :declaration_order => 1),
@@ -590,4 +599,17 @@ specials:
 }
     assert_equal expected, "\n" + c.to_s
   end
+  
+  def test_to_s_format_for_nested_delegates
+    delegates = {
+      :opt => Delegate.new(:opt, :opt=, 'value', :desc => 'desc', :short => 'o', :type => :switch),
+    }
+
+    c.add(delegates, "nest")
+    expected = %Q{
+    -o, --nest:[no-]opt              desc
+}
+    assert_equal expected, "\n" + c.to_s
+  end
+    
 end

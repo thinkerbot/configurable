@@ -70,6 +70,18 @@ class ConfigParser
       str
     end
     
+    # Adds a prefix onto the last nested segment of a long option.
+    #
+    #   prefix_long("--opt", 'no-')         # => '--no-opt'
+    #   prefix_long("--nested:opt", 'no-')  # => '--nested:no-opt'
+    #
+    def prefix_long(switch, prefix, split_char=':')
+      switch = switch[2,switch.length-2] if switch =~ /^--/
+      switch = switch.split(split_char)
+      switch[-1] = "#{prefix}#{switch[-1]}"
+      "--#{switch.join(':')}"
+    end
+    
     # Attributes:
     #
     #   :long      the long key ("--key") 
