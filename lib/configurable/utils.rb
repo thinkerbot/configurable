@@ -40,12 +40,12 @@ module Configurable
     #   #
     #   # }
     #
-    def dump(delegates, target="")
-      unless block_given?
-        return dump(delegates, target) do |key, delegate|
-          {key => delegate.default}.to_yaml[5..-1]
-        end
-      end
+    def dump(delegates, target="")      
+      return dump(delegates, target) do |key, delegate|
+        default = delegate.default
+        default = default.to_hash if delegate.is_nest?
+        {key => default}.to_yaml[5..-1]
+      end unless block_given?
       
       stringify = delegates.kind_of?(IndifferentAccess)
       delegates.each_pair do |key, delegate|

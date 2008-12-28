@@ -39,7 +39,7 @@ module Configurable
     # The bound receiver
     attr_reader :receiver
 
-    # The underlying data store for non-delegate keys
+    # The underlying data store
     attr_reader :store
 
     # A hash of (key, Delegate) pairs identifying which
@@ -47,9 +47,8 @@ module Configurable
     attr_reader :delegates
   
     # Initializes a new DelegateHash.  Note that initialize simply sets the
-    # receiver, it does NOT map stored values the same way bind does.
-    # This allows quick, implicit binding when the store is set up 
-    # beforehand.
+    # receiver, it does NOT map stored values the same way bind does.  This
+    # allows quick, implicit binding when the store is set up beforehand.
     #
     # For more standard binding use: DelegateHash.new.bind(receiver)
     def initialize(delegates={}, store={}, receiver=nil)
@@ -59,16 +58,18 @@ module Configurable
       @receiver = receiver
     end
 
-    # Binds self to the specified receiver.  Mapped keys are
-    # removed from store and sent to their writer method on 
-    # receiver.
+    # Binds self to the specified receiver.  Delegate values are removed from
+    # store and sent to their writer method on receiver.  If the store has no
+    # value for a delegate key, the delegate default value will be used.
     def bind(receiver)
       raise ArgumentError, "receiver cannot be nil" if receiver == nil
       raise ArgumentError, "already bound to: #{@receiver}" if bound? && @receiver != receiver
         
-      store.keys.each do |key|
-        next unless delegate = delegates[key]
-        receiver.send(delegate.writer, store.delete(key)) if delegate.writer
+      delegates.each_pair do |key, delegate|
+        if delegate.writer
+          value = store.has_key?(key) ? store.delete(key) : delegate.default
+          receiver.send(delegate.writer, value)
+        end
       end
       @receiver = receiver
   
@@ -80,7 +81,7 @@ module Configurable
       receiver != nil
     end
 
-    # Unbinds self from the specified receiver.  Mapped values
+    # Unbinds self from the specified receiver.  Delegate values
     # are stored in store.  Returns the unbound receiver.
     def unbind
       delegates.each_pair do |key, delegate|
@@ -92,54 +93,49 @@ module Configurable
       current_receiver
     end
 
-    # Retrieves the value corresponding to the key. If bound? 
-    # and the key is a delegates key, then the value is
-    # obtained from the delegate.reader method on the receiver.
+    # Retrieves the value corresponding to the key.  When bound, delegates with
+    # readers pull values from the receiver; otherwise the value in store will
+    # be returned.  When unbound, if the store has no value for a delegate, the
+    # delgate default value will be returned.
     def [](key)
-      case 
-      when bound? && delegate = delegates[key]
-        delegate.reader ? receiver.send(delegate.reader) : store[key]
-      else store[key]
+      return store[key] unless delegate = delegates[key]
+      
+      case
+      when bound? && delegate.reader
+        receiver.send(delegate.reader)
+      when store.has_key?(key)
+        store[key]
+      else
+        delegate.default
       end
     end
 
-    # Associates the value the key.  If bound? and the key
-    # is a delegates key, then the value will be forwarded
-    # to the delegate.writer method on the receiver.
+    # Stores a value for the key.  When bound, delegates with writers send the
+    # value to the receiver; otherwise values are stored in store.
     def []=(key, value)
-      case 
-      when bound? && delegate = delegates[key]
-        delegate.writer ? receiver.send(delegate.writer, value) : store[key] = value
-      else store[key] = value
+      if bound? && delegate = delegates[key]
+        if delegate.writer
+          receiver.send(delegate.writer, value)
+          return
+        end
       end
+      
+      store[key] = value
+    end
+    
+    # Returns the union of delegate and store keys.
+    def keys
+      delegates.keys | store.keys
     end
 
     # True if the key is assigned in self.
     def has_key?(key)
-      (bound? && delegates[key]) || store.has_key?(key) 
+      delegates.has_key?(key) || store.has_key?(key) 
     end
 
     # Calls block once for each key-value pair stored in self.
     def each_pair # :yields: key, value
-      delegates.each_pair do |key, delegate|
-        yield(key, receiver.send(delegate.reader)) if delegate.reader
-      end if bound?
-  
-      store.each_pair do |key, value|
-        yield(key, value)
-      end
-    end
-
-    # Updates self to ensure that each delegates key
-    # has a value in self; the delegate.default value is
-    # set if a value does not already exist.
-    #
-    # Returns self.
-    def update
-      delegates.each_pair do |key, delegate|
-        self[key] ||= delegate.default
-      end
-      self
+      keys.each {|key| yield(key, self[key]) }
     end
 
     # Duplicates self, returning an unbound DelegateHash.
@@ -159,8 +155,9 @@ module Configurable
     def to_hash
       hash = store.dup
       delegates.keys.each do |key|
-        hash[key] = self[key]
-      end if bound?
+        value = self[key]
+        hash[key] = value.kind_of?(DelegateHash) ? value.to_hash : value
+      end
       hash
     end
 

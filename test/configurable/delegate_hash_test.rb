@@ -218,13 +218,21 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal "value", d[:unmapped]
   end
   
-  def test_AGET_returns_stored_value_if_config_has_no_reader
+  def test_AGET_returns_stored_value_if_delegate_has_no_reader
     d.delegates[:key].reader = nil
     d.bind(r)
     
     assert_equal nil, d.store[:unmapped]
     d[:unmapped] = "value"
     assert_equal "value", d.store[:unmapped]
+  end
+  
+  def test_AGET_returns_default_value_if_unbound
+    d.delegates[:key].default = "default"
+    
+    assert !d.bound?
+    assert_equal nil, d.store[:key]
+    assert_equal "default", d[:key]
   end
   
   #
@@ -348,6 +356,7 @@ class DelegateHashTest < Test::Unit::TestCase
   #
   
   def test_equals_compares_to_hash_values
+    d = DelegateHash.new
     assert d == {}
     
     d[:one] = 'one'
@@ -378,5 +387,22 @@ class DelegateHashTest < Test::Unit::TestCase
     
     r.key = "VALUE"
     assert_equal({:one => 'one', :key => 'VALUE'}, d.to_hash)
+  end
+  
+  def test_to_hash_recursively_hashifies_DelegateHash_values
+    one = DelegateHash.new({:key => Delegate.new(:key, :key=, 'value')}, {:one => 'value'})
+    two = DelegateHash.new({:key => Delegate.new(:key, :key=, one)}, {:two => 'value'})
+    three = DelegateHash.new({:key => Delegate.new(:key, :key=, two)}, {:three => 'value'})
+    
+    assert_equal({
+      :key => {
+        :key => {
+          :key => 'value',
+          :one => 'value'
+        },
+        :two => 'value'
+      },
+      :three => 'value'
+    }, three.to_hash)
   end
 end

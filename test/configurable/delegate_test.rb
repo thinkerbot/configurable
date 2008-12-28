@@ -1,5 +1,6 @@
 require File.join(File.dirname(__FILE__), '../tap_test_helper')
 require 'configurable/delegate'
+require 'configurable/delegate_hash'
 
 class DelegateTest < Test::Unit::TestCase
   Delegate = Configurable::Delegate
@@ -148,6 +149,18 @@ class DelegateTest < Test::Unit::TestCase
   def test_writer_may_be_set_to_nil
     c.writer = nil
     assert_equal nil, c.writer
+  end
+  
+  #
+  # is_nest? test
+  #
+  
+  def test_is_nest_returns_true_if_default_is_a_DelegateHash
+    assert !c.default.kind_of?(Configurable::DelegateHash)
+    assert !c.is_nest?
+    
+    c.default = Configurable::DelegateHash.new
+    assert c.is_nest?
   end
   
   #

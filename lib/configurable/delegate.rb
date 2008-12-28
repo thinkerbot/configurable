@@ -67,6 +67,11 @@ module Configurable
     def writer=(value)
       @writer = value == nil ? value : value.to_sym
     end
+    
+    # Returns true if the default value is a kind of DelegateHash.
+    def is_nest?
+      @default.kind_of?(DelegateHash)
+    end
 
     # True if another is a kind of Delegate with the same
     # reader, writer, and default value.  Attributes are

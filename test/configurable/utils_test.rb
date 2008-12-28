@@ -23,8 +23,14 @@ class Configurable::UtilsTest < Test::Unit::TestCase
   # A mock delgate class
   class Delegate
     attr_reader :default
-    def initialize(default)
+    
+    def initialize(default, is_nest=false)
       @default = default
+      @is_nest = is_nest
+    end
+    
+    def is_nest?
+      @is_nest
     end
   end
   
@@ -76,6 +82,26 @@ str: value
     end
     
     assert_equal DEFAULTS, YAML.load(dump(delegates))
+  end
+  
+  def test_dump_dumps_nested_delegate_to_target_as_hash
+    one = Configurable::DelegateHash.new({:key => Delegate.new('value')}, {:one => 'value'})
+    two = Configurable::DelegateHash.new({:key => Delegate.new(one, true)}, {:two => 'value'})
+    three = {
+      :key => Delegate.new(two, true), 
+      :three => Delegate.new('value')
+    }
+    
+    assert_equal({
+      :key => {
+        :key => {
+          :key => 'value',
+          :one => 'value'
+        },
+        :two => 'value'
+      },
+      :three => 'value'
+    }, YAML.load(dump(three)))
   end
   
   def test_dump_dumps_delegates_to_target_in_each_pair_order

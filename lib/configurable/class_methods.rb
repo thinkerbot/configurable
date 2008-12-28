@@ -338,7 +338,7 @@ module Configurable
         reader = writer = nil
       end
       
-      value = DelegateHash.new(configurable_class.configurations).update
+      value = DelegateHash.new(configurable_class.configurations)
       configurations[key] = Delegate.new(reader, writer, value, attributes)
   
       check_infinite_nest(configurable_class.configurations)

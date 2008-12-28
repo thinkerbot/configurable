@@ -174,19 +174,6 @@ module Configurable
   # Initializes config. Default config values 
   # are overridden as specified by overrides.
   def initialize_config(overrides={})
-    delegates = self.class.configurations
-
-    # note the defaults could be stored first and overridden
-    # by the overrides, but this is likely more efficient
-    # on average since delegates duplicate default values.
-    store = {}
-    overrides.each_pair do |key, value| 
-      store[key] = value
-    end
-    delegates.each_pair do |key, delegate|
-      store[key] = delegate.default unless store.has_key?(key)
-    end
-
-    @config = DelegateHash.new(delegates, store).bind(self)
+    @config = DelegateHash.new(self.class.configurations, overrides.to_hash).bind(self)
   end
 end
