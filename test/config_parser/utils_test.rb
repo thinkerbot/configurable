@@ -1,7 +1,7 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
 require 'config_parser/utils'
 
-class UtilsTest < Test::Unit::TestCase
+class ConfigParser::UtilsTest < Test::Unit::TestCase
   include ConfigParser::Utils
 
   attr_reader :config
