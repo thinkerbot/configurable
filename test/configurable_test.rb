@@ -420,7 +420,7 @@ class ConfigurableTest < Test::Unit::TestCase
   # initialize_copy test
   #
   
-  def test_dup_reinitializes_config
+  def test_duplicates_have_an_independent_config
     t1 = Sample.new
     t2 = t1.dup
     
@@ -430,6 +430,16 @@ class ConfigurableTest < Test::Unit::TestCase
     t2.two = 'two'
     assert_equal 2, t1.two
     assert_equal 'two', t2.two
+  end
+  
+  def test_dup_passes_along_current_config_values
+    t1 = Sample.new
+    t1.two = 2
+    t1.config[:three] = 3
+    assert_equal({:one => 'ONE', :two => 2, :three => 3}, t1.config)
+    
+    t2 = t1.dup
+    assert_equal({:one => 'ONE', :two => 2, :three => 3}, t2.config)
   end
   
 end
