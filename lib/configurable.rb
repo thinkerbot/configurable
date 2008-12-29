@@ -133,7 +133,8 @@ require 'configurable/class_methods'
 # interface), as needed.
 #
 module Configurable
-
+  autoload(:Utils, 'configurable/utils')
+  
   # Extends including classes with Configurable::ClassMethods
   def self.included(mod) # :nodoc:
     mod.extend ClassMethods if mod.kind_of?(Class)

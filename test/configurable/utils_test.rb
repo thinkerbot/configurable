@@ -1,6 +1,5 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
 require 'configurable'
-require 'configurable/utils'
 require 'fileutils'
 
 class Configurable::UtilsTest < Test::Unit::TestCase
@@ -317,8 +316,8 @@ one: value
   
   def test_load_file_raises_for_non_existant_file
     path = File.join(method_root, "non_existant.yml")
-    e = assert_raise(Errno::ENOENT) { load_file(path) }
-    assert_equal "No such file or directory - #{path}", e.message
+    assert !File.exists?(path)
+    assert_equal({}, load_file(path))
   end
   
   def test_load_file_returns_empty_hash_for_empty_file

@@ -1,7 +1,3 @@
-require 'configurable/indifferent_access'
-
-autoload(:YAML, 'yaml')
-
 module Configurable
   module Utils
     module_function
@@ -115,9 +111,9 @@ module Configurable
     # Loads the file contents as YAML.  If recurse is true, a hash will be
     # recursively loaded.  A block may be provided to set recursively loaded
     # values in the hash loaded from the path.
-    def load_file(path, recurse=false)
+    def load_file(path, recurse=false, &block)
       return load_file(path, recurse, &DEFAULT_LOAD) if recurse && !block_given?
-      base = File.directory?(path) ? {} : (YAML.load_file(path) || {})
+      base = File.file?(path) ? (YAML.load_file(path) || {}) : {}
       
       if recurse
         # determine the files/dirs to load recursively
@@ -152,7 +148,7 @@ module Configurable
         # recursively load each file and reverse merge
         # the result into the base
         paths.each_pair do |key, recursive_path|
-          value = load_file(recursive_path, true)
+          value = load_file(recursive_path, true, &block)
           yield(base, key, value)
         end
       end
