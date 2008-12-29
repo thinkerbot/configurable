@@ -20,4 +20,12 @@ class IndifferentAccessTest < Test::Unit::TestCase
     assert_equal({:sym => 'new value'}, hash)
   end
   
+  #
+  # dup test
+  #
+  
+  def test_duplicates_use_indifferent_access
+    hash = {}.extend Configurable::IndifferentAccess
+    assert hash.dup.kind_of?(Configurable::IndifferentAccess)
+  end
 end

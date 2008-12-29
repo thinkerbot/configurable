@@ -439,10 +439,18 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_recursively_hashifies_DelegateHash_values
-    one = DelegateHash.new({:a => Delegate.new(:key, :key=, 'value')}, {:one => 'value'})
-    two = DelegateHash.new({:b => Delegate.new(:key, :key=, one)}, {:two => 'value'})
-    three = DelegateHash.new({:d => Delegate.new(:key, :key=, 'value')}, {:three => 'value'})
-    d = DelegateHash.new({:c => Delegate.new(:key, :key=, two)}, {:e => three})
+    one = DelegateHash.new(
+      {:a => Delegate.new(:key, :key=, 'value')}, 
+      {:one => 'value'})
+    two = DelegateHash.new(
+      {:b => Delegate.new(:key, :key=, one)}, 
+      {:two => 'value'})
+    three = DelegateHash.new(
+      {:d => Delegate.new(:key, :key=, 'value')}, 
+      {:three => 'value'})
+    d = DelegateHash.new(
+      {:c => Delegate.new(:key, :key=, two)}, 
+      {:e => three})
     
     assert_equal({
       :c => {

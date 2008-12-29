@@ -19,7 +19,12 @@ module Configurable
     def []=(key, value)
       super(convert(key), value)
     end
-  
+    
+    # Ensures duplicates use indifferent access.
+    def dup
+      super().extend IndifferentAccess
+    end
+    
     private
     
     # a helper to convert strings to symbols
