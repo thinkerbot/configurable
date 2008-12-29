@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "configurable"
-  s.version = "0.2.0"
+  s.version = "0.2.1"
   s.author = "Simon Chiang"
   s.email = "simon.a.chiang@gmail.com"
   s.homepage = "http://tap.rubyforge.org/configurable"
@@ -34,5 +34,6 @@ Gem::Specification.new do |s|
     lib/configurable/delegate_hash.rb
     lib/configurable/indifferent_access.rb
     lib/configurable/validation.rb
+    lib/configurable/utils.rb
   }
 end

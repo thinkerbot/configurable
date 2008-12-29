@@ -63,16 +63,17 @@ module Configurable
     # value for a delegate key, the delegate default value will be used.
     def bind(receiver)
       raise ArgumentError, "receiver cannot be nil" if receiver == nil
-      raise ArgumentError, "already bound to: #{@receiver}" if bound? && @receiver != receiver
-        
-      delegates.each_pair do |key, delegate|
-        if delegate.writer
-          value = store.has_key?(key) ? store.delete(key) : delegate.default
-          receiver.send(delegate.writer, value)
+      
+      if bound?
+        if @receiver == receiver
+          return(self)
+        else
+          raise ArgumentError, "already bound to: #{@receiver}"
         end
       end
+      
       @receiver = receiver
-  
+      map(store)
       self
     end
 
@@ -84,13 +85,9 @@ module Configurable
     # Unbinds self from the specified receiver.  Delegate values
     # are stored in store.  Returns the unbound receiver.
     def unbind
-      delegates.each_pair do |key, delegate|
-        store[key] = receiver.send(delegate.reader) if delegate.reader
-      end
-      current_receiver = receiver
+      unmap(store)
       @receiver = nil
-  
-      current_receiver
+      self
     end
 
     # Retrieves the value corresponding to the key.  When bound, delegates with
@@ -106,7 +103,7 @@ module Configurable
       when store.has_key?(key)
         store[key]
       else
-        delegate.default
+        store[key] = delegate.default
       end
     end
 
@@ -128,9 +125,20 @@ module Configurable
       delegates.keys | store.keys
     end
 
-    # True if the key is assigned in self.
+    # True if the key is an assigned delegate or store key.
     def has_key?(key)
       delegates.has_key?(key) || store.has_key?(key) 
+    end
+    
+    # Merges another with self.
+    def merge!(another)
+      if bound?
+        another.each_pair {|key, value| self[key] = value }
+      else
+        # optimization for the common case of an 
+        # unbound merge of another hash
+        store.merge!(another.to_hash)
+      end
     end
 
     # Calls block once for each key-value pair stored in self.
@@ -138,24 +146,16 @@ module Configurable
       keys.each {|key| yield(key, self[key]) }
     end
 
-    # Duplicates self, returning an unbound DelegateHash.
-    def dup
-      duplicate = super()
-      duplicate.instance_variable_set(:@receiver, nil)
-      duplicate.instance_variable_set(:@store, @store.dup)
-      duplicate
-    end
-
     # Equal if the to_hash values of self and another are equal.
     def ==(another)
       another.respond_to?(:to_hash) && to_hash == another.to_hash
     end
 
-    # Returns self as a hash. 
+    # Returns self as a hash.  Any DelegateHash values are recursively
+    # hashified, to account for nesting.
     def to_hash
-      hash = store.dup
-      delegates.keys.each do |key|
-        value = self[key]
+      hash = {}
+      each_pair do |key, value|
         hash[key] = value.kind_of?(DelegateHash) ? value.to_hash : value
       end
       hash
@@ -164,6 +164,35 @@ module Configurable
     # Overrides default inspect to show the to_hash values.
     def inspect
       "#<#{self.class}:#{object_id} to_hash=#{to_hash.inspect}>"
+    end
+    
+    # Ensures duplicates are unbound and store the same values as the original.
+    def initialize_copy(orig)
+      super
+      
+      @receiver = nil
+      @store = @store.dup
+      orig.unmap(@store) if orig.bound?
+    end
+    
+    protected
+    
+    # helper to map delegate values from source to the receiver
+    def map(source) # :nodoc:
+      delegates.each_pair do |key, delegate|
+        next unless writer = delegate.writer
+        
+        value = source.has_key?(key) ? source.delete(key) : delegate.default
+        receiver.send(writer, value)
+      end
+    end
+    
+    # helper to unmap delegates from the receiver to a target hash
+    def unmap(target) # :nodoc:
+      delegates.each_pair do |key, delegate|
+        next unless reader = delegate.reader
+        target[key] = receiver.send(reader)
+      end
     end
   end
 end

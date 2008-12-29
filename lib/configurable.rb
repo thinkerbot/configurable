@@ -166,14 +166,18 @@ module Configurable
   # separate from the original object.
   def initialize_copy(orig)
     super
-    initialize_config(orig.config)
+    initialize_config(orig.config.dup)
   end
 
   protected
 
   # Initializes config. Default config values 
   # are overridden as specified by overrides.
-  def initialize_config(overrides={})
-    @config = DelegateHash.new(self.class.configurations, overrides.to_hash).bind(self)
+  def initialize_config(config={})
+    unless config.kind_of?(DelegateHash)
+      config = DelegateHash.new(self.class.configurations, config)
+    end
+    
+    @config = config.bind(self)
   end
 end

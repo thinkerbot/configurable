@@ -59,14 +59,16 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal({}, d.delegates)
   end
   
-  def test_initialize_sets_receiver_without_mapping_store
+  def test_initialize_sets_receiver_without_mapping_store_or_delegate_default_values
     r = Receiver.new
+    r.key = "existing value"
+    
     d = DelegateHash.new({:key => Delegate.new(:key)}, {:key => 'value'}, r)
     
     assert d.bound?
     assert_equal({:key => 'value'}, d.store)
     assert_equal r, d.receiver
-    assert_equal nil, r.key
+    assert_equal "existing value", r.key
   end
   
   #
@@ -91,8 +93,19 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal({:not_a_config => 1}, d.store)
   end
   
+  def test_bind_delegates_default_values_to_receiver_if_no_store_value_is_present
+    d.delegates[:key].default = 1
+    
+    assert_nil r.key
+    assert_equal({}, d.store)
+    
+    d.bind(r)
+    assert_equal 1, r.key
+  end
+  
   def test_bind_does_not_delegate_values_to_delegates_without_a_writer
     d.delegates[:key].writer = nil
+    d.delegates[:key].default = 1
     d.store[:key] = 1
     d.store[:not_a_config] = 1
     
@@ -105,24 +118,26 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal({:key => 1, :not_a_config => 1}, d.store)
   end
   
-  def test_bind_redelegates_stored_values_if_bound_again_to_the_receiver
+  def test_bind_does_nothing_if_bound_again_to_the_current_receiver
     assert_nil r.key
     
     d.store[:key] = 1
     d.bind(r)
     assert_equal 1, r.key
+    assert_equal({}, d.store)
     
     d.store[:key] = 2
     d.bind(r)
-    assert_equal 2, r.key
+    assert_equal 1, r.key
+    assert_equal({:key => 2}, d.store)
   end
   
-  def test_bind_raisess_error_for_nil_receiver
+  def test_bind_raises_error_for_nil_receiver
     e = assert_raises(ArgumentError) { d.bind(nil) }
     assert_equal "receiver cannot be nil", e.message
   end
   
-  def test_bind_raisess_error_if_already_bound
+  def test_bind_raises_error_if_already_bound
     d.bind(r)
     e = assert_raises(ArgumentError) { d.bind(Receiver.new) }
     assert_equal "already bound to: #{r}", e.message
@@ -183,9 +198,9 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal({}, d.store)
   end
    
-  def test_unbind_returns_receiver
+  def test_unbind_returns_self
     d.bind(r)
-    assert_equal r, d.unbind
+    assert_equal d, d.unbind
   end
   
   #
@@ -227,12 +242,22 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal "value", d.store[:unmapped]
   end
   
-  def test_AGET_returns_default_value_if_unbound
+  def test_AGET_sets_missing_default_values_for_delegates_in_store_if_unbound
     d.delegates[:key].default = "default"
     
     assert !d.bound?
     assert_equal nil, d.store[:key]
     assert_equal "default", d[:key]
+    assert_equal "default", d.store[:key]
+  end
+  
+  def test_AGET_does_not_regard_nil_values_as_missing
+    d.delegates[:key].default = "default"
+    d.store[:key] = nil
+    
+    assert !d.bound?
+    assert_equal nil, d[:key]
+    assert_equal nil, d.store[:key]
   end
   
   #
@@ -272,10 +297,28 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   #
+  # keys test
+  #
+  
+  def test_keys_returns_union_of_delegates_and_store_keys
+    d.store[:unmapped] = nil
+    
+    assert_equal [:key], d.delegates.keys
+    assert_equal [:unmapped], d.store.keys
+    assert_equal [:key, :unmapped], d.keys
+    
+    d.store[:key] = nil
+    
+    assert_equal [:key], d.delegates.keys
+    assert_equal [:key, :unmapped], d.store.keys
+    assert_equal [:key, :unmapped], d.keys
+  end
+  
+  #
   # has_key? test
   #
   
-  def test_has_key_is_true_if_the_key_is_in_store_or_is_mapped
+  def test_has_key_is_true_if_the_key_is_assigned_in_delegates_or_in_store
     d[:key] = 'value'
     d[:another] = 'value'
     
@@ -290,6 +333,51 @@ class DelegateHashTest < Test::Unit::TestCase
     assert d.has_key?(:key)
     assert d.has_key?(:another)
     assert !d.has_key?(:not_a_key)
+  end
+  
+  #
+  # merge! test
+  #
+  
+  def test_merge_merges_another_with_self
+    d[:key] = 'a'
+    d[:one] = 'A'
+    assert_equal({:key => 'a', :one => 'A'}, d.to_hash)
+    
+    # unbound merge!
+    d.merge!(:key => 'b', :one => 'B', :two => :B)
+    assert_equal({:key => 'b', :one => 'B', :two => :B}, d.to_hash)
+    
+    # bound merge!
+    d.bind(r)
+    d.merge!(:key => 'c')
+    assert_equal 'c', r.key
+  end
+  
+  def test_merge_can_merge_another_DelegateHash
+    d[:key] = 'a'
+    d[:one] = 'A'
+    assert_equal({:key => 'a', :one => 'A'}, d.to_hash)
+    
+    # unbound merge!
+    r2 = Receiver.new
+    d2 = DelegateHash.new({:key => Delegate.new(:key)})
+    d2.bind(r2)
+    d2[:key] = 'b'
+    d2[:one] = 'B'
+    d2[:two] = :B
+    
+    d.merge!(d2)
+    assert_equal({:key => 'b', :one => 'B', :two => :B}, d.to_hash)
+    
+    # bound merge!
+    d3 = DelegateHash.new({:key => Delegate.new(:key)})
+    d3.bind(Receiver.new)
+    d3[:key] = 'c'
+    
+    d.bind(r)
+    d.merge!(d3)
+    assert_equal 'c', r.key
   end
   
   #
@@ -310,45 +398,6 @@ class DelegateHashTest < Test::Unit::TestCase
     results = {}
     d.each_pair {|key, value| results[key] = value }
     assert_equal({:key => 'VALUE', :another => 'value'}, results)
-  end
-  
-  def test_each_pair_pulls_value_from_store_when_config_has_no_reader
-    d.delegates[:key].reader = nil
-    
-    d[:key] = 'value'
-    d[:another] = 'value'
-    
-    results = {}
-    d.each_pair {|key, value| results[key] = value }
-    assert_equal({:key => 'value', :another => 'value'}, results)
-    
-    d.bind(r)
-    
-    d.store[:key] = 'VALUE'
-    results = {}
-    d.each_pair {|key, value| results[key] = value }
-    assert_equal({:key => 'VALUE', :another => 'value'}, results)
-  end
-  
-  #
-  # dup test
-  #
-  
-  def test_duplicate_store_is_distinct_from_parent
-    duplicate = d.dup
-    assert d.store.object_id != duplicate.store.object_id
-  end
-  
-  def test_duplicate_is_unbound
-    d.bind(r)
-    duplicate = d.dup
-    assert d.bound?
-    assert !duplicate.bound?
-  end
-  
-  def test_duplicate_delegates_are_the_same_object_as_parent
-    duplicate = d.dup
-    assert_equal d.delegates.object_id, duplicate.delegates.object_id
   end
   
   #
@@ -390,19 +439,57 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_recursively_hashifies_DelegateHash_values
-    one = DelegateHash.new({:key => Delegate.new(:key, :key=, 'value')}, {:one => 'value'})
-    two = DelegateHash.new({:key => Delegate.new(:key, :key=, one)}, {:two => 'value'})
-    three = DelegateHash.new({:key => Delegate.new(:key, :key=, two)}, {:three => 'value'})
+    one = DelegateHash.new({:a => Delegate.new(:key, :key=, 'value')}, {:one => 'value'})
+    two = DelegateHash.new({:b => Delegate.new(:key, :key=, one)}, {:two => 'value'})
+    three = DelegateHash.new({:d => Delegate.new(:key, :key=, 'value')}, {:three => 'value'})
+    d = DelegateHash.new({:c => Delegate.new(:key, :key=, two)}, {:e => three})
     
     assert_equal({
-      :key => {
-        :key => {
-          :key => 'value',
+      :c => {
+        :b => {
+          :a => 'value',
           :one => 'value'
         },
         :two => 'value'
       },
-      :three => 'value'
-    }, three.to_hash)
+      :e => {
+        :d => 'value',
+        :three => 'value'
+      }
+    }, d.to_hash)
+  end
+  
+  #
+  # dup test
+  #
+  
+  def test_duplicate_store_is_distinct_from_parent
+    duplicate = d.dup
+    assert d.store.object_id != duplicate.store.object_id
+  end
+  
+  def test_duplicate_is_unbound
+    d.bind(r)
+    duplicate = d.dup
+    assert d.bound?
+    assert !duplicate.bound?
+  end
+  
+  def test_duplicate_delegates_are_the_same_object_as_parent
+    duplicate = d.dup
+    assert_equal d.delegates.object_id, duplicate.delegates.object_id
+  end
+  
+  def test_duplicate_stores_delegate_values_from_receiver
+    d.bind(r)
+    d[:key] = 'VALUE'
+    d[:another] = 'value'
+    
+    assert_equal 'VALUE', r.key
+    assert_equal({:another => 'value'}, d.store)
+    
+    duplicate = d.dup
+    
+    assert_equal({:key => 'VALUE', :another => 'value'}, duplicate.store)
   end
 end
