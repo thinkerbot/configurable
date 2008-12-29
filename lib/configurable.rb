@@ -155,10 +155,7 @@ module Configurable
   #
   # Returns self.
   def reconfigure(overrides={})
-    overrides.each_pair do |key, value|
-      config[key] = value
-    end
-
+    config.merge!(overrides)
     self
   end
 
