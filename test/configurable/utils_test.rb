@@ -192,7 +192,7 @@ hash:
 }, "\n" + File.read(path)
   end
   
-  def test_dump_file_recursively_creates_dump_files_for_nested_delegates_based_on_key
+  def test_dump_file_recursively_creates_dump_files_for_nested_delegates_when_recurse_is_true
     FileUtils.mkdir_p(method_root)
     three_path = File.join(method_root, 'path.yml')
     two_path = File.join(method_root, 'path/key.yml')
@@ -224,5 +224,185 @@ two: value
     assert_equal %q{
 one: value
 }, "\n" + File.read(one_path)
+  end
+  
+  def test_dump_file_dumps_to_a_single_file_when_recurse_is_false
+    FileUtils.mkdir_p(method_root)
+    path = File.join(method_root, 'path.yml')
+    
+    one = OrderedHash.new()
+    one[:one] = Delegate.new(:r, :w, 'value')
+
+    two = OrderedHash.new(:key, :two)
+    two[:key] = Delegate.new(:r, :w, DelegateHash.new(one))
+    two[:two] = Delegate.new(:r, :w, 'value')
+
+    three = OrderedHash.new(:key, :three)
+    three[:key] = Delegate.new(:r, :w, DelegateHash.new(two))
+    three[:three] = Delegate.new(:r, :w, 'value')
+
+    assert !File.exists?(path)
+    dump_file(three, path)
+
+    assert_equal %q{
+:key: 
+  :key: 
+    :one: value
+  :two: value
+:three: value
+}, "\n" + File.read(path)
+  end
+  
+  def test_dump_file_uses_block_to_format_each_line_in_the_dump
+    FileUtils.mkdir_p(method_root)
+    path = File.join(method_root, 'path.yml')
+
+    one = OrderedHash.new()
+    one[:one] = Delegate.new(:r, :w, 'value')
+
+    two = OrderedHash.new(:key, :two)
+    two[:key] = Delegate.new(:r, :w, DelegateHash.new(one))
+    two[:two] = Delegate.new(:r, :w, 'value')
+
+    three = OrderedHash.new(:key, :three)
+    three[:key] = Delegate.new(:r, :w, DelegateHash.new(two))
+    three[:three] = Delegate.new(:r, :w, 'value')
+
+    assert !File.exists?(path)
+    dump_file(three, path) {|key, delegate| "#{key} "}
+    
+    # note only the keys in three are shown, since
+    # recurse is false.
+    assert_equal %q{key three }, File.read(path)
+  end
+  
+  def test_dump_file_uses_block_to_format_each_line_in_a_recursive_dump
+    FileUtils.mkdir_p(method_root)
+    three_path = File.join(method_root, 'path.yml')
+    two_path = File.join(method_root, 'path/key.yml')
+    one_path = File.join(method_root, 'path/key/key.yml')
+
+    one = {
+      :one => Delegate.new(:r, :w, 'value')
+    }.extend(IndifferentAccess)
+    two = {
+      :key => Delegate.new(:r, :w, DelegateHash.new(one)), 
+      :two => Delegate.new(:r, :w, 'value')
+    }.extend(IndifferentAccess)
+    three = {
+      :key => Delegate.new(:r, :w, DelegateHash.new(two)), 
+      :three => Delegate.new(:r, :w, 'value')
+    }.extend(IndifferentAccess)
+
+    assert !File.exists?(three_path)
+    dump_file(three, three_path, true) {|key, delegate| "#{key} "}
+
+    assert_equal %q{three }, File.read(three_path)
+    assert_equal %q{two }, File.read(two_path)
+    assert_equal %q{one }, File.read(one_path)
+  end
+  
+  #
+  # load_file test
+  #
+  
+  def prepare_yaml(path, obj)
+    path = File.join(method_root, path)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.open(path, 'w') do |file| 
+      file << obj.to_yaml if obj
+    end
+    path
+  end
+  
+  def test_load_file_raises_for_non_existant_file
+    path = File.join(method_root, "non_existant.yml")
+    e = assert_raise(Errno::ENOENT) { load_file(path) }
+    assert_equal "No such file or directory - #{path}", e.message
+  end
+  
+  def test_load_file_returns_empty_hash_for_empty_file
+    path = prepare_yaml("non_existant.yml", nil)
+    
+    assert File.exists?(path)
+    assert_equal "", File.read(path)
+    assert_equal({}, load_file(path))
+  end
+  
+  def test_load_file_loads_existing_files_as_yaml
+    path = prepare_yaml("file.yml", {'key' => 'value'})
+    assert_equal({'key' => 'value'}, load_file(path))
+    
+    path = prepare_yaml("file.yml", [1,2])
+    assert_equal([1,2], load_file(path))
+  end
+  
+  def test_load_file_recursively_loads_files
+    path = prepare_yaml("a.yml", {'key' => 'a value'})
+           prepare_yaml("a/b.yml", 'b value')
+           prepare_yaml("a/c.yml", 'c value')
+    
+    a = {'key' => 'a value', 'b' => 'b value', 'c' => 'c value'}
+    assert_equal(a, load_file(path, true))
+  end
+  
+  def test_load_file_recursively_loads_directories
+    path = prepare_yaml("a.yml", {'key' => 'value'})
+           prepare_yaml("a/b/c.yml", 'c value')
+           prepare_yaml("a/c/d.yml", 'd value')
+           
+    a = {
+       'key' => 'value',
+       'b' => {'c' => 'c value'},
+       'c' => {'d' => 'd value'}
+    }
+    assert_equal(a, load_file(path, true))
+  end
+  
+  def test_recursive_loading_with_files_and_directories
+    path = prepare_yaml("a.yml", {'key' => 'a value'})
+           prepare_yaml("a/b.yml", {'key' => 'b value'})
+           prepare_yaml("a/b/c.yml", 'c value')
+           
+           prepare_yaml("a/d.yml", {'key' => 'd value'})
+           prepare_yaml("a/d/e/f.yml", 'f value')
+    
+    d = {'key' => 'd value', 'e' => {'f' => 'f value'}}
+    b = {'key' => 'b value', 'c' => 'c value'}
+    a = {'key' => 'a value', 'b' => b, 'd' => d}
+    
+    assert_equal(a, load_file(path, true))
+  end
+  
+  def test_recursive_loading_does_not_override_values_set_in_parent
+    path = prepare_yaml("a.yml", {'a' => 'set value', 'b' => 'set value'})
+           prepare_yaml("a/b.yml", 'recursive value')
+           prepare_yaml("a/c.yml", 'recursive value')
+           
+    a = {
+      'a' => 'set value',
+      'b' => 'set value',
+      'c' => 'recursive value'
+    }
+    
+    assert_equal(a, load_file(path, true))
+  end
+  
+  def test_load_file_does_not_recusively_load_file_unless_specified
+    path = prepare_yaml("a.yml", {'key' => 'a value'})
+           prepare_yaml("a/b.yml", {'key' => 'ab value'})
+           
+    a = {'key' => 'a value'}
+            
+    assert_equal(a, load_file(path))
+  end
+  
+  def test_recursive_loading_raises_error_when_two_files_map_to_the_same_value
+    path = prepare_yaml("a.yml", {})
+    one = prepare_yaml("a/b.yml", 'one')
+    two = prepare_yaml("a/b.yaml", 'two')
+           
+    e = assert_raise(RuntimeError) { load_file(path, true) }
+    assert_equal "multiple files load the same key: [\"b.yaml\", \"b.yml\"]", e.message
   end
 end

@@ -6,11 +6,21 @@ module Configurable
   module Utils
     module_function
     
-    DEFAULT_DUMP = lambda do |key, delegate|
+    default_dump_block = lambda do |key, delegate|
       default = delegate.default(false)
       default = default.to_hash if delegate.is_nest?
       {key => default}.to_yaml[5..-1]
     end
+    
+    # A block performing the default YAML dump.
+    DEFAULT_DUMP = default_dump_block
+    
+    default_load_block = lambda do |base, key, value|
+      base[key] ||= value
+    end
+    
+    # A block performing the default load.
+    DEFAULT_LOAD = default_load_block
     
     # Dumps delegates to target as yaml.  Delegates are output in order, and
     # symbol keys are be stringified if delegates has been extended with
@@ -58,17 +68,37 @@ module Configurable
       target
     end
     
-    def dump_file(delegates, path, nested=false, &block)
-      return dump_file(delegates, path, nested, &DEFAULT_DUMP) unless block_given?
-      
-      if nested && !delegates.kind_of?(IndifferentAccess)
-        raise "nested dumps are not allowed unless delegates use IndifferentAccess: #{path}"
-      end
+    # Dumps the delegates to the specified file.  If recurse is true, nested
+    # configurations are each dumped to their own file, based on the nesting
+    # key.  For instance if you nested a in b:
+    #
+    #   a_configs = {
+    #     'key' => Delegate.new(:r, :w, 'a default')}
+    #   b_configs = {
+    #     'key' => Delegate.new(:r, :w, 'b default')}
+    #     'a' => Delegate.new(:r, :w, DelegateHash.new(a_configs))}}
+    #
+    #   Utils.dump_file(b_configs, 'b.yml')
+    #   File.read('b.yml')         # => "key: b default"
+    #   File.read('b/a.yml')       # => "key: a default"
+    #
+    # In this way, each nested config gets it's own file.  The load_file method
+    # can recursively load configurations from this file structure. When recurse
+    # is false, all configs are dumped to a single file.
+    #
+    # ==== Note
+    # For load_file to correctly load a recursive dump, all delegate hashes
+    # must use String keys.  Symbol keys are allowed if the delegate hashes use
+    # IndifferentAccess; all other keys will not load properly.  By default 
+    # Configurable is set up to satisfy these conditions.
+    def dump_file(delegates, path, recurse=false, &block)
+      return dump_file(delegates, path, recurse, &DEFAULT_DUMP) unless block_given?
       
       File.open(path, "w") do |io|
         dump(delegates, io) do |key, delegate|
-          if nested && delegate.is_nest?
-            dump_file(delegate.default(false).delegates, nest_path(key, path), nested, &block)
+          if recurse && delegate.is_nest?
+            nested_delegates = delegate.default(false).delegates
+            dump_file(nested_delegates, recursive_path(key, path), true, &block)
             ""
           else
             yield(key, delegate)
@@ -77,23 +107,66 @@ module Configurable
       end
     end
     
+    # Loads the string as YAML.
     def load(str)
       YAML.load(str)
     end
     
-    def load_file(path, nested=false)
+    # Loads the file contents as YAML.  If recurse is true, a hash will be
+    # recursively loaded.  A block may be provided to set recursively loaded
+    # values in the hash loaded from the path.
+    def load_file(path, recurse=false)
+      return load_file(path, recurse, &DEFAULT_LOAD) if recurse && !block_given?
+      base = File.directory?(path) ? {} : (YAML.load_file(path) || {})
+      
+      if recurse
+        # determine the files/dirs to load recursively
+        # and add them to paths by key (ie the base
+        # name of the path, minus any extname)
+        paths = {}
+        files, dirs = Dir.glob("#{path.chomp(File.extname(path))}/*").partition do |sub_path|
+          File.file?(sub_path)
+        end
+
+        # directories are added to paths first so they can be
+        # overridden by the files (appropriate since the file
+        # will recursively load the directory if it exists)
+        dirs.each do |dir|
+          paths[File.basename(dir)] = dir
+        end
+
+        # when adding files, check that no two files map to
+        # the same key (ex a.yml, a.yaml).
+        files.each do |filepath|
+          key = File.basename(filepath).chomp(File.extname(filepath))
+          if existing = paths[key]
+            if File.file?(existing)
+              confict = [File.basename(paths[key]), File.basename(filepath)].sort
+              raise "multiple files load the same key: #{confict.inspect}"
+            end
+          end
+
+          paths[key] = filepath
+        end
+
+        # recursively load each file and reverse merge
+        # the result into the base
+        paths.each_pair do |key, recursive_path|
+          value = load_file(recursive_path, true)
+          yield(base, key, value)
+        end
+      end
+
+      base
     end
     
     protected
     
-    def nest_path(key, path) # :nodoc:
+    # helper to create and prepare a recursive dump path
+    def recursive_path(key, path) # :nodoc:
       ext = File.extname(path)
       dir = path.chomp(ext)
       Dir.mkdir(dir) unless File.exists?(dir)
-      
-      unless key.kind_of?(String) || key.kind_of?(Symbol)
-        raise "nested dump is only allowed for String and Symbol keys"
-      end
       
       "#{File.join(dir, key.to_s)}#{ext}"
     end
