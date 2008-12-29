@@ -17,9 +17,6 @@ class ConfigurableTest < Test::Unit::TestCase
     config :two, 'two'
     config :three, 'three'
   
-    def initialize(overrides={})
-      initialize_config(overrides)
-    end
   end
   
   class SubClass < ConfigClass
@@ -31,10 +28,6 @@ class ConfigurableTest < Test::Unit::TestCase
     include Configurable
   
     config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
-  
-    def initialize
-      initialize_config
-    end
     
     def get_sym
       @sym
@@ -174,7 +167,10 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class ConfigAttrClass
     include Configurable
-  
+    
+    def initialize
+    end
+    
     config_attr :trues, 'value', :reader => true, :writer => true
     config_attr :falses, 'value', :reader => false, :writer => false
     config_attr :nils, 'value', :reader => nil, :writer => nil
@@ -394,6 +390,37 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_default_attributes_may_be_overridden
     assert_equal({}, DefaultOptionsClassOne::DEFAULT_ATTRIBUTES[:key])
     assert_equal('value', DefaultOptionsClassTwo::DEFAULT_ATTRIBUTES[:key])
+  end
+  
+  #
+  # initialize test
+  #
+  
+  class InitializeClass
+    include Configurable
+    config :key, 'value'
+  end
+  
+  def test_initialize_initializes_config_if_necessary
+    i = InitializeClass.new
+    assert_equal(Configurable::DelegateHash, i.config.class)
+    assert_equal({:key => 'value'}, i.config)
+  end
+  
+  class NoInitializeClass
+    include Configurable
+    config :key, 'value'
+    
+    def initialize
+      @config = {:key => 'alt'}
+      super
+    end
+  end
+  
+  def test_initialize_does_not_override_existing_config
+    i = NoInitializeClass.new
+    assert_equal(Hash, i.config.class)
+    assert_equal({:key => 'alt'}, i.config)
   end
   
   #

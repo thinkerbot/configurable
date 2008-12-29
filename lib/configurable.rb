@@ -10,9 +10,6 @@ require 'configurable/class_methods'
 #     config :two, 'two'
 #     config :three, 'three'
 #
-#     def initialize(overrides={})
-#       initialize_config(overrides)
-#     end
 #   end
 #
 #   c = ConfigClass.new
@@ -95,10 +92,6 @@ require 'configurable/class_methods'
 #
 #     config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
 #
-#     def initialize
-#       initialize_config
-#     end
-#
 #     def get_sym
 #       @sym
 #     end
@@ -148,6 +141,14 @@ module Configurable
 
   # A DelegateHash bound to self
   attr_reader :config
+  
+  # Initializes config, if necessary, and then calls super.  If initialize
+  # is overridden without calling super, be sure to call initialize_config
+  # manually within the new initialize method.
+  def initialize(*args)
+    initialize_config unless instance_variable_defined?(:@config)
+    super
+  end
 
   # Reconfigures self with the given overrides. Only the 
   # specified configs are modified.
