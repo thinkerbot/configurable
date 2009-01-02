@@ -133,7 +133,9 @@ module Configurable
     # Merges another with self.
     def merge!(another)
       if bound?
-        another.each_pair {|key, value| self[key] = value }
+        (delegates.keys | another.keys).each do |key|
+          self[key] = another[key] if another.has_key?(key)
+        end
       else
         # optimization for the common case of an 
         # unbound merge of another hash

@@ -417,11 +417,16 @@ module Configurable
       super
     end
     
+    # Keys, sorted into insertion order
+    def keys
+      super.sort_by do |key|
+        @insertion_order.index(key) || length
+      end
+    end
+    
     # Yields each key-value pair to the block in insertion order.
     def each_pair
-      keys.sort_by do |key|
-        @insertion_order.index(key)
-      end.each do |key|
+      keys.each do |key|
         yield(key, fetch(key))
       end
     end

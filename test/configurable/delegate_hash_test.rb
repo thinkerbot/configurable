@@ -5,6 +5,7 @@ class DelegateHashTest < Test::Unit::TestCase
   Delegate = Configurable::Delegate
   DelegateHash = Configurable::DelegateHash
   
+  # a dummy receiver
   class Receiver
     attr_accessor :key
     
@@ -12,7 +13,31 @@ class DelegateHashTest < Test::Unit::TestCase
       @key = nil
     end
   end
-
+  
+  # a receiver to log the order in which values are sent to key
+  class OrderedReceiver
+    attr_reader :order
+    def initialize
+      @order = []
+    end
+    def key=(value)
+      order << value
+    end
+  end
+  
+  # a hash that iterates each_pair in a predefined order
+  class OrderedHash < Hash
+    attr_reader :keys
+    
+    def initialize(*keys)
+      @keys = keys
+    end
+    
+    def each_pair
+      @keys.each {|key| yield(key, self[key])}
+    end
+  end
+  
   attr_reader :d, :r
   
   def setup
@@ -145,6 +170,25 @@ class DelegateHashTest < Test::Unit::TestCase
   
   def test_bind_returns_self
     assert_equal d, d.bind(r)
+  end
+  
+  def test_bind_sets_delegates_in_order
+    delegates = OrderedHash.new(:a, :b, :c)
+    delegates[:a] = Delegate.new(:key, :key=, 'a')
+    delegates[:b] = Delegate.new(:key, :key=, 'b')
+    delegates[:c] = Delegate.new(:key, :key=, 'c')
+    
+    r = OrderedReceiver.new
+    d = DelegateHash.new(delegates)
+    d.bind(r)
+    
+    assert_equal ['a', 'b', 'c'], r.order
+    
+    r = OrderedReceiver.new
+    d = DelegateHash.new(delegates, {:a => 'A', :c => 'C'})
+    d.bind(r)
+    
+    assert_equal ['A', 'b', 'C'], r.order
   end
   
   #
@@ -378,6 +422,18 @@ class DelegateHashTest < Test::Unit::TestCase
     d.bind(r)
     d.merge!(d3)
     assert_equal 'c', r.key
+  end
+  
+  def test_merge_sets_delegates_in_order
+    letters = [:a, :b, :c, :d, :e, :f, :g, :h]
+    delegates = OrderedHash.new(*letters)
+    letters.each {|letter| delegates[letter] = Delegate.new(:key, :key=, letter.to_s) }
+
+    r = OrderedReceiver.new
+    d = DelegateHash.new(delegates, {}, r)
+
+    d.merge!({:a => 'A', :g => 'G', :c => 'C', :h => 'H', :b => 'B'})
+    assert_equal ['A', 'B', 'C', 'G', 'H'], r.order
   end
   
   #
