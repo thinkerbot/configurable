@@ -114,7 +114,7 @@ class ConfigParser
       attributes[:long].to_s =~ /^(--)?(\[no-\])?(.*)$/ 
       attributes[:long] = "--[no-]#{$3}" unless $2
       
-      lambda {|value| config[key] = (value ? !default : default) }
+      lambda {|value| config[key] = value }
     end
     
     # Attributes:
