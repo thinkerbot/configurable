@@ -82,25 +82,41 @@ module Configurable
     # can recursively load configurations from this file structure. When recurse
     # is false, all configs are dumped to a single file.
     #
+    # dump_file uses a method that collects all dumps in a preview hash before
+    # dumping, so that the dump results can be redirected other places than the
+    # file system.  If preview is set to false, no files will be created.  The
+    # preview dumps are always returned by dump_file.
+    #
     # ==== Note
     # For load_file to correctly load a recursive dump, all delegate hashes
     # must use String keys.  Symbol keys are allowed if the delegate hashes use
     # IndifferentAccess; all other keys will not load properly.  By default 
     # Configurable is set up to satisfy these conditions.
-    def dump_file(delegates, path, recurse=false, &block)
-      return dump_file(delegates, path, recurse, &DEFAULT_DUMP) unless block_given?
+    def dump_file(delegates, path, recurse=false, preview=false, &block)
+      return dump_file(delegates, path, recurse, preview, &DEFAULT_DUMP) unless block_given?
       
-      File.open(path, "w") do |io|
-        dump(delegates, io) do |key, delegate|
-          if recurse && delegate.is_nest?
-            nested_delegates = delegate.default(false).delegates
-            dump_file(nested_delegates, recursive_path(key, path), true, &block)
-            ""
-          else
-            yield(key, delegate)
-          end
+      dumps = {}
+      dumps[path] = dump(delegates) do |key, delegate|
+        if recurse && delegate.is_nest?
+          nested_delegates = delegate.default(false).delegates
+          nested_dumps = dump_file(nested_delegates, recursive_path(key, path), true, true, &block)
+          
+          dumps.merge!(nested_dumps)
+          ""
+        else
+          yield(key, delegate)
         end
       end
+      
+      dumps.keys.sort.each do |path|
+        dir = File.dirname(path)
+        Dir.mkdir(dir) unless File.exists?(dir)
+        File.open(path, "w") do |io|
+          io << dumps[path]
+        end 
+      end unless preview
+      
+      dumps
     end
     
     # Loads the string as YAML.

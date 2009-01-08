@@ -210,6 +210,9 @@ hash:
     }.extend(IndifferentAccess)
     
     assert !File.exists?(three_path)
+    assert !File.exists?(two_path)
+    assert !File.exists?(one_path)
+    
     dump_file(three, three_path, true)
 
     assert_equal %q{
@@ -294,6 +297,9 @@ one: value
     }.extend(IndifferentAccess)
 
     assert !File.exists?(three_path)
+    assert !File.exists?(two_path)
+    assert !File.exists?(one_path)
+    
     dump_file(three, three_path, true) {|key, delegate| "#{key} "}
 
     assert_equal %q{three }, File.read(three_path)
@@ -404,4 +410,40 @@ one: value
     e = assert_raise(RuntimeError) { load_file(path, true) }
     assert_equal "multiple files load the same key: [\"b.yaml\", \"b.yml\"]", e.message
   end
+  
+  def test_dump_file_does_not_create_files_when_preview_is_true
+    FileUtils.mkdir_p(method_root)
+    three_path = File.join(method_root, 'path.yml')
+    two_path = File.join(method_root, 'path/key.yml')
+    one_path = File.join(method_root, 'path/key/key.yml')
+
+    one = {
+      :one => Delegate.new(:r, :w, 'value')
+    }.extend(IndifferentAccess)
+    two = {
+      :key => Delegate.new(:r, :w, DelegateHash.new(one)), 
+      :two => Delegate.new(:r, :w, 'value')
+    }.extend(IndifferentAccess)
+    three = {
+      :key => Delegate.new(:r, :w, DelegateHash.new(two)), 
+      :three => Delegate.new(:r, :w, 'value')
+    }.extend(IndifferentAccess)
+
+    assert !File.exists?(three_path)
+    assert !File.exists?(two_path)
+    assert !File.exists?(one_path)
+    
+    preview = dump_file(three, three_path, true, true)
+    
+    assert_equal({
+      three_path => "three: value\n",
+      two_path => "two: value\n",
+      one_path => "one: value\n"
+    }, preview)
+    
+    assert !File.exists?(three_path)
+    assert !File.exists?(two_path)
+    assert !File.exists?(one_path)
+  end
+    
 end
