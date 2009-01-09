@@ -403,8 +403,8 @@ module Configurable
   #
   # Pre-1.9 ruby implementations require a patched Hash that tracks insertion
   # order.  This very thin subclass of hash does that for ASET insertions and
-  # each_pair.  It is used exclusively as the configurations object in 
-  # Configurable classes.
+  # each_pair.  OrderedHashPatches are used as the configurations object in 
+  # Configurable classes for pre-1.9 ruby implementations and for nothing else.
   class OrderedHashPatch < Hash
     def initialize
       super

@@ -12,7 +12,7 @@
 # unaffected as the constants are reset after RDoc loads.
 #
 if Object.const_defined?(:RubyToken) || Object.const_defined?(:RubyLex)
-  class Object 
+  class Object # :nodoc:
     old_ruby_token = const_defined?(:RubyToken) ? remove_const(:RubyToken) : nil
     old_ruby_lex = const_defined?(:RubyLex) ? remove_const(:RubyLex) : nil
   
@@ -34,13 +34,13 @@ else
   require 'rdoc/rdoc'
 
   if Object.const_defined?(:RubyToken) && !RDoc.const_defined?(:RubyToken)
-    class Object
+    class Object # :nodoc:
       RDoc.const_set(:RubyToken, remove_const(:RubyToken))
     end
   end 
   
   if Object.const_defined?(:RubyLex) && !RDoc.const_defined?(:RubyLex)
-    class Object
+    class Object # :nodoc:
       RDoc.const_set(:RubyLex, remove_const(:RubyLex))
       RDoc::RubyLex.const_set(:RubyLex, RDoc::RubyLex)
     end

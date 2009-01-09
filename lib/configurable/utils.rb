@@ -1,4 +1,7 @@
 module Configurable
+  
+  # Utility methods to dump and load configurations, particularly nested
+  # configurations.
   module Utils
     module_function
     
