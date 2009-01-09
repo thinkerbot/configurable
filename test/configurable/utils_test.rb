@@ -435,11 +435,11 @@ one: value
     
     preview = dump_file(three, three_path, true, true)
     
-    assert_equal({
-      three_path => "three: value\n",
-      two_path => "two: value\n",
-      one_path => "one: value\n"
-    }, preview)
+    assert_equal([
+      [three_path, "three: value\n"],
+      [two_path, "two: value\n"],
+      [one_path, "one: value\n"]
+    ], preview)
     
     assert !File.exists?(three_path)
     assert !File.exists?(two_path)
