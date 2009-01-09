@@ -172,10 +172,8 @@ module Configurable
       base
     end
     
-    protected
-    
-    # helper to create and prepare a recursive dump path
-    def recursive_path(key, path) # :nodoc:
+    # A helper to create and prepare a recursive dump path.
+    def recursive_path(key, path)
       ext = File.extname(path)
       dir = path.chomp(ext)
       Dir.mkdir(dir) unless File.exists?(dir)
