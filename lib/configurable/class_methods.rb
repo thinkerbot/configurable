@@ -430,6 +430,12 @@ module Configurable
         yield(key, fetch(key))
       end
     end
+    
+    # Ensures the insertion order of duplicates is separate from parents.
+    def initialize_copy(orig)
+      super
+      @insertion_order = orig.instance_variable_get(:@insertion_order).dup
+    end
   end
   
   module ClassMethods
