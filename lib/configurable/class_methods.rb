@@ -193,10 +193,9 @@ module Configurable
     #   b = B.new
     #   b.config[:a]                   # => {:key => 'value'}
     #
-    # Nest may be provided a block which receives the nested config 
-    # and is expected to initialize an instance of configurable_class.  
-    # In this case a reader for the instance is created and access 
-    # becomes quite natural.
+    # Nest may be provided a block which initializes an instance of
+    # configurable_class.  In this case accessors for the instance
+    # are created and access becomes quite natural.
     #
     #   class C
     #     include Configurable
@@ -219,8 +218,7 @@ module Configurable
     #   c.config[:a] = {:key => 'three'}
     #   c.a.key                        # => "three"
     #
-    # The initialize block for nest executes in class context, much
-    # like config.
+    # The initialize block executes in class context, much like config.
     #
     #   # An equivalent class to illustrate class-context
     #   class EquivalentClass
@@ -233,14 +231,18 @@ module Configurable
     #     end
     #   end
     #
+    # Nest checks for recursive nesting and raises an error if a recursive nest
+    # is detected.
+    #
     # ==== Attributes
     #
-    # Nesting with an initialization block creates the public reader for the 
-    # instance, and private methods to read and write the instance 
-    # configurations, and to initialize the nested instance. The default names
+    # Nesting with an initialization block creates the public accessor for the
+    # instance, private methods to read and write the instance configurations,
+    # and a private method to initialize the instance. The default names
     # for these methods are listed with the attributes to override them:
     #
     #   :instance_reader         key
+    #   :instance_writer         "#{key}="
     #   :instance_initializer    "#{key}_initialize"
     #   :reader                  "#{key}_config_reader"
     #   :writer                  "#{key}_config_writer"
@@ -248,8 +250,6 @@ module Configurable
     # These attributes are ignored if no block is given; true/false/nil
     # values are meaningless and will be treated as the default.
     #
-    # Nest checks for recursive nesting and raises an error if
-    # a recursive nest is detected.
     def nest(key, configurable_class, attributes={}, &block)
       attributes = merge_attributes(block, attributes)
       
@@ -297,8 +297,9 @@ module Configurable
       # add some tracking attributes
       attributes[:receiver] ||= configurable_class
       
-      # remove attributes modifiying method defaults
+      # remove method attributes
       instance_reader = attributes.delete(:instance_reader)
+      instance_writer = attributes.delete(:instance_writer)
       initializer = attributes.delete(:instance_initializer)
       reader = attributes.delete(:reader)
       writer = attributes.delete(:writer)
@@ -306,6 +307,7 @@ module Configurable
       if block_given?
         # define instance accessor methods
         instance_reader = boolean_select(instance_reader, key)
+        instance_writer = boolean_select(instance_writer, "#{key}=")
         instance_var = "@#{instance_reader}".to_sym
         
         initializer = boolean_select(reader, "#{key}_initialize")
@@ -314,7 +316,11 @@ module Configurable
         
         # the public accessor
         attr_reader instance_reader
-        public(instance_reader)
+        
+        define_method(instance_writer) do |value|
+          instance_variable_set(instance_var, value)
+        end
+        public(instance_reader, instance_writer)
         
         # the initializer
         define_method(initializer, &block)
