@@ -128,6 +128,17 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal 1, r.key
   end
   
+  def test_bind_does_not_delegates_default_value_if_no_store_value_is_present_and_map_default_is_false
+    d.delegates[:key].default = 1
+    d.delegates[:key][:map_default] = false
+    
+    assert_nil r.key
+    assert_equal({}, d.store)
+    
+    d.bind(r)
+    assert_nil r.key
+  end
+  
   def test_bind_does_not_delegate_values_to_delegates_without_a_writer
     d.delegates[:key].writer = nil
     d.delegates[:key].default = 1

@@ -58,6 +58,16 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   #
+  # ASET test
+  #
+  
+  def test_ASET_sets_an_attribute_value
+    assert_equal nil, c.attributes[:key]
+    c[:key] = 'value'
+    assert_equal 'value', c.attributes[:key]
+  end
+  
+  #
   # AGET test
   #
   

@@ -37,6 +37,11 @@ module Configurable
       @attributes = attributes
     end
     
+    # Sets the value of an attribute.
+    def []=(key, value)
+      attributes[key] = value
+    end
+    
     # Returns the value for the specified attribute, or
     # default, if the attribute is unspecified.
     def [](key, default=nil)

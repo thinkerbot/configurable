@@ -184,7 +184,16 @@ module Configurable
       delegates.each_pair do |key, delegate|
         next unless writer = delegate.writer
         
-        value = source.has_key?(key) ? source.delete(key) : delegate.default
+        # map the value; if no value is set in the source then use the 
+        # delegate default.  if map_default is false, then simply skip... 
+        # this ensures each config is initialized to a value when bound
+        # UNLESS map_default is set (indicating manual initialization)
+        value = case
+        when source.has_key?(key) then source.delete(key)
+        when delegate[:map_default, true] then delegate.default
+        else next
+        end
+        
         receiver.send(writer, value)
       end
     end
