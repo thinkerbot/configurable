@@ -1,13 +1,13 @@
 = Configurable[http://tap.rubyforge.org/configurable]
 
-Class configurations that map to the command line.  Configurable is used by the
-Tap[http://tap.rubyforge.org] framework.
+Class configurations that map to the command line.
 
 == Description
 
-Configurable allows the declaration of inheritable class configurations that
-delegate to methods but also have hash-like access.  Configurable facilitates 
-the parsing configurations from the command line through ConfigParser.
+Configurable allows the declaration of class configurations.  Configurations
+are inheritable, delegate to methods, and have hash-like access. Configurable
+maps configurations to the command line through ConfigParser and is used by
+the Tap[http://tap.rubyforge.org] framework.
 
 Check out these links for development, and bug tracking.
 
@@ -18,12 +18,10 @@ Check out these links for development, and bug tracking.
 
 == Usage
 
-=== Quickstart
-
-Use the config method to declare class configurations.  Blocks may be provided
-to ensure configurations are valid; many standard blocks are available through 
-the 'c' method (an alias for the {Validation}[link:classes/Configurable/Validation.html]
-module) or you can write your own.
+Use the config method to declare class configurations.  A block may be provided
+to validate inputs, and many standard validations are available through the 'c'
+method (an alias for the {Validation}[link:classes/Configurable/Validation.html]
+module).
 
   class ConfigClass
     include Configurable
@@ -42,11 +40,12 @@ module) or you can write your own.
     end
   end
   
-Configurations are easily added to a ConfigParser to parse configurations from
-command line arguments and to generate a documented help string:
+A ConfigParser can parse configurations from command line arguments, and turn
+them into a documented help string:
 
   parser = ConfigParser.new
   parser.add(ConfigClass.configurations)
+  
   parser.parse "one two --key=value --flag --no-switch --num 8 --range a..z three"  
   # => ['one', 'two', 'three']
   
@@ -71,23 +70,25 @@ command line arguments and to generate a documented help string:
   # }
 
 Configurable classes typically call initialize_config to set configurations
-during initialize. The validation/transformation blocks are called as the 
-configurations are set.
+during initialization. The validation/transformation blocks are called as
+configurations are set.  Notice how the :range and :upcase values have been
+transformed from the input config.
   
   c = ConfigClass.new(parser.config)
   c.config.to_hash      
   # => {
   # :key => 'value',
-  # :flag => true,            # notice these values
-  # :switch => false,         # are no longer strings
+  # :flag => true,            
+  # :switch => false,         
   # :num => 8,
-  # :range => 'a'..'z',
-  # :upcase => 'DEFAULT'
+  # :range => 'a'..'z',       # notice these values
+  # :upcase => 'DEFAULT'      # have been transformed
   # }
 
-Configurations automatically generate accessors, and are accessible through the
-hash-like config object.  Configurations are validated every time they are set, 
-both through the accessors and config.
+Configurations automatically generate accessors (the blocks are basically
+writer methods), but they are also accessible through the hash-like config
+object.  Configurations are validated every time they are set, regardless of
+whether they are set through an accessor or config.
   
   c.upcase                    # => 'DEFAULT'
   

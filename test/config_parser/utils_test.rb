@@ -245,18 +245,18 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     assert_equal({:long => '--[no-]long'}, options)
   end
   
-  def test_setup_switch_block_sets_not_default_value_if_true
+  def test_setup_switch_block_sets_true_if_true
     setup_switch(:a, true).call(true)
     setup_switch(:b, false).call(true)
     
-    assert_equal({:a => false, :b => true}, config)
+    assert_equal({:a => true, :b => true}, config)
   end
   
-  def test_setup_switch_block_sets_default_value_if_false
+  def test_setup_switch_block_sets_false_if_false
     setup_switch(:a, true).call(false)
     setup_switch(:b, false).call(false)
     
-    assert_equal({:a => true, :b => false}, config)
+    assert_equal({:a => false, :b => false}, config)
   end
   
   #
