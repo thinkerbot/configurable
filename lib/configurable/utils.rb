@@ -7,6 +7,8 @@ module Configurable
     
     default_dump_block = lambda do |key, delegate|
       default = delegate.default(false)
+      
+      # note: this causes order to be lost...
       default = default.to_hash if delegate.is_nest?
       {key => default}.to_yaml[5..-1]
     end
@@ -95,6 +97,9 @@ module Configurable
     # must use String keys.  Symbol keys are allowed if the delegate hashes use
     # IndifferentAccess; all other keys will not load properly.  By default 
     # Configurable is set up to satisfy these conditions.
+    #
+    # 1.8 Bug: Currently dump_file with recurse=false will cause order to be
+    # lost in nested configs. See http://bahuvrihi.lighthouseapp.com/projects/21202-configurable/tickets/8
     def dump_file(delegates, path, recurse=false, preview=false, &block)
       return dump_file(delegates, path, recurse, preview, &DEFAULT_DUMP) unless block_given?
       

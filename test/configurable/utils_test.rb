@@ -246,13 +246,12 @@ one: value
     assert !File.exists?(path)
     dump_file(three, path)
 
-    assert_equal %q{
-:key: 
-  :key: 
-    :one: value
-  :two: value
-:three: value
-}, "\n" + File.read(path)
+    assert_equal({
+    :key => {
+      :key => {
+        :one => 'value'}, 
+      :two => 'value'}, 
+    :three => 'value'}, YAML.load(File.read(path)))
   end
   
   def test_dump_file_uses_block_to_format_each_line_in_the_dump
