@@ -452,7 +452,8 @@ class ConfigParser
   
   # Same as parse, but removes parsed args from argv.
   def parse!(argv=ARGV, config={}, merge_default=true)
-    argv.replace(parse(argv, config, merge_default))
+    result = parse(argv, config, merge_default)
+    argv.kind_of?(Array) ? argv.replace(result) : result
   end
   
   # Converts the options and separators in self into a help string suitable for
