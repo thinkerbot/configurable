@@ -409,7 +409,7 @@ class ConfigParser
   # A config may be provided to receive configurations; it will be set
   # as self.config.
   #
-  def parse(argv=ARGV, config={})
+  def parse(argv=ARGV, config={}, merge_default=true)
     @config = config
     argv = argv.kind_of?(String) ? Shellwords.shellwords(argv) : argv.dup
     args = []
@@ -445,14 +445,14 @@ class ConfigParser
     
     default_config.each_pair do |key, default|
       config[key] = default unless config.has_key?(key)
-    end
+    end if merge_default
     
     args
   end
   
   # Same as parse, but removes parsed args from argv.
-  def parse!(argv=ARGV, config={})
-    argv.replace(parse(argv, config))
+  def parse!(argv=ARGV, config={}, merge_default=true)
+    argv.replace(parse(argv, config, merge_default))
   end
   
   # Converts the options and separators in self into a help string suitable for

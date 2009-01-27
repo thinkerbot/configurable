@@ -486,6 +486,14 @@ configurations:
     assert_equal({"opt" => "default"}, c.config)
     assert_equal(["a", "b"], args)
   end
+  
+  def test_parse_does_not_add_defaults_unless_specified
+    c.define('opt', 'default')
+    args = c.parse(["a", "b"], {}, false)
+    
+    assert_equal({}, c.config)
+    assert_equal(["a", "b"], args)
+  end
 
   def test_parse_sets_config_values
     c.define('opt', 'default')
