@@ -339,6 +339,9 @@ class ConfigParser
     end
     default_config[key] = default_value
     
+    # ensure setup does not modifiy input attributes
+    attributes = attributes.dup
+    
     block = case attributes[:type]
     when :switch then setup_switch(key, default_value, attributes)
     when :flag   then setup_flag(key, default_value, attributes)
@@ -390,7 +393,7 @@ class ConfigParser
       key = nesting ? "#{nesting}:#{key}" : key
       default = delegate.default(false)
       
-      if default.kind_of?(Configurable::DelegateHash)
+      if delegate.is_nest?
         add(default.delegates, key)
       else
         define(key, default, delegate.attributes)

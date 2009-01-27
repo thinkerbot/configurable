@@ -77,7 +77,7 @@ class NestTest < Test::Unit::TestCase
   def test_nest_creates_reader_initialized_to_subclass
     p = NestParent.new
     assert p.respond_to?(:key)
-    assert_equal NestChild,  p.key.class
+    assert_equal NestChild, p.key.class
   end
   
   def test_nest_creates_writer_initialized_to_subclass
@@ -95,21 +95,26 @@ class NestTest < Test::Unit::TestCase
     assert !p.respond_to?(:blockless)
   end
   
-  def test_define_adds_configs_by_key_to_configurations
-    assert NestParent.configurations.key?(:key)
-    config = NestParent.configurations[:key]
-    
-    assert_equal :key_config_reader, config.reader
-    assert_equal :key_config_writer, config.writer
-    assert_equal DelegateHash, config.default.class
-    assert_equal NestChild.configurations, config.default.delegates
-    
-    assert NestParent.configurations.key?(:blockless)
+  def test_nest_without_block_does_not_set_config_reader_and_writer
     config = NestParent.configurations[:blockless]
     assert_equal nil, config.reader
     assert_equal nil, config.writer
-    assert_equal DelegateHash, config.default.class
-    assert_equal NestChild.configurations, config.default.delegates
+  end
+  
+  def test_nest_with_block_sets_config_reader_and_writer
+    config = NestParent.configurations[:key]
+    assert_equal :key_config_reader, config.reader
+    assert_equal :key_config_writer, config.writer
+  end
+  
+  def test_nested_configs_are_nests
+    assert NestParent.configurations[:key].is_nest?
+    assert NestParent.configurations[:blockless].is_nest?
+  end
+  
+  def test_nested_delegates_are_nested_class_configs
+    delegates = NestParent.configurations[:key].default.delegates
+    assert_equal NestChild.configurations.object_id, delegates.object_id
   end
   
   def test_instance_is_initialized_with_defaults

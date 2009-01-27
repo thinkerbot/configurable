@@ -390,10 +390,8 @@ module Configurable
       raise "infinite nest detected" if delegates == self.configurations
       
       delegates.each_pair do |key, delegate|
-        default = delegate.default(false)
-    
-        if default.kind_of?(DelegateHash)
-          check_infinite_nest(default.delegates)
+        if delegate.is_nest?
+          check_infinite_nest(delegate.default(false).delegates)
         end
       end
     end

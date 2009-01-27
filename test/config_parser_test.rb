@@ -278,6 +278,12 @@ configurations:
     assert_equal "already set by a different option: :key", e.message
   end
   
+  def test_define_does_not_modify_input_attributes
+    attrs = {}
+    c.define(:key, 'value', attrs)
+    assert_equal({}, attrs)
+  end
+  
   #
   # add test
   #
