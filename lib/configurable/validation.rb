@@ -77,11 +77,6 @@ module Configurable
       end
     end
 
-    # Attempts to load the input as YAML.
-    def yamlize(input)
-      YAML.load(input)
-    end
-
     # Returns a block that calls validate using the block input
     # and validations.
     def check(*validations)
@@ -104,7 +99,7 @@ module Configurable
     def yaml(*validations)
       validations = nil if validations.empty?
       lambda do |input|
-        input = yamlize(input) if input.kind_of?(String)
+        input = YAML.load(input) if input.kind_of?(String)
         validate(input, validations)
       end
     end
@@ -234,7 +229,7 @@ module Configurable
     def list(); LIST; end
     list_block = lambda do |input|
       validate(input, [Array]).collect do |arg| 
-        arg.kind_of?(String) ? yamlize(arg) : arg
+        arg.kind_of?(String) ? YAML.load(arg) : arg
       end
     end
     
@@ -330,13 +325,16 @@ module Configurable
     def num_or_nil(); NUMERIC_OR_NIL; end
     NUMERIC_OR_NIL = yaml(Numeric, nil)
 
-    # Returns a block that checks the input is a regexp.
-    # String inputs are converted to regexps using
-    # Regexp#new.
+    # Returns a block that checks the input is a regexp. String inputs are
+    # loaded as yaml; if the result is still a string, it is converted to
+    # a regexp using Regexp#new.
     #
     #   regexp.class              # => Proc
     #   regexp.call(/regexp/)     # => /regexp/
     #   regexp.call('regexp')     # => /regexp/
+    #
+    #   yaml_str = '!ruby/regexp /regexp/'
+    #   regexp.call(yaml_str)     # => /regexp/
     #
     #   # use of ruby-specific flags can turn on/off 
     #   # features like case insensitive matching
@@ -344,35 +342,31 @@ module Configurable
     #
     def regexp(); REGEXP; end
     regexp_block = lambda do |input|
+      input = YAML.load(input) if input.kind_of?(String)
       input = Regexp.new(input) if input.kind_of?(String)
       validate(input, [Regexp])
     end
     REGEXP = regexp_block
 
-    # Same as regexp but allows nil. Note the special
-    # behavior of the nil string '~' -- rather than
-    # being converted to a regexp, it is processed as 
-    # nil to be consistent with the other [class]_or_nil
-    # methods.
+    # Same as regexp but allows nil. Note the special behavior of the nil
+    # string '~' -- rather than being converted to a regexp, it is processed
+    # as nil to be consistent with the other [class]_or_nil methods.
     #
     #   regexp_or_nil.call('~')   # => nil
     #   regexp_or_nil.call(nil)   # => nil
     def regexp_or_nil(); REGEXP_OR_NIL; end
     regexp_or_nil_block = lambda do |input|
-      input = case input
+      case input
       when nil, '~' then nil
-      when String then Regexp.new(input)
-      else input
+      else REGEXP[input]
       end
-  
-      validate(input, [Regexp, nil])
     end
     REGEXP_OR_NIL = regexp_or_nil_block
 
-    # Returns a block that checks the input is a range.
-    # String inputs are split into a beginning and
-    # end if possible, where each part is loaded as
-    # yaml before being used to construct a Range.a
+    # Returns a block that checks the input is a range. String inputs are
+    # loaded as yaml; if the result is still a string, it is split into a
+    # beginning and end, if possible, and each part is loaded as yaml
+    # before being used to construct a Range.
     #
     #   range.class               # => Proc
     #   range.call(1..10)         # => 1..10
@@ -383,10 +377,14 @@ module Configurable
     #   range.call('1.10')        # => ValidationError
     #   range.call('a....z')      # => ValidationError
     #
+    #   yaml_str = "!ruby/range \nbegin: 1\nend: 10\nexcl: false\n"
+    #   range.call(yaml_str)      # => 1..10
+    #
     def range(); RANGE; end
     range_block = lambda do |input|
+      input = YAML.load(input) if input.kind_of?(String)
       if input.kind_of?(String) && input =~ /^([^.]+)(\.{2,3})([^.]+)$/
-        input = Range.new(yamlize($1), yamlize($3), $2.length == 3) 
+        input = Range.new(YAML.load($1), YAML.load($3), $2.length == 3) 
       end
       validate(input, [Range])
     end
@@ -398,18 +396,10 @@ module Configurable
     #   range_or_nil.call(nil)    # => nil
     def range_or_nil(); RANGE_OR_NIL; end
     range_or_nil_block = lambda do |input|
-      input = case input
+      case input
       when nil, '~' then nil
-      when String
-        if input =~ /^([^.]+)(\.{2,3})([^.]+)$/
-          Range.new(yamlize($1), yamlize($3), $2.length == 3)
-        else
-          input
-        end
-      else input
+      else RANGE[input]
       end
-  
-      validate(input, [Range, nil])
     end
     RANGE_OR_NIL = range_or_nil_block
 
@@ -454,21 +444,13 @@ module Configurable
     #
     #   time_or_nil.call('~')    # => nil
     #   time_or_nil.call(nil)    # => nil
-    def time_or_nil()
-      # adding this check is a compromise to autoload the parse 
-      # method (autoload doesn't work since Time already exists)
-      require 'time' unless Time.respond_to?(:parse)
-      TIME_OR_NIL
-    end
+    def time_or_nil(); TIME_OR_NIL; end
 
     time_or_nil_block = lambda do |input|
-      input = case input
+      case input
       when nil, '~' then nil
-      when String then Time.parse(input)
-      else input
+      else TIME[input]
       end
-  
-      validate(input, [Time, nil])
     end 
     TIME_OR_NIL = time_or_nil_block
     

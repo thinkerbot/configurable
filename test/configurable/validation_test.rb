@@ -299,7 +299,10 @@ class ValidationTest < Test::Unit::TestCase
   def test_regexp_documentation
     assert_equal Proc, regexp.class
     assert_equal(/regexp/, regexp.call(/regexp/))
-    assert_equal(/regexp/, regexp.call('regexp'))
+    
+    yaml_str = '!ruby/regexp /regexp/'
+    assert_equal(/regexp/, regexp.call(yaml_str))
+    
     assert_equal(/(?i)regexp/, regexp.call('(?i)regexp'))
   end
 
@@ -310,6 +313,16 @@ class ValidationTest < Test::Unit::TestCase
   def test_regexp_or_nil_documentation
     assert_equal nil, regexp_or_nil.call("~") 
     assert_equal nil, regexp_or_nil.call(nil) 
+  end
+  
+  def test_regexp_or_nil_with_regexp_documentation
+    assert_equal Proc, regexp_or_nil.class
+    assert_equal(/regexp/, regexp_or_nil.call(/regexp/))
+    
+    yaml_str = '!ruby/regexp /regexp/'
+    assert_equal(/regexp/, regexp_or_nil.call(yaml_str))
+    
+    assert_equal(/(?i)regexp/, regexp_or_nil.call('(?i)regexp'))
   end
   
   #
@@ -325,6 +338,9 @@ class ValidationTest < Test::Unit::TestCase
     assert_raises(ValidationError) { range.call(nil) }
     assert_raises(ValidationError) { range.call('1.10') }
     assert_raises(ValidationError) { range.call('a....z') }
+    
+    yaml_str = "!ruby/range \nbegin: 1\nend: 10\nexcl: false\n"
+    assert_equal 1..10, range.call(yaml_str)
   end
 
   #
@@ -336,6 +352,19 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal nil, range_or_nil.call(nil) 
   end
   
+  def test_range_or_nil_with_range_documentation
+    assert_equal Proc, range_or_nil.class
+    assert_equal 1..10, range_or_nil.call(1..10)
+    assert_equal 1..10, range_or_nil.call('1..10')
+    assert_equal 'a'..'z', range_or_nil.call('a..z')
+    assert_equal(-10...10, range_or_nil.call('-10...10'))
+    # assert_raises(ValidationError) { range.call(nil) }
+    assert_raises(ValidationError) { range_or_nil.call('1.10') }
+    assert_raises(ValidationError) { range_or_nil.call('a....z') }
+    
+    yaml_str = "!ruby/range \nbegin: 1\nend: 10\nexcl: false\n"
+    assert_equal 1..10, range_or_nil.call(yaml_str)
+  end
   #
   # time test
   #
@@ -362,5 +391,20 @@ class ValidationTest < Test::Unit::TestCase
   def test_time_or_nil_documentation
     assert_equal nil, time_or_nil.call("~") 
     assert_equal nil, time_or_nil.call(nil) 
+  end
+  
+  def test_time_or_nil_with_time_documentation
+    assert_equal Proc, time_or_nil.class
+    
+    now = Time.now
+    assert_equal now, time_or_nil.call(now)
+  
+    assert_equal '2008/08/08 12:00:00', time_or_nil.call('2008-08-08 20:00:00.00 +08:00').getutc.strftime('%Y/%m/%d %H:%M:%S')
+    assert_equal '2008/08/08 00:00:00', time_or_nil.call('2008-08-08').strftime('%Y/%m/%d %H:%M:%S')
+
+    assert_raises(ValidationError) { time_or_nil.call(1) }
+    # assert_raises(ValidationError) { time_or_nil.call(nil) }
+    
+    assert_equal Time.now.strftime('%Y/%m/%d %H:%M:%S'), time_or_nil.call('str').strftime('%Y/%m/%d %H:%M:%S')
   end
 end
