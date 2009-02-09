@@ -419,9 +419,10 @@ configurations:
     assert_equal(["a", "b"], args)
   end
   
-  def test_parse_raisess_error_if_no_value_is_available
+  def test_parse_raises_error_if_no_value_is_available
     c.on('--opt VALUE')
-    assert_raises(RuntimeError) { c.parse(["--opt"]) }
+    e = assert_raises(RuntimeError) { c.parse(["--opt"]) }
+    assert_equal "no value provided for: --opt", e.message
   end
   
   def test_parse_stops_parsing_on_option_break
