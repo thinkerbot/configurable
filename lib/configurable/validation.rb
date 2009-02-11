@@ -60,16 +60,22 @@ module Configurable
     #   else raise ValidationError.new(...)
     #   end
     #
-    # Note the validations input must be an Array or nil; validate will raise
-    # an ArgumentError otherwise.  All inputs are considered VALID if 
-    # validations == nil.
+    # A block may be provided to handle invalid inputs; if provided it will be
+    # called and a ValidationError will not be raised.  Note the validations
+    # input must be an Array or nil; validate will raise an ArgumentError
+    # otherwise.  All inputs are considered VALID if validations == nil.
     def validate(input, validations)
       case validations
       when Array
   
         case input
         when *validations then input
-        else raise ValidationError.new(input, validations)
+        else 
+          if block_given? 
+            yield(input)
+          else 
+            raise ValidationError.new(input, validations)
+          end
         end
     
       when nil then input
@@ -326,7 +332,7 @@ module Configurable
     NUMERIC_OR_NIL = yaml(Numeric, nil)
 
     # Returns a block that checks the input is a regexp. String inputs are
-    # loaded as yaml; if the result is still a string, it is converted to
+    # loaded as yaml; if the result is not a regexp, it is converted to
     # a regexp using Regexp#new.
     #
     #   regexp.class              # => Proc
@@ -342,8 +348,17 @@ module Configurable
     #
     def regexp(); REGEXP; end
     regexp_block = lambda do |input|
-      input = YAML.load(input) if input.kind_of?(String)
-      input = Regexp.new(input) if input.kind_of?(String)
+      if input.kind_of?(String)
+        begin
+          input = validate(YAML.load(input), [Regexp]) {|obj| input }
+        rescue(ArgumentError)
+        end
+      end
+      
+      if input.kind_of?(String)
+        input = Regexp.new(input)
+      end
+      
       validate(input, [Regexp])
     end
     REGEXP = regexp_block
@@ -382,10 +397,17 @@ module Configurable
     #
     def range(); RANGE; end
     range_block = lambda do |input|
-      input = YAML.load(input) if input.kind_of?(String)
+      if input.kind_of?(String)
+        begin
+          input = validate(YAML.load(input), [Range]) {|obj| input }
+        rescue(ArgumentError)
+        end
+      end
+      
       if input.kind_of?(String) && input =~ /^([^.]+)(\.{2,3})([^.]+)$/
         input = Range.new(YAML.load($1), YAML.load($3), $2.length == 3) 
       end
+      
       validate(input, [Range])
     end
     RANGE = range_block

@@ -34,6 +34,11 @@ class ValidationTest < Test::Unit::TestCase
     assert_raises(ValidationError) { validate("str", [/non/]) }
   end
   
+  def test_validate_yields_to_block_instead_of_raising_validation_error
+    result = validate("str", [/non/]) {|obj| "block return: #{obj}" }
+    assert_equal "block return: str", result 
+  end
+  
   def test_all_inputs_are_valid_if_validations_is_nil
     assert_equal "str", validate("str", nil)
     assert_equal 1, validate(1, nil)
@@ -305,6 +310,16 @@ class ValidationTest < Test::Unit::TestCase
     
     assert_equal(/(?i)regexp/, regexp.call('(?i)regexp'))
   end
+  
+  def test_regexp_converts_strings_that_do_not_load_to_regexps_into_regexps
+    assert_equal(/1/, regexp.call("1"))
+    assert_equal(//, regexp.call(""))
+    assert_equal(/false/, regexp.call("false"))
+  end
+  
+  def test_regexp_does_not_fail_for_bad_yaml
+    assert_equal(/: a/, regexp.call(": a"))
+  end
 
   #
   # regexp_or_nil test
@@ -342,7 +357,7 @@ class ValidationTest < Test::Unit::TestCase
     yaml_str = "!ruby/range \nbegin: 1\nend: 10\nexcl: false\n"
     assert_equal 1..10, range.call(yaml_str)
   end
-
+  
   #
   # range_or_nil test
   #
