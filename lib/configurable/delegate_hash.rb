@@ -52,7 +52,6 @@ module Configurable
     #
     # For more standard binding use: DelegateHash.new.bind(receiver)
     def initialize(delegates={}, store={}, receiver=nil)
-      @receiver = nil
       @store = store
       @delegates = delegates
       @receiver = receiver
