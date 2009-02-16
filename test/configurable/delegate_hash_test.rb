@@ -365,7 +365,7 @@ class DelegateHashTest < Test::Unit::TestCase
     d.store[:key] = nil
     
     assert_equal [:key], d.delegates.keys
-    assert_equal [:key, :unmapped], d.store.keys
+    assert_equal ['key', 'unmapped'], d.store.keys.collect {|key| key.to_s }.sort
     assert_equal [:key, :unmapped], d.keys
   end
   

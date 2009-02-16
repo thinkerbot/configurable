@@ -206,14 +206,14 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal nil, config.writer
   end
   
-  def test_block_without_writer_true_raisess_error
-    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => :alt) {} }
+  def test_block_without_writer_true_raises_error
+    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :a, 'val', :writer => :alt) {} }
     assert_equal "a block may not be specified without writer == true", e.message
     
-    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => false) {} }
+    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :b, 'val', :writer => false) {} }
     assert_equal "a block may not be specified without writer == true", e.message
     
-    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :key, 'val', :writer => nil) {} }
+    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :c, 'val', :writer => nil) {} }
     assert_equal "a block may not be specified without writer == true", e.message
   end
   

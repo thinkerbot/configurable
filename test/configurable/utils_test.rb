@@ -35,7 +35,7 @@ class Configurable::UtilsTest < Test::Unit::TestCase
   attr_reader :method_root
   
   def setup
-    @method_root = File.join(TEST_ROOT, method_name)
+    @method_root = File.join(TEST_ROOT, name)
   end
   
   def teardown
@@ -72,7 +72,7 @@ str: value
 }
 
     actual = dump(DumpExample.configurations, "\n") do |key, delegate|
-      yaml = {key => delegate.default}.to_yaml[5..-1]
+      yaml = YAML.dump({key => delegate.default})[5..-1]
       "# #{delegate[:desc]}\n#{yaml}\n"
     end
     assert_equal expected, actual
@@ -314,7 +314,7 @@ one: value
     path = File.join(method_root, path)
     FileUtils.mkdir_p(File.dirname(path))
     File.open(path, 'w') do |file| 
-      file << obj.to_yaml if obj
+      file << YAML.dump(obj) if obj
     end
     path
   end

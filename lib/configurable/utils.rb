@@ -10,7 +10,7 @@ module Configurable
       
       # note: this causes order to be lost...
       default = default.to_hash if delegate.is_nest?
-      {key => default}.to_yaml[5..-1]
+      YAML.dump({key => default})[5..-1]
     end
     
     # A block performing the default YAML dump.
@@ -45,7 +45,7 @@ module Configurable
     # specified manually.
     # 
     #   Utils.dump(DumpExample.configurations, "\n") do |key, delegate|
-    #     yaml = {key => delegate.default}.to_yaml[5..-1]
+    #     yaml = YAML.dump({key => delegate.default})[5..-1]
     #     "# #{delegate[:desc]}\n#{yaml}\n"
     #   end
     #   # => %q{
@@ -118,10 +118,10 @@ module Configurable
         end
       end
       
-      dumps.each do |path, content|
-        dir = File.dirname(path)
+      dumps.each do |dump_path, content|
+        dir = File.dirname(dump_path)
         Dir.mkdir(dir) unless File.exists?(dir)
-        File.open(path, "w") do |io|
+        File.open(dump_path, "w") do |io|
           io << content
         end 
       end unless preview

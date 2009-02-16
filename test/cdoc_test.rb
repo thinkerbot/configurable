@@ -5,7 +5,7 @@ class CDocTest < Test::Unit::TestCase
   
   def setup
     @current_dir = File.expand_path(Dir.pwd)
-    @root_dir = File.expand_path(File.dirname(__FILE__) + "/cdoc/#{method_name}")
+    @root_dir = File.expand_path(File.dirname(__FILE__) + "/cdoc/#{name}")
     Dir.chdir(@root_dir)
   end
   
