@@ -86,6 +86,10 @@ task :default => :test
 
 desc 'Run tests.'
 Rake::TestTask.new(:test) do |t|
+  t.libs = ['lib']
+  unless ENV['gems']
+    t.libs << 'submodule/lazydoc/lib'
+  end
   t.test_files = Dir.glob( File.join('test', ENV['pattern'] || '**/*_test.rb') )
   t.verbose = true
   t.warning = true
@@ -93,6 +97,10 @@ end
 
 desc "run checks"
 Rake::TestTask.new(:check) do |t|
+  t.libs = ['lib']
+  unless ENV['gems']
+    t.libs << 'submodule/lazydoc/lib'
+  end
   t.test_files = Dir.glob( File.join('test', ENV['pattern'] || '**/*_check.rb') )
   t.verbose = true
   t.warning = true
@@ -100,6 +108,10 @@ end
 
 desc 'run benchmarks.'
 Rake::TestTask.new(:bench) do |t|
+  t.libs = ['lib']
+  unless ENV['gems']
+    t.libs << 'submodule/lazydoc/lib'
+  end
   t.test_files = Dir.glob( File.join('test', ENV['pattern'] || '**/*_benchmark.rb') )
   t.verbose = true
   t.warning = true

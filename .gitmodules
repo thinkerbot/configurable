@@ -1,0 +1,3 @@
+[submodule "submodule/lazydoc"]
+	path = submodule/lazydoc
+	url = git://github.com/bahuvrihi/lazydoc.git
