@@ -10,12 +10,13 @@ Gem::Specification.new do |s|
   s.rubyforge_project = "tap"
   s.has_rdoc = true
   s.rdoc_options.concat %w{--title Configurable --main README --line-numbers --inline-source}
-  s.add_dependency("lazydoc", ">= 0.3.0")
+  s.add_dependency("lazydoc", ">= 0.3.1")
 
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{
     MIT-LICENSE
     README
+    History
   }
   
   # list the files you want to include here. you can

@@ -1,0 +1,9 @@
+== 0.3.0 / 2009-02-17
+
+Significant rework of the 0.1.0 release:
+
+* Added CDoc
+* Expanded use of nested configs
+* Added dumping of configs for config files
+* Updates to Range/Regexp validations
+* Numerous bug fixes
