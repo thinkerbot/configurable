@@ -256,7 +256,7 @@ module Configurable
     # instance_reader::       The method accessing the nested instance. (default: key)
     # instance_writer::       The method to set the nested instance. (default: "#{key}=")
     # instance_initializer::  The method that initializes the instance.
-    #                         (default: "#{key}_initialize")
+    #                         (default: "initialize_#{key}")
     # reader::                The method used to read the instance configuration.
     #                         (default: "#{key}_config_reader")
     # writer::                The method used to initialize or reconfigure the
@@ -321,7 +321,7 @@ module Configurable
       end
       
       # define initializer
-      initializer = define_attribute_method(:initializer, attributes, "#{key}_initializer") do |attribute|
+      initializer = define_attribute_method(:initializer, attributes, "initialize_#{key}") do |attribute|
         define_method(attribute) {|config| configurable_class.new.reconfigure(config) }
         private(attribute)
       end
