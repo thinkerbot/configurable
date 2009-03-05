@@ -137,9 +137,7 @@ module Configurable
       attributes = merge_attributes(block, attributes)
       
       # define the default public reader method
-      reader = attributes.delete(:reader)
-
-      case reader
+      case reader = attributes.delete(:reader)
       when true
         reader = key
         attr_reader(key) 
@@ -250,106 +248,68 @@ module Configurable
     # These attributes are ignored if no block is given; true/false/nil
     # values are meaningless and will be treated as the default.
     #
-    def nest(key, configurable_class, attributes={}, &block)
+    def nest(key, configurable_class=nil, attributes={}, &block)
       attributes = merge_attributes(block, attributes)
+      attributes = {
+        :instance_reader => true,
+        :instance_writer => true,
+        :initializer => true
+      }.merge(attributes)
       
-      if block_given?
-        instance_variable = "@#{key}".to_sym
-        nest_attr(key, configurable_class, attributes) do |input|
-          instance_variable_set(instance_variable, yield(input))
-        end
+      # define the nested configurable
+      if configurable_class
+        raise "a block is not allowed when a configurable class is specified" if block_given?
       else
-        nest_attr(key, configurable_class, attributes)
-      end
-    end  
-    
-    # Same as nest, except the initialize block executes in instance-context.
-    #
-    #   class C
-    #     include Configurable
-    #     nest(:a, A) {|overrides| A.new(overrides) }
-    #
-    #     def initialize(overrides={})
-    #       initialize_config(overrides)
-    #     end
-    #   end
-    #
-    #   # An equivalent class to illustrate instance-context
-    #   class EquivalentClass
-    #     attr_reader :a, A
-    #
-    #     def a_initialize(overrides)
-    #       A.new(overrides)
-    #     end
-    #
-    #     def initialize(overrides={})
-    #       @a = send(:a_initialize, overrides[:a] || {})
-    #     end
-    #   end
-    #
-    def nest_attr(key, configurable_class, attributes={}, &block)
-      unless configurable_class.kind_of?(Configurable::ClassMethods)
-        raise ArgumentError, "not a Configurable class: #{configurable_class}" 
+        configurable_class = Class.new { include Configurable }
+        configurable_class.class_eval(&block) if block_given?
       end
       
-      attributes = merge_attributes(block, attributes)
+      const_name = attributes.delete(:const_name) || key.to_s.capitalize
+      const_set(const_name, configurable_class)
+         
+      # define instance reader
+      instance_reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
+        attr_reader(key)
+        public(key)
+      end
       
-      # add some tracking attributes
-      attributes[:receiver] ||= configurable_class
+      # define instance writer
+      instance_writer = define_attribute_method(:instance_writer, attributes, "#{key}=") do |attribute|
+        attr_writer(key)
+        public(attribute)
+      end
       
-      # remove method attributes
-      instance_reader = attributes.delete(:instance_reader)
-      instance_writer = attributes.delete(:instance_writer)
-      initializer = attributes.delete(:instance_initializer)
-      reader = attributes.delete(:reader)
-      writer = attributes.delete(:writer)
+      # define initializer
+      initializer = define_attribute_method(:initializer, attributes, "#{key}_initializer") do |attribute|
+        define_method(attribute) {|config| configurable_class.new.reconfigure(config) }
+        private(attribute)
+      end
       
-      if block_given?
-        # define instance accessor methods
-        instance_reader = boolean_select(instance_reader, key)
-        instance_writer = boolean_select(instance_writer, "#{key}=")
-        instance_var = "@#{instance_reader}".to_sym
-        
-        initializer = boolean_select(reader, "#{key}_initialize")
-        reader = boolean_select(reader, "#{key}_config_reader")
-        writer = boolean_select(writer, "#{key}_config_writer")
-        
-        # the public accessor
-        attr_reader instance_reader
-        
-        define_method(instance_writer) do |value|
-          instance_variable_set(instance_var, value)
-        end
-        public(instance_reader, instance_writer)
-        
-        # the initializer
-        define_method(initializer, &block)
-
-        # the reader returns the config for the instance
-        define_method(reader) do
-          instance_variable_get(instance_var).config
-        end
-  
-        # the writer initializes the instance if necessary,
-        # or reconfigures the instance if it already exists
-        define_method(writer) do |value|
-          if instance_variable_defined?(instance_var) 
-            instance_variable_get(instance_var).reconfigure(value)
+      # define the reader
+      reader = define_attribute_method(:reader, attributes, "#{key}_config") do |attribute|
+        define_method(attribute) { send(instance_reader).config }
+        private(attribute)
+      end
+      
+      # define the writer
+      writer = define_attribute_method(:writer, attributes, "#{key}_config=") do |attribute|
+        define_method(attribute) do |value|
+          if instance = send(instance_reader)
+            instance.reconfigure(value)
           else
-            instance_variable_set(instance_var, send(initializer, value))
+            send(instance_writer, send(initializer, value))
           end
         end
-        private(reader, writer)
-      else
-        reader = writer = nil
+        private(attribute)
       end
       
-      value = DelegateHash.new(configurable_class.configurations)
-      configurations[key] = Delegate.new(reader, writer, value, attributes)
-  
+      # define the configuration
+      nested_config = DelegateHash.new(configurable_class.configurations)
+      configurations[key] = Delegate.new(reader, writer, nested_config, attributes)
+      
       check_infinite_nest(configurable_class.configurations)
-    end
-
+    end  
+    
     # Alias for Validation
     def c
       Validation
@@ -357,13 +317,30 @@ module Configurable
 
     private
     
-    # a helper to select a value or the default, if the default is true,
-    # false, or nil.  used by nest_attr to handle attributes
-    def boolean_select(value, default) # :nodoc:
-      case value
-      when true, false, nil then default
-      else value
+    # a helper to define methods that may be overridden in attributes.
+    # yields the default to the block if the default is supposed to
+    # be defined.  returns the symbolized method name.
+    def define_attribute_method(name, attributes, default) # :nodoc:
+      attribute = attributes.delete(name)
+      
+      case attribute
+      when true
+        # true means use the default and define the method
+        attribute = default
+        yield(attribute)
+        
+      when false
+        # false means use the default, but let the user define the method
+        attribute = default
+        
+      when nil
+        # nil is not allowed
+        raise "#{name.inspect} attribute cannot be nil"
       end
+      # ... all other values specify what the method should be,
+      # and lets the user define the method.
+
+      attribute.to_sym
     end
     
     # a helper to initialize configurations for the first time,
