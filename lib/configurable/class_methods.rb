@@ -133,6 +133,24 @@ module Configurable
     #     end
     #   end
     #
+    # === Attributes
+    #
+    # Several attributes may be specified to modify how a config is constructed.
+    # Attribute keys should be specified as symbols.
+    #
+    # Attribute::             Description            
+    # reader::                The method used to read the configuration.
+    #                         (default: key)
+    # writer::                The method used to write the configuration
+    #                         (default: "#{key}=")
+    #
+    # Neither attribute may be set to nil, but they may be set to non-default
+    # values.  In that case, config_attr will register the method names as
+    # provided, but it will not define the methods themselves. Specifying true
+    # uses and defines the default methods.  Specifying false uses the default
+    # method name, but does not define the method itself.
+    #
+    # Any additional attributes are registered with the configuration.
     def config_attr(key, value=nil, attributes={}, &block)
       attributes = merge_attributes(block, attributes)
       
@@ -154,90 +172,118 @@ module Configurable
       
       configurations[key] = Delegate.new(reader, writer, value, attributes)
     end
-
-    # Adds a configuration to self accessing the configurations for the
-    # configurable class.  Unlike config_attr and config, nest does not
-    # create accessors; the configurations must be accessed through
-    # the instance config method.
+    
+    # Adds nested configurations to self.  Nest creates a new configurable
+    # class using the block, and provides accessors to an instance of the
+    # new class.  Everything is set up so you can access configs through
+    # the instance or through config.
     #
     #   class A
     #     include Configurable
-    #     config :key, 'value'
     #
-    #     def initialize(overrides={})
-    #       initialize_config(overrides)
+    #     config :key, 'one'
+    #     nest :nest do
+    #       config :key, 'two'
     #     end
     #   end
+    #
+    #   a = A.new
+    #   a.key                     # => 'one'
+    #   a.config[:key]            # => 'one'
+    #
+    #   a.nest.key                # => 'two'
+    #   a.config[:nest][:key]     # => 'two'
+    # 
+    #   a.nest.key = 'TWO'
+    #   a.config[:nest][:key]     # => 'TWO'
+    #
+    #   a.config[:nest][:key] = 2
+    #   a.nest.key                # => 2
+    #
+    #   a.config.to_hash          # => {:key => 'one', :nest => {:key => 2}}
+    #   a.nest.config.to_hash     # => {:key => 2}
+    #   a.nest.class              # => A::Nest
+    #
+    # An existing configurable class may be provided instead of using the block
+    # to define a new configurable class.  Recursive nesting is supported.
     #
     #   class B
     #     include Configurable
-    #     nest :a, A
     #
-    #     def initialize(overrides={})
-    #       initialize_config(overrides)
+    #     config :key, 1, &c.integer
+    #     nest :nest do 
+    #       config :key, 2, &c.integer
+    #       nest :nest do
+    #         config :key, 3, &c.integer
+    #       end
     #     end
     #   end
-    #
-    #   b = B.new
-    #   b.config[:a]                   # => {:key => 'value'}
-    #
-    # Nest may be provided a block which initializes an instance of
-    # configurable_class.  In this case accessors for the instance
-    # are created and access becomes quite natural.
     #
     #   class C
     #     include Configurable
-    #     nest(:a, A) {|overrides| A.new(overrides) }
-    #
-    #     def initialize(overrides={})
-    #       initialize_config(overrides)
-    #     end
+    #     nest :a, A
+    #     nest :b, B
     #   end
     #
     #   c = C.new
-    #   c.a.key                        # => "value"
+    #   c.b.key = 7
+    #   c.b.nest.key = "8"
+    #   c.config[:b][:nest][:nest][:key] = "9"
     #
-    #   c.a.key = "one"
-    #   c.config[:a].to_hash           # => {:key => 'one'}
+    #   c.config.to_hash
+    #   # => {
+    #   # :a => {
+    #   #   :key => 'one',
+    #   #   :nest => {:key => 'two'}
+    #   # },
+    #   # :b => {
+    #   #   :key => 7,
+    #   #   :nest => {
+    #   #     :key => 8,
+    #   #     :nest => {:key => 9}
+    #   #   }
+    #   # }}
     #
-    #   c.config[:a][:key] = 'two'
-    #   c.a.key                        # => "two"
+    # === Attributes
     #
-    #   c.config[:a] = {:key => 'three'}
-    #   c.a.key                        # => "three"
+    # Nest provides a number of attributes that can modify how a nest is
+    # constructed.  Attribute keys should be specified as symbols.
     #
-    # The initialize block executes in class context, much like config.
+    # Attribute::             Description            
+    # const_name::            Determines the constant name of the configurable
+    #                         class within the nesting class.  May be nil.
+    #                         (default: key.to_s.capitalize)
+    # instance_reader::       The method accessing the nested instance. (default: key)
+    # instance_writer::       The method to set the nested instance. (default: "#{key}=")
+    # instance_initializer::  The method that initializes the instance.
+    #                         (default: "#{key}_initialize")
+    # reader::                The method used to read the instance configuration.
+    #                         (default: "#{key}_config_reader")
+    # writer::                The method used to initialize or reconfigure the
+    #                         instance. (default: "#{key}_config_writer")
     #
-    #   # An equivalent class to illustrate class-context
-    #   class EquivalentClass
-    #     attr_reader :a, A
+    # Except for const_name, these attributes are used to define methods
+    # required for nesting to work properly.  None of the method attributes may
+    # be set to nil, but they may be set to non-default values.  In that case,
+    # nest will register the method names as provided, but it will not define
+    # the methods themselves.  The user must define methods with the following
+    # functionality:
     #
-    #     INITIALIZE_BLOCK = lambda {|overrides| A.new(overrides) }
+    # Attribute::             Function          
+    # instance_reader::       Returns the instance of the configurable class
+    # instance_writer::       Inputs and sets the instance of the configurable class
+    # instance_initializer::  Receives the initial config and return an instance of
+    #                         configurable class
+    # reader::                Returns instance.config
+    # writer::                Reconfigures instance using the input overrides,
+    #                         or uses instance_initializer and instance_writer to
+    #                         initialize and set the instance.
     #
-    #     def initialize(overrides={})
-    #       @a = INITIALIZE_BLOCK.call(overrides[:a] || {})
-    #     end
-    #   end
+    # Methods can be public or otherwise.  Specifying true uses and defines the
+    # default methods.  Specifying false uses the default method name, but does
+    # not define the method itself.
     #
-    # Nest checks for recursive nesting and raises an error if a recursive nest
-    # is detected.
-    #
-    # ==== Attributes
-    #
-    # Nesting with an initialization block creates the public accessor for the
-    # instance, private methods to read and write the instance configurations,
-    # and a private method to initialize the instance. The default names
-    # for these methods are listed with the attributes to override them:
-    #
-    #   :instance_reader         key
-    #   :instance_writer         "#{key}="
-    #   :instance_initializer    "#{key}_initialize"
-    #   :reader                  "#{key}_config_reader"
-    #   :writer                  "#{key}_config_writer"
-    #
-    # These attributes are ignored if no block is given; true/false/nil
-    # values are meaningless and will be treated as the default.
-    #
+    # Any additional attributes are registered with the configuration.
     def nest(key, configurable_class=nil, attributes={}, &block)
       attributes = merge_attributes(block, attributes)
       attributes = {
@@ -254,9 +300,14 @@ module Configurable
         configurable_class.class_eval(&block) if block_given?
       end
       
-      const_name = attributes.delete(:const_name) || key.to_s.capitalize
-      const_set(const_name, configurable_class)
-         
+      # set the new constant
+      const_name = if attributes.has_key?(:const_name) 
+        attributes.delete(:const_name) 
+      else
+        key.to_s.capitalize
+      end
+      const_set(const_name, configurable_class) if const_name
+      
       # define instance reader
       instance_reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
         attr_reader(key)
@@ -276,13 +327,13 @@ module Configurable
       end
       
       # define the reader
-      reader = define_attribute_method(:reader, attributes, "#{key}_config") do |attribute|
+      reader = define_attribute_method(:reader, attributes, "#{key}_config_reader") do |attribute|
         define_method(attribute) { send(instance_reader).config }
         private(attribute)
       end
       
       # define the writer
-      writer = define_attribute_method(:writer, attributes, "#{key}_config=") do |attribute|
+      writer = define_attribute_method(:writer, attributes, "#{key}_config_writer") do |attribute|
         define_method(attribute) do |value|
           if instance = send(instance_reader)
             instance.reconfigure(value)

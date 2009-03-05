@@ -8,49 +8,70 @@ class NestTest < Test::Unit::TestCase
   # nest test
   #
   
-  # class A
-  #   include Configurable
-  #   config :key, 'value'
-  # 
-  #   def initialize(overrides={})
-  #     initialize_config(overrides)
-  #   end
-  # end
-  # 
-  # class B
-  #   include Configurable
-  #   nest :a, A
-  # 
-  #   def initialize(overrides={})
-  #     initialize_config(overrides)
-  #   end
-  # end
-  # 
-  # class C
-  #   include Configurable
-  #   nest(:a, A) {|overrides| A.new(overrides) }
-  # 
-  #   def initialize(overrides={})
-  #     initialize_config(overrides)
-  #   end
-  # end
+  class A
+    include Configurable
+
+    config :key, 'one'
+    nest :nest do
+      config :key, 'two'
+    end
+  end
   
-  # def test_nest_documentation
-  #   b = B.new
-  #   assert_equal({:key => 'value'}, b.config[:a])
-  # 
-  #   c = C.new
-  #   assert_equal("value", c.a.key)
-  #   
-  #   c.a.key = "one"
-  #   assert_equal({:key => 'one'}, c.config[:a].to_hash)
-  # 
-  #   c.config[:a][:key] = 'two'
-  #   assert_equal("two", c.a.key)
-  # 
-  #   c.config[:a] = {:key => 'three'}
-  #   assert_equal("three", c.a.key)
-  # end
+  class B
+    include Configurable
+
+    config :key, 1, &c.integer
+    nest :nest do 
+      config :key, 2, &c.integer
+      nest :nest do
+        config :key, 3, &c.integer
+      end
+    end
+  end
+
+  class C
+    include Configurable
+    nest :a, A
+    nest :b, B
+  end
+  
+  def test_documentation
+    a = A.new
+    assert_equal 'one', a.key
+    assert_equal 'one', a.config[:key]
+  
+    assert_equal 'two', a.nest.key
+    assert_equal 'two', a.config[:nest][:key]
+  
+    a.nest.key = 'TWO'
+    assert_equal 'TWO', a.config[:nest][:key]
+  
+    a.config[:nest][:key] = 2
+    assert_equal 2, a.nest.key
+  
+    assert_equal({:key => 'one', :nest => {:key => 2}}, a.config.to_hash)
+    assert_equal({:key => 2}, a.nest.config.to_hash)
+    assert_equal A::Nest, a.nest.class
+  
+    c = C.new
+    c.b.key = 7
+    c.b.nest.key = "8"
+    c.config[:b][:nest][:nest][:key] = "9"
+  
+    expected = {
+    :a => {
+      :key => 'one',
+      :nest => {:key => 'two'}
+    },
+    :b => {
+      :key => 7,
+      :nest => {
+        :key => 8,
+        :nest => {:key => 9}
+      }
+    }}
+    assert_equal expected, c.config.to_hash
+  end
   
   #
   # nest class definition
@@ -75,6 +96,18 @@ class NestTest < Test::Unit::TestCase
     assert NestDefinesConstantByAttribute.const_defined?(:Alt)
   end
   
+  class NestDoesNotDefineNilConstName
+    include Configurable
+    nest :nest, nil, :const_name => nil
+  end
+  
+  def test_nest_does_not_set_const_name_if_nil
+    assert !NestDefinesConstantByAttribute.const_defined?(:Nest)
+    
+    n = NestDoesNotDefineNilConstName.new
+    assert n.nest.kind_of?(Configurable)
+  end
+  
   class InputConfigurableClass
     include Configurable
   end
@@ -85,6 +118,11 @@ class NestTest < Test::Unit::TestCase
   end
   
   def test_nest_uses_configurable_class_if_specified
+    n = NestInheritsFromConfigurableClass.new
+    assert n.nest.kind_of?(InputConfigurableClass)
+  end
+  
+  def test_nest_sets_const_name_for_nested_class
     assert_equal InputConfigurableClass, NestInheritsFromConfigurableClass::Nest
   end
   
@@ -175,7 +213,7 @@ class NestTest < Test::Unit::TestCase
   
   def test_nest_initializes_instance_of_nested_configurable_class
     p = NestParent.new
-    assert_equal NestParent::Nest, p.nest.class
+    assert_equal NestChild, p.nest.class
   end
   
   def test_modification_of_configs_adjusts_instance_configs_and_vice_versa

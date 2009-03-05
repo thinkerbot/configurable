@@ -111,18 +111,14 @@ require 'configurable/class_methods'
 #   alt.set_sym('two')
 #   alt.config[:sym]          # => :two
 #
-# Idiosyncratically, true, false, and nil may also be provided as reader/writer
-# options. 
+# Idiosyncratically, true and false may also be provided as reader/writer
+# values.
 #
-#   true     Same as using the defaults, accessors are defined.
-#
-#   false    Sets the default reader/writer but does not define
+# true::     Same as using the defaults, accessors are defined.
+# false::    Sets the default reader/writer but does not define
 #            the accessors (think 'define reader/writer' => false).
 #
-#   nil      Does not define a reader/writer, and does not define
-#            the accessors. In effect this will define a config
-#            that does not map to the instance, but will be
-#            present in instance.config
+# Nil is not allowed as a value.
 #
 # ==== Non-reader/writer attributes
 #

@@ -136,6 +136,11 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal :reader, c.reader
   end
   
+  def test_reader_may_not_be_set_to_nil
+    e = assert_raises(ArgumentError) { c.reader = nil }
+    assert_equal "reader may not be nil", e.message
+  end
+  
   #
   # writer= test
   #
@@ -144,6 +149,11 @@ class DelegateTest < Test::Unit::TestCase
     c.writer = 'writer='
     assert_equal :writer=, c.writer
   end  
+  
+  def test_writer_may_not_be_set_to_nil
+    e = assert_raises(ArgumentError) { c.writer = nil }
+    assert_equal "writer may not be nil", e.message
+  end
   
   #
   # is_nest? test

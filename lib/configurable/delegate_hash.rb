@@ -58,8 +58,8 @@ module Configurable
     end
 
     # Binds self to the specified receiver.  Delegate values are removed from
-    # store and sent to their writer method on receiver.  If the store has no
-    # value for a delegate key, the delegate default value will be used.
+    # store and sent to their writer on receiver.  If the store has no value
+    # for a delegate key, the delegate default value will be used.
     def bind(receiver)
       raise ArgumentError, "receiver cannot be nil" if receiver == nil
       
@@ -89,10 +89,10 @@ module Configurable
       self
     end
 
-    # Retrieves the value corresponding to the key.  When bound, delegates with
-    # readers pull values from the receiver; otherwise the value in store will
-    # be returned.  When unbound, if the store has no value for a delegate, the
-    # delgate default value will be returned.
+    # Retrieves the value corresponding to the key.  When bound, delegates pull
+    # values from the receiver using the delegate.reader method; otherwise the
+    # value in store will be returned.  When unbound, if the store has no value
+    # for a delegate, the delgate default value will be returned.
     def [](key)
       return store[key] unless delegate = delegates[key]
       
@@ -106,15 +106,15 @@ module Configurable
       end
     end
 
-    # Stores a value for the key.  When bound, delegates with writers send the
-    # value to the receiver; otherwise values are stored in store.
+    # Stores a value for the key.  When bound, delegates set the value in the
+    # receiver using the delegate.writer method; otherwise values are stored in
+    # store.
     def []=(key, value)
       if bound? && delegate = delegates[key]
         receiver.send(delegate.writer, value)
-        return
+      else
+        store[key] = value
       end
-      
-      store[key] = value
     end
     
     # Returns the union of delegate and store keys.

@@ -27,8 +27,7 @@ module Configurable
     # line, in a web form, or a desktop app).
     attr_reader :attributes
 
-    # Initializes a new Delegate with the specified key 
-    # and default value.
+    # Initializes a new Delegate with the specified key and default value.
     def initialize(reader, writer="#{reader}=", default=nil, attributes={})
       self.default = default
       self.reader = reader
