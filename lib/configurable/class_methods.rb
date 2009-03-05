@@ -136,32 +136,22 @@ module Configurable
     def config_attr(key, value=nil, attributes={}, &block)
       attributes = merge_attributes(block, attributes)
       
-      # define the default public reader method
-      case reader = attributes.delete(:reader)
-      when true
-        reader = key
-        attr_reader(key) 
-        public(key)
-      when false
-        reader = key
+      # define the reader
+      reader = define_attribute_method(:reader, attributes, key) do |attribute|
+        attr_reader(attribute) 
+        public(attribute)
       end
-
-      # define the default public writer method
-      writer = attributes.delete(:writer)
-
-      if block_given? && writer != true
+      
+      # define the writer
+      if block_given? && attributes[:writer] != true
         raise ArgumentError, "a block may not be specified without writer == true"
       end
-
-      case writer
-      when true
-        writer = "#{key}="
-        block_given? ? define_method(writer, &block) : attr_writer(key)
-        public writer
-      when false
-        writer = "#{key}="
+      
+      writer = define_attribute_method(:writer, attributes, "#{key}=") do |attribute|
+        block_given? ? define_method(attribute, &block) : attr_writer(key)
+        public(attribute)
       end
-  
+      
       configurations[key] = Delegate.new(reader, writer, value, attributes)
     end
 

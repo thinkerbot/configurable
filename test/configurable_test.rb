@@ -173,7 +173,6 @@ class ConfigurableTest < Test::Unit::TestCase
     
     config_attr :trues, 'value', :reader => true, :writer => true
     config_attr :falses, 'value', :reader => false, :writer => false
-    config_attr :nils, 'value', :reader => nil, :writer => nil
   end
   
   def test_config_attr_reader_and_writer_true
@@ -196,24 +195,27 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :falses=, config.writer
   end
   
-  def test_config_attr_reader_and_writer_nil
-    o = ConfigAttrClass.new
-    assert !o.respond_to?(:nils)
-    assert !o.respond_to?(:nils=)
-    
-    config = ConfigAttrClass.configurations[:nils]
-    assert_equal nil, config.reader
-    assert_equal nil, config.writer
+  class InvalidAttrClass
+    include Configurable
+  end
+  
+  def test_config_attr_reader_and_writer_cannot_be_nil
+    e = assert_raises(RuntimeError) do
+      InvalidAttrClass.send(:config, :a, 'value', :reader => nil)
+    end
+    assert_equal ":reader attribute cannot be nil", e.message
+
+    e = assert_raises(RuntimeError) do
+      InvalidAttrClass.send(:config, :b, 'value', :writer => nil)
+    end
+    assert_equal ":writer attribute cannot be nil", e.message
   end
   
   def test_block_without_writer_true_raises_error
-    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :a, 'val', :writer => :alt) {} }
+    e = assert_raises(ArgumentError) { InvalidAttrClass.send(:config_attr, :a, 'val', :writer => :alt) {} }
     assert_equal "a block may not be specified without writer == true", e.message
     
-    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :b, 'val', :writer => false) {} }
-    assert_equal "a block may not be specified without writer == true", e.message
-    
-    e = assert_raises(ArgumentError) { ConfigAttrClass.send(:config_attr, :c, 'val', :writer => nil) {} }
+    e = assert_raises(ArgumentError) { InvalidAttrClass.send(:config_attr, :b, 'val', :writer => false) {} }
     assert_equal "a block may not be specified without writer == true", e.message
   end
   

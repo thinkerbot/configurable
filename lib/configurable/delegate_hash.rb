@@ -97,7 +97,7 @@ module Configurable
       return store[key] unless delegate = delegates[key]
       
       case
-      when bound? && delegate.reader
+      when bound?
         receiver.send(delegate.reader)
       when store.has_key?(key)
         store[key]
@@ -110,10 +110,8 @@ module Configurable
     # value to the receiver; otherwise values are stored in store.
     def []=(key, value)
       if bound? && delegate = delegates[key]
-        if delegate.writer
-          receiver.send(delegate.writer, value)
-          return
-        end
+        receiver.send(delegate.writer, value)
+        return
       end
       
       store[key] = value
@@ -181,8 +179,6 @@ module Configurable
     # helper to map delegate values from source to the receiver
     def map(source) # :nodoc:
       delegates.each_pair do |key, delegate|
-        next unless writer = delegate.writer
-        
         # map the value; if no value is set in the source then use the 
         # delegate default.  if map_default is false, then simply skip... 
         # this ensures each config is initialized to a value when bound
@@ -193,15 +189,14 @@ module Configurable
         else next
         end
         
-        receiver.send(writer, value)
+        receiver.send(delegate.writer, value)
       end
     end
     
     # helper to unmap delegates from the receiver to a target hash
     def unmap(target) # :nodoc:
       delegates.each_pair do |key, delegate|
-        next unless reader = delegate.reader
-        target[key] = receiver.send(reader)
+        target[key] = receiver.send(delegate.reader)
       end
     end
   end

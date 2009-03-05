@@ -61,16 +61,16 @@ module Configurable
       duplicate && @duplicable ? @default.dup : @default
     end
 
-    # Sets the reader for self.  The reader is symbolized,
-    # but may also be set to nil.
+    # Sets the reader for self.
     def reader=(value)
-      @reader = value == nil ? value : value.to_sym
+      raise ArgumentError, "reader may not be nil" if value == nil
+      @reader = value.to_sym
     end
 
-    # Sets the writer for self.  The writer is symbolized,
-    # but may also be set to nil.
+    # Sets the writer for self.
     def writer=(value)
-      @writer = value == nil ? value : value.to_sym
+      raise ArgumentError, "writer may not be nil" if value == nil
+      @writer = value.to_sym
     end
     
     # Returns true if the default value is a kind of DelegateHash.

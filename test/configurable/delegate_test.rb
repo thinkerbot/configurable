@@ -51,12 +51,6 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal({}, c.attributes)
   end
   
-  def test_reader_and_writer_may_be_set_to_nil_during_initialize
-    c = Delegate.new(nil, nil, 'default')
-    assert_equal nil, c.reader
-    assert_equal nil, c.writer
-  end
-  
   #
   # ASET test
   #
@@ -142,11 +136,6 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal :reader, c.reader
   end
   
-  def test_reader_may_be_set_to_nil
-    c.reader = nil
-    assert_equal nil, c.reader
-  end
-  
   #
   # writer= test
   #
@@ -155,11 +144,6 @@ class DelegateTest < Test::Unit::TestCase
     c.writer = 'writer='
     assert_equal :writer=, c.writer
   end  
-  
-  def test_writer_may_be_set_to_nil
-    c.writer = nil
-    assert_equal nil, c.writer
-  end
   
   #
   # is_nest? test

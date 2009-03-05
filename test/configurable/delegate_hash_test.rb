@@ -139,21 +139,6 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_nil r.key
   end
   
-  def test_bind_does_not_delegate_values_to_delegates_without_a_writer
-    d.delegates[:key].writer = nil
-    d.delegates[:key].default = 1
-    d.store[:key] = 1
-    d.store[:not_a_config] = 1
-    
-    assert_nil r.key
-    assert_equal({:key => 1, :not_a_config => 1}, d.store)
-    
-    d.bind(r)
-    
-    assert_nil r.key
-    assert_equal({:key => 1, :not_a_config => 1}, d.store)
-  end
-  
   def test_bind_does_nothing_if_bound_again_to_the_current_receiver
     assert_nil r.key
     
@@ -239,19 +224,6 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal 1, r.key
     assert_equal({:key => 1}, d.store)
   end
-  
-  def test_unbind_does_not_store_values_for_delegates_without_a_reader
-    d.delegates[:key].reader = nil
-    d.bind(r)
-  
-    r.key = 1
-    assert_equal({}, d.store)
-    
-    d.unbind
-    
-    assert_equal 1, r.key
-    assert_equal({}, d.store)
-  end
    
   def test_unbind_returns_self
     d.bind(r)
@@ -286,15 +258,6 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal nil, d[:unmapped]
     d.store[:unmapped] = "value"
     assert_equal "value", d[:unmapped]
-  end
-  
-  def test_AGET_returns_stored_value_if_delegate_has_no_reader
-    d.delegates[:key].reader = nil
-    d.bind(r)
-    
-    assert_equal nil, d.store[:unmapped]
-    d[:unmapped] = "value"
-    assert_equal "value", d.store[:unmapped]
   end
   
   def test_AGET_sets_missing_default_values_for_delegates_in_store_if_unbound
@@ -335,15 +298,6 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   def test_ASET_stores_value_in_store_if_bound_and_key_is_not_mapped
-    d.bind(r)
-  
-    assert_equal nil, d.store[:unmapped]
-    d[:unmapped] = "value"
-    assert_equal "value", d.store[:unmapped]
-  end
-  
-  def test_ASET_stores_value_in_store_if_config_has_no_writer
-    d.delegates[:key].writer = nil
     d.bind(r)
   
     assert_equal nil, d.store[:unmapped]
