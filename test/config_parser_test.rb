@@ -271,7 +271,12 @@ configurations:
     assert_equal({:key => 'value'}, c.default_config)
   end
   
-  def test_define_raisess_error_for_conflicting_keys
+  def test_define_does_not_add_or_generate_an_option_if_type_is_hidden
+    assert_equal nil, c.define(:key, 'value', :type => :hidden)
+    assert_equal [], c.options
+  end
+  
+  def test_define_raises_error_for_conflicting_keys
     c.define(:key)
     
     e = assert_raises(ArgumentError) { c.define(:key) }

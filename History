@@ -1,3 +1,8 @@
+== 0.4.1 
+
+* Simplified internal API for nesting (removed initialize_<key>)
+* Added :hidden option type to prevent declaration of an option
+
 == 0.4.0 / 2009-03-05
 
 Reworked nesting.  Changes are not backward compatible.

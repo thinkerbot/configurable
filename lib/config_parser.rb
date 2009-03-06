@@ -331,7 +331,8 @@ class ConfigParser
   #   psr.parse("--opt value")
   #   psr.config             # => {:opt => 'eulav'}
   #
-  # Define raises an error if key is already set by a different option.
+  # The :hidden type causes no configuration to be defined.  Raises an error if
+  # key is already set by a different option.
   def define(key, default_value=nil, attributes={})
     # check for conflicts and register
     if default_config.has_key?(key)
@@ -346,6 +347,7 @@ class ConfigParser
     when :switch then setup_switch(key, default_value, attributes)
     when :flag   then setup_flag(key, default_value, attributes)
     when :list   then setup_list(key, attributes)
+    when :hidden then return nil
     when nil     then setup_option(key, attributes)
     else
       if respond_to?("setup_#{attributes[:type]}")
