@@ -185,7 +185,7 @@ module Configurable
         # UNLESS map_default is set (indicating manual initialization)
         value = case
         when source.has_key?(key) then source.delete(key)
-        when delegate[:map_default, true] then delegate.default
+        when delegate[:set_default, true] then delegate.default
         else next
         end
         

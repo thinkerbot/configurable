@@ -122,11 +122,19 @@ require 'configurable/class_methods'
 #
 # ==== Non-reader/writer attributes
 #
-# Metadata for a config may be specified in attributes as well.  Attributes like
-# :desc, and :type are used by ConfigParser, for instance, to determine how to
-# represent the configuration on the command line.  Attributes are unstructured
-# so they can accomodate metadata for multiple contexts (ex a web or desktop 
-# interface), as needed.
+# Attributes provide metadata for how to use configurations in various contexts.
+# In general, attributes can be used to set any metadata an application
+# needs.  A few attributes are used internally by Configurable.
+#
+# Attribute::    Use::
+# set_default::  When set to false, the delegate will not map a default value
+#                during bind.  Specify when you manually initialize a config
+#                variable.
+# type::         Specifies the type of option ConfigParser generates for this
+#                Delegate (ex: :switch, :flag, :list, :hidden)
+# desc::         The description string used in the ConfigParser help
+# long::         The long option (default: key)
+# short::        The short option.
 #
 module Configurable
   autoload(:Utils, 'configurable/utils')

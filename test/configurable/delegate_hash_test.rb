@@ -130,7 +130,7 @@ class DelegateHashTest < Test::Unit::TestCase
   
   def test_bind_does_not_delegates_default_value_if_no_store_value_is_present_and_map_default_is_false
     d.delegates[:key].default = 1
-    d.delegates[:key][:map_default] = false
+    d.delegates[:key][:set_default] = false
     
     assert_nil r.key
     assert_equal({}, d.store)

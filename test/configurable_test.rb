@@ -445,6 +445,29 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal({:one => 'ONE', :two => 2}, t.config)
   end
   
+  class SetNoDefaultAttribute
+    include Configurable
+    
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+    
+    config :a, 'default'
+    config :b, 'default', :set_default => false
+  end
+  
+  def test_initialize_config_does_not_set_a_default_value_as_specified
+    c = SetNoDefaultAttribute.new
+    assert_equal "default", c.a
+    assert_equal nil, c.b
+  end
+  
+  def test_initialize_config_sets_overrides_when_set_default_is_false
+    c = SetNoDefaultAttribute.new :a => 'over', :b => 'ride'
+    assert_equal "over", c.a
+    assert_equal 'ride', c.b
+  end
+  
   #
   # initialize_copy test
   #

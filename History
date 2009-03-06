@@ -2,6 +2,7 @@
 
 * Simplified internal API for nesting (removed initialize_<key>)
 * Added :hidden option type to prevent declaration of an option
+* Refactored :map_default attribute to :set_default
 
 == 0.4.0 / 2009-03-05
 
