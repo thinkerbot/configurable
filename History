@@ -1,3 +1,10 @@
+== 0.4.0 / 2009-03-05
+
+Reworked nesting.  Changes are not backward compatible.
+
+* Nesting syntax reworked
+* Delegates no longer accept nil reader/writers
+
 == 0.3.0 / 2009-02-17
 
 Significant rework of the 0.1.0 release:
