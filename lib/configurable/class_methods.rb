@@ -255,12 +255,10 @@ module Configurable
     #                         (default: key.to_s.capitalize)
     # instance_reader::       The method accessing the nested instance. (default: key)
     # instance_writer::       The method to set the nested instance. (default: "#{key}=")
-    # instance_initializer::  The method that initializes the instance.
-    #                         (default: "initialize_#{key}")
-    # reader::                The method used to read the instance configuration.
+    # reader::                The method used to read the instance config.
     #                         (default: "#{key}_config_reader")
-    # writer::                The method used to initialize or reconfigure the
-    #                         instance. (default: "#{key}_config_writer")
+    # writer::                The method used to reconfigure the instance. 
+    #                         (default: "#{key}_config_writer")
     #
     # Except for const_name, these attributes are used to define methods
     # required for nesting to work properly.  None of the method attributes may
@@ -270,14 +268,12 @@ module Configurable
     # functionality:
     #
     # Attribute::             Function          
-    # instance_reader::       Returns the instance of the configurable class
+    # instance_reader::       Returns the instance of the configurable class 
+    #                         (initializing if necessary, by default nest initializes
+    #                         using configurable_class.new)
     # instance_writer::       Inputs and sets the instance of the configurable class
-    # instance_initializer::  Receives the initial config and return an instance of
-    #                         configurable class
     # reader::                Returns instance.config
-    # writer::                Reconfigures instance using the input overrides,
-    #                         or uses instance_initializer and instance_writer to
-    #                         initialize and set the instance.
+    # writer::                Reconfigures instance using the input overrides.
     #
     # Methods can be public or otherwise.  Specifying true uses and defines the
     # default methods.  Specifying false uses the default method name, but does
@@ -289,7 +285,6 @@ module Configurable
       attributes = {
         :instance_reader => true,
         :instance_writer => true,
-        :initializer => true
       }.merge(attributes)
       
       # define the nested configurable
@@ -310,7 +305,17 @@ module Configurable
       
       # define instance reader
       instance_reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
-        attr_reader(key)
+        instance_variable = "@#{key}".to_sym
+        
+        # gets or initializes the instance
+        define_method(attribute) do
+          if instance_variable_defined?(instance_variable)
+            instance_variable_get(instance_variable)
+          else
+            instance_variable_set(instance_variable, configurable_class.new)
+          end
+        end
+        
         public(key)
       end
       
@@ -320,26 +325,18 @@ module Configurable
         public(attribute)
       end
       
-      # define initializer
-      initializer = define_attribute_method(:initializer, attributes, "initialize_#{key}") do |attribute|
-        define_method(attribute) {|config| configurable_class.new.reconfigure(config) }
-        private(attribute)
-      end
-      
       # define the reader
       reader = define_attribute_method(:reader, attributes, "#{key}_config_reader") do |attribute|
-        define_method(attribute) { send(instance_reader).config }
+        define_method(attribute) do
+          send(instance_reader).config
+        end
         private(attribute)
       end
       
       # define the writer
       writer = define_attribute_method(:writer, attributes, "#{key}_config_writer") do |attribute|
         define_method(attribute) do |value|
-          if instance = send(instance_reader)
-            instance.reconfigure(value)
-          else
-            send(instance_writer, send(initializer, value))
-          end
+          send(instance_reader).reconfigure(value)
         end
         private(attribute)
       end
