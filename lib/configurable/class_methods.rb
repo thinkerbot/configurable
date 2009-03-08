@@ -273,7 +273,8 @@ module Configurable
     #                         using configurable_class.new)
     # instance_writer::       Inputs and sets the instance of the configurable class
     # reader::                Returns instance.config
-    # writer::                Reconfigures instance using the input overrides.
+    # writer::                Reconfigures instance using the input overrides, or
+    #                         sets instance if provided.
     #
     # Methods can be public or otherwise.  Specifying true uses and defines the
     # default methods.  Specifying false uses the default method name, but does
@@ -336,7 +337,11 @@ module Configurable
       # define the writer
       writer = define_attribute_method(:writer, attributes, "#{key}_config_writer") do |attribute|
         define_method(attribute) do |value|
-          send(instance_reader).reconfigure(value)
+          if value.kind_of?(configurable_class)
+            send(instance_writer, value)
+          else
+            send(instance_reader).reconfigure(value)
+          end
         end
         private(attribute)
       end

@@ -263,6 +263,21 @@ class NestTest < Test::Unit::TestCase
     assert_equal({:key => 'one'}, p.nest.config.to_hash)
   end
   
+  def test_instance_may_be_specified_as_config_value
+    c = NestChild.new
+    p = NestParent.new :nest => c
+    assert_equal c.object_id, p.nest.object_id
+  end
+  
+  def test_instance_may_be_set_during_reconfigure
+    c = NestChild.new
+    p = NestParent.new
+    assert c.object_id != p.nest.object_id
+    
+    p.reconfigure :nest => c
+    assert_equal c.object_id, p.nest.object_id
+  end
+  
   #
   # recursive nest test
   #
