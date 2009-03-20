@@ -494,4 +494,34 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal({:one => 'ONE', :two => 2, :three => 3}, t2.config)
   end
   
+  #
+  # to_yaml test
+  #
+  
+  class SerializeTest
+    include Configurable
+    config :key, 'value'
+    config :upcase, 'value' do |obj|
+      obj.upcase
+    end
+    config :int, 1, &c.integer
+  end
+  
+  def test_configurable_serializes_and_deserializes_cleanly_as_YAML
+    s = SerializeTest.new
+    s.reconfigure :store => 'value'
+    
+    assert_equal 'value', s.key
+    assert_equal 'VALUE', s.upcase
+    assert_equal 1, s.int
+    assert_equal 'value', s.config[:store]
+    
+    deserialized = YAML.load(YAML.dump(s))
+    
+    assert deserialized.object_id != s.object_id
+    assert_equal 'value', deserialized.key
+    assert_equal 'VALUE', deserialized.upcase
+    assert_equal 1, deserialized.int
+    assert_equal 'value', deserialized.config[:store]
+  end
 end
