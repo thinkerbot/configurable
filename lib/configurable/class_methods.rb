@@ -460,6 +460,33 @@ module Configurable
       super
       @insertion_order = orig.instance_variable_get(:@insertion_order).dup
     end
+    
+    # Overridden to load an array of [key, value] pairs in order (see to_yaml).
+    # The default behavior for loading from a hash of key-value pairs is
+    # preserved, but the insertion order will not be preserved.
+    def yaml_initialize( tag, val )
+      @insertion_order ||= []
+     
+      if Array === val
+        val.each do |k, v|
+          self[k] = v
+        end
+      else
+        super
+      end
+    end
+    
+    # Overridden to preserve insertion order by serializing self as an array
+    # of [key, value] pairs.
+    def to_yaml( opts = {} )
+      YAML::quick_emit( object_id, opts ) do |out|
+        out.seq( taguri, to_yaml_style ) do |seq|
+          each_pair do |key, value|
+            seq.add( [key, value] )
+          end
+        end
+      end
+    end
   end
   
   module ClassMethods

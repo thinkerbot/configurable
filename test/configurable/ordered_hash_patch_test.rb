@@ -12,11 +12,11 @@ class OrderedHashPatchTest < Test::Unit::TestCase
   
   def test_keys_are_returned_in_insertion_order
     h = OrderedHashPatch.new
-    %w{a b c d e f g h}.each do |key|
+    %w{e f g a b c d h}.each do |key|
       h[key] = key.to_sym
     end
 
-    assert_equal %w{a b c d e f g h}, h.keys
+    assert_equal %w{e f g a b c d h}, h.keys
   end
   
   #
@@ -25,7 +25,7 @@ class OrderedHashPatchTest < Test::Unit::TestCase
   
   def test_each_pair_iterates_keys_in_keys_order
     h = OrderedHashPatch.new
-    %w{a b c d e f g h}.each do |key|
+    %w{e f g a b c d h}.each do |key|
       h[key] = key.to_sym
     end
     
@@ -35,13 +35,13 @@ class OrderedHashPatchTest < Test::Unit::TestCase
     end
     
     assert_equal [
+      ['e', :e],
+      ['f', :f],
+      ['g', :g],
       ['a', :a],
       ['b', :b],
       ['c', :c],
       ['d', :d],
-      ['e', :e],
-      ['f', :f],
-      ['g', :g],
       ['h', :h],
     ], order
   end
@@ -67,6 +67,49 @@ class OrderedHashPatchTest < Test::Unit::TestCase
     
     assert_equal %w{a b c d e f g h}, h.keys
     assert_equal %w{a b c d h g f e}, d.keys
+  end
+  
+  #
+  # YAML tests
+  #
+  
+  def test_ordered_hash_preserves_order_over_dump_load
+    h = OrderedHashPatch.new
+    %w{e f g a b c d h}.each do |key|
+      h[key] = key.to_sym
+    end
+    
+    d = YAML.load(YAML.dump(h))
+    assert d == h
+    assert d.object_id != h.object_id
+    
+    order = []
+    d.each_pair do |key, value|
+      order << key
+    end
+    assert_equal %w{e f g a b c d h}, order
+  end
+  
+  def test_ordered_hash_can_be_unfaithfully_loaded_from_hash_yaml
+    yaml = %Q{--- !map:Configurable::OrderedHashPatch 
+e: :e
+f: :f
+g: :g
+a: :a
+b: :b
+c: :c
+d: :d
+h: :h
+}
+    d = YAML.load(yaml)
+    assert_equal OrderedHashPatch, d.class
+
+    order = []
+    d.each_pair do |key, value|
+      order << key
+    end
+    assert %w{e f g a b c d h} != order
+    assert_equal %w{a b c d e f g h}, order.sort
   end
   
 end if Configurable.const_defined?(:OrderedHashPatch)
