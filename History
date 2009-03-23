@@ -1,8 +1,9 @@
-== 0.4.1 
+== 0.4.1 / 2009-03-23
 
 * Simplified internal API for nesting (removed initialize_<key>)
 * Added :hidden option type to prevent declaration of an option
 * Refactored :map_default attribute to :set_default
+* Made OrderedHashPatch preserve order when serialized as YAML
 
 == 0.4.0 / 2009-03-05
 
