@@ -198,7 +198,10 @@ module Configurable
   # configurations. 
   def open_io(io, mode='r')
     case io
-    when String then File.open(io, mode) {|file| yield(file) }
+    when String
+      dir = File.dirname(io)
+      FileUtils.mkdir_p(dir) unless File.directory?(dir)
+      File.open(io, mode) {|file| yield(file) }
     when nil
     else yield(io)
     end

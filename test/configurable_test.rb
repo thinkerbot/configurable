@@ -1,5 +1,6 @@
 require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'configurable'
+require 'tempfile'
 
 class ConfigurableTest < Test::Unit::TestCase
   Delegate = Configurable::Delegate
@@ -492,6 +493,80 @@ class ConfigurableTest < Test::Unit::TestCase
     
     t2 = t1.dup
     assert_equal({:one => 'ONE', :two => 2, :three => 3}, t2.config)
+  end
+  
+  #
+  # open_io test
+  #
+  
+  class IoSample
+    include Configurable
+    config :output, $stdout, &c.io_or_nil(:<<)
+
+    def say_hello
+      open_io(output, 'w') do |io|
+        io << 'hello!'
+      end
+    end
+  end
+  
+  def test_open_io_yields_IO_to_block
+    Tempfile.open('io_sample', Dir::tmpdir) do |io|
+      s = IoSample.new
+      s.output = io
+      s.say_hello
+      
+      io.flush
+      io.rewind
+      assert_equal 'hello!', io.read
+    end
+  end
+  
+  def test_open_io_opens_filepath_and_passes_file_to_block
+    temp = Tempfile.new('io_sample')
+    temp.close
+    
+    assert_equal '', File.read(temp.path)
+    
+    s = IoSample.new
+    s.output = temp.path
+    s.say_hello
+
+    assert_equal 'hello!', File.read(temp.path)
+  end
+  
+  def test_open_io_makes_parent_directories_if_needed
+    path = __FILE__.chomp('.rb') + "/test_open_io_makes_parent_directories_if_needed/file.txt"
+    assert !File.exists?(File.dirname(path))
+    
+    begin
+      s = IoSample.new
+      s.output = path
+      s.say_hello
+
+      assert_equal 'hello!', File.read(path)
+    ensure
+      if File.exists?(path)
+        FileUtils.rm(path)
+        FileUtils.rmdir(File.dirname(path))
+      end
+    end
+  end
+  
+  def test_open_io_passes_non_nil_objects_to_block
+    array = []
+    
+    s = IoSample.new
+    s.output = array
+    s.say_hello
+    
+    assert_equal ['hello!'], array
+  end
+  
+  def test_open_io_does_not_pass_nil_to_block
+    s = IoSample.new
+    s.output = nil 
+    s.say_hello # no error raised
   end
   
   #
