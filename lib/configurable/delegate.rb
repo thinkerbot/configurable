@@ -22,23 +22,25 @@ module Configurable
     # The writer method, by default key=
     attr_reader :writer
 
-    # An hash of metadata for self, used to present the 
-    # delegate in different contexts (ex on the command
-    # line, in a web form, or a desktop app).
+    # An hash of metadata for self, used to present the delegate in different
+    # contexts (ex on the command line, in a web form, or a desktop app).
+    # Note that attributes should be set through []= and not through this
+    # reader.
     attr_reader :attributes
 
     # Initializes a new Delegate with the specified key and default value.
     def initialize(reader, writer="#{reader}=", default=nil, attributes={})
+      @attributes = attributes
+      
       self.default = default
       self.reader = reader
       self.writer = writer
-  
-      @attributes = attributes
     end
     
     # Sets the value of an attribute.
     def []=(key, value)
       attributes[key] = value
+      reset_duplicable if key == :duplicate_default
     end
     
     # Returns the value for the specified attribute, or
@@ -49,13 +51,14 @@ module Configurable
 
     # Sets the default value for self.
     def default=(value)
-      @duplicable = Delegate.duplicable_value?(value)
       @default = value
+      reset_duplicable
     end
 
-    # Returns the default value, or a duplicate of the default
-    # value if specified and the default value is duplicable
-    # (see Delegate.duplicable_value?)
+    # Returns the default value, or a duplicate of the default value if specified.
+    # The default value will not be duplicated unless duplicable (see 
+    # Delegate.duplicable_value?).  Duplication can also be turned off by
+    # specifying self[:duplicate_default] = false.
     def default(duplicate=true)
       duplicate && @duplicable ? @default.dup : @default
     end
@@ -85,6 +88,16 @@ module Configurable
       self.reader == another.reader &&
       self.writer == another.writer &&
       self.default(false) == another.default(false)
+    end
+    
+    private
+    
+    # resets marker indiciating whether or not a default value is duplicable
+    def reset_duplicable # :nodoc:
+      @duplicable = case attributes[:duplicate_default]
+      when true, nil then Delegate.duplicable_value?(@default)
+      else false
+      end
     end
   end
 end

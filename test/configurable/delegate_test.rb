@@ -120,6 +120,33 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal a.object_id, c.default.object_id
   end
   
+  def test_default_does_not_duplicate_if_specified_by_duplicate_default_attribute
+    a = [1,2,3]
+    c.default = a
+    c[:duplicate_default] = false
+  
+    assert_equal a, c.default
+    assert_equal a.object_id, c.default.object_id
+  end
+  
+  def test_default_does_duplicate_if_specified_by_duplicate_default_attribute
+    a = [1,2,3]
+    c.default = a
+    c[:duplicate_default] = true
+  
+    assert_equal a, c.default
+    assert a.object_id != c.default.object_id
+  end
+  
+  def test_duplicate_default_attribute_may_be_set_before_default_is_set
+    a = [1,2,3]
+    c[:duplicate_default] = false
+    c.default = a
+    
+    assert_equal a, c.default
+    assert_equal a.object_id, c.default.object_id
+  end
+  
   #
   # reader= test
   #
