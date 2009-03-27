@@ -5,6 +5,7 @@
   value duplication
 * standardized formatting of argument names
 * added select and list_select validations
+* added io validation + open_io method
 
 == 0.4.1 / 2009-03-23
 

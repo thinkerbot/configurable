@@ -460,4 +460,25 @@ class ValidationTest < Test::Unit::TestCase
     assert_raises(ValidationError) { s.call([0]) }
     assert_raises(ValidationError) { s.call(['4']) }
   end
+  
+  #
+  # io test
+  #
+  
+  def test_io_documentation
+    assert_equal Proc, io.class
+    assert_equal $stdout, io.call($stdout)
+    assert_equal '/path/to/file', io.call('/path/to/file')
+  
+    assert_raises(ValidationError) { io.call(nil) }
+    assert_raises(ValidationError) { io.call(10)  }
+  end
+  
+  #
+  # io_or_nil test
+  #
+  
+  def test_io_or_nil_documentation
+    assert_equal nil, io_or_nil.call(nil)
+  end
 end

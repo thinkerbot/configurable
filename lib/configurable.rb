@@ -173,6 +173,37 @@ module Configurable
   end
 
   protected
+  
+  # Opens the file specified by io and yield it to the block.  If io is an
+  # IO, it will be yielded immediately, and the mode is ignored.  Nil io are
+  # simply ignored.  The input io is always returned.
+  #
+  # === Usage
+  #
+  # open_io is used to compliment the io validation, to ensure that if a file
+  # is specified, it will be closed.
+  #
+  #   class IoSample
+  #     include Configurable
+  #     config :output, $stdout, &c.io    # can be an io or filepath
+  #
+  #     def say_hello
+  #       open_io(output, 'w') do |io|
+  #         io << 'hello!'
+  #       end
+  #     end
+  #   end
+  #
+  # In short, this method provides a way to responsibly handle IO and file
+  # configurations. 
+  def open_io(io, mode='r')
+    case io
+    when String then File.open(io, mode) {|file| yield(file) }
+    when nil
+    else yield(io)
+    end
+    io
+  end
 
   # Initializes config. Default config values 
   # are overridden as specified by overrides.

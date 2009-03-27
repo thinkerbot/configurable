@@ -537,6 +537,10 @@ module Configurable
     #   s.call(0)                    # => ValidationError
     #   s.call('4')                  # => ValidationError
     #
+    # The select block is registered with these default attributes: 
+    #
+    #  {:type => :select, :values => values}
+    #
     def select(*values, &validation)
       block = lambda do |input|
         input = validation.call(input) if validation
@@ -561,6 +565,10 @@ module Configurable
     #   s.call([0])                  # => ValidationError
     #   s.call(['4'])                # => ValidationError
     #
+    # The list_select block is registered with these default attributes: 
+    #
+    #  {:type => :list_select, :values => values, :split => ','}
+    #
     def list_select(*values, &validation)
       block = lambda do |input|
         args = validate(input, [Array])
@@ -570,5 +578,30 @@ module Configurable
       
       register(block, :type => :list_select, :values => values, :split => ',')
     end
+    
+    # Returns a block validating the input is an IO or a string.  String inputs
+    # are expected to be filepaths, but io does not open a file immediately.
+    #
+    #   io.class                     # => Proc
+    #   io.call($stdout)             # => $stdout
+    #   io.call('/path/to/file')     # => '/path/to/file'
+    #
+    #   io.call(nil)                 # => ValidationError
+    #   io.call(10)                  # => ValidationError
+    #
+    def io(); IO_OR_STRING; end
+    
+    # default attributes {:type => :io, :example => "/path/to/file"}
+    IO_OR_STRING = check(IO, String)
+    register IO_OR_STRING, :type => :io, :example => "/path/to/file"
+    
+    # Same as io but allows nil:
+    #
+    #   io_or_nil.call(nil)          # => nil
+    #
+    def io_or_nil(); IO_STRING_OR_NIL; end
+    
+    IO_STRING_OR_NIL = check(IO, String, nil)
+    register_as IO_OR_STRING, IO_STRING_OR_NIL
   end
 end
