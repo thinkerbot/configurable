@@ -85,13 +85,6 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal 1, c.default
   end
   
-  def test_set_default_freezes_object
-    a = []
-    assert !a.frozen?
-    c.default = a
-    assert a.frozen?
-  end
-  
   #
   # default test
   #

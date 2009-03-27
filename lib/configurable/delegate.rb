@@ -50,7 +50,7 @@ module Configurable
     # Sets the default value for self.
     def default=(value)
       @duplicable = Delegate.duplicable_value?(value)
-      @default = value.freeze
+      @default = value
     end
 
     # Returns the default value, or a duplicate of the default

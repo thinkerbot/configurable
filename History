@@ -1,3 +1,7 @@
+==
+
+* set delegate default no longer freezes value
+
 == 0.4.1 / 2009-03-23
 
 * Simplified internal API for nesting (removed initialize_<key>)
