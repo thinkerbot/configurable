@@ -625,7 +625,7 @@ configurations:
 specials:
         --[no-]switch
         --flag
-        --list A,B,C
+        --list LIST
 }
     assert_equal expected, "\n" + c.to_s
   end

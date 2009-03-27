@@ -48,6 +48,12 @@ module Configurable
       DEFAULT_ATTRIBUTES[block] = attributes
     end
     
+    # Registers the default attributes of the source as the attributes
+    # of the target.  Attributes are duplicated so they may be modifed.
+    def register_as(source, target)
+      DEFAULT_ATTRIBUTES[target] = DEFAULT_ATTRIBUTES[source].dup
+    end
+    
     # Returns input if it matches any of the validations as in would in a case
     # statement.  Raises a ValidationError otherwise.  For example:
     #
@@ -127,8 +133,11 @@ module Configurable
       input = validate(input, [String])
       eval %Q{"#{input}"}
     end
+    
+    # default attributes {:type => :string, :example => "string"}
     STRING = string_validation_block
-
+    register STRING, :type => :string, :example => "string"
+    
     # Same as string but allows nil.  Note the special
     # behavior of the nil string '~' -- rather than
     # being treated as a string, it is processed as nil
@@ -145,8 +154,10 @@ module Configurable
       else eval %Q{"#{input}"}
       end
     end
+    
     STRING_OR_NIL = string_or_nil_validation_block
-
+    register_as STRING, STRING_OR_NIL
+    
     # Returns a block that checks the input is a symbol.
     # String inputs are loaded as yaml first.
     #
@@ -157,15 +168,20 @@ module Configurable
     #   symbol.call('str')        # => ValidationError
     #
     def symbol(); SYMBOL; end
+    
+    # default attributes {:type => :symbol, :example => ":sym"}
     SYMBOL = yaml(Symbol)
-
+    register SYMBOL, :type => :symbol, :example => ":sym"
+    
     # Same as symbol but allows nil:
     #
     #   symbol_or_nil.call('~')   # => nil
     #   symbol_or_nil.call(nil)   # => nil
     def symbol_or_nil(); SYMBOL_OR_NIL; end
+    
     SYMBOL_OR_NIL = yaml(Symbol, nil)
-
+    register_as SYMBOL, SYMBOL_OR_NIL
+    
     # Returns a block that checks the input is true, false or nil.
     # String inputs are loaded as yaml first.
     #
@@ -182,7 +198,10 @@ module Configurable
     #   boolean.call("str")       # => ValidationError
     #
     def boolean(); BOOLEAN; end
+    
+    # default attributes {:type => :boolean, :example => "true"}
     BOOLEAN = yaml(true, false, nil)
+    register BOOLEAN, :type => :boolean, :example => "true"
 
     # Same as boolean.
     def switch(); SWITCH; end
@@ -209,9 +228,9 @@ module Configurable
     #
     def array(); ARRAY; end
     
-    # default attributes {:arg_name => "'[a, b, c]'"}
+    # default attributes {:type => :array, :example => "[a, b, c]"}
     ARRAY = yaml(Array)
-    register ARRAY, :arg_name => "'[a, b, c]'"
+    register ARRAY, :type => :array, :example => "[a, b, c]"
 
     # Same as array but allows nil:
     #
@@ -219,9 +238,8 @@ module Configurable
     #   array_or_nil.call(nil)    # => nil
     def array_or_nil(); ARRAY_OR_NIL; end
     
-    # default attributes {:arg_name => "'[a, b, c]'"}
     ARRAY_OR_NIL = yaml(Array, nil)
-    register ARRAY_OR_NIL, :arg_name => "'[a, b, c]'"
+    register_as ARRAY, ARRAY_OR_NIL
 
     # Returns a block that checks the input is an array,
     # then yamlizes each string value of the array.
@@ -254,9 +272,9 @@ module Configurable
     #
     def hash(); HASH; end
     
-    # default attributes {:arg_name => "'{one: 1, two: 2}'"}
+    # default attributes {:type => :hash, :example => "{one: 1, two: 2}"}
     HASH = yaml(Hash)
-    register HASH, :arg_name => "'{one: 1, two: 2}'"
+    register HASH, :type => :hash, :example => "{one: 1, two: 2}"
 
     # Same as hash but allows nil:
     #
@@ -264,9 +282,8 @@ module Configurable
     #   hash_or_nil.call(nil)          # => nil
     def hash_or_nil(); HASH_OR_NIL; end
     
-    # default attributes {:arg_name => "'{one: 1, two: 2}'"}
     HASH_OR_NIL = yaml(Hash, nil)
-    register HASH_OR_NIL, :arg_name => "'{one: 1, two: 2}'"
+    register_as HASH, HASH_OR_NIL
 
     # Returns a block that checks the input is an integer.
     # String inputs are loaded as yaml first.
@@ -279,15 +296,20 @@ module Configurable
     #   integer.call('str')       # => ValidationError
     #
     def integer(); INTEGER; end
+    
+    # default attributes {:type => :integer, :example => "2"}
     INTEGER = yaml(Integer)
-
+    register INTEGER, :type => :integer, :example => "2"
+    
     # Same as integer but allows nil:
     #
     #   integer_or_nil.call('~')  # => nil
     #   integer_or_nil.call(nil)  # => nil
     def integer_or_nil(); INTEGER_OR_NIL; end
+    
     INTEGER_OR_NIL = yaml(Integer, nil)
-
+    register_as INTEGER, INTEGER_OR_NIL
+    
     # Returns a block that checks the input is a float.
     # String inputs are loaded as yaml first.
     #
@@ -300,14 +322,19 @@ module Configurable
     #   float.call('str')         # => ValidationError
     #
     def float(); FLOAT; end
+    
+    # default attributes {:type => :float, :example => "2.2"}
     FLOAT = yaml(Float)
-
+    register FLOAT, :type => :float, :example => "2.2"
+    
     # Same as float but allows nil:
     #
     #   float_or_nil.call('~')    # => nil
     #   float_or_nil.call(nil)    # => nil
     def float_or_nil(); FLOAT_OR_NIL; end
+
     FLOAT_OR_NIL = yaml(Float, nil)
+    register_as FLOAT, FLOAT_OR_NIL
 
     # Returns a block that checks the input is a number.
     # String inputs are loaded as yaml first.
@@ -322,14 +349,19 @@ module Configurable
     #   num.call('str')         # => ValidationError
     #
     def num(); NUMERIC; end
+    
+    # default attributes {:type => :num, :example => "2, 2.2, 2e2"}
     NUMERIC = yaml(Numeric)
-
+    register NUMERIC, :type => :num, :example => "2, 2.2, 2e2"
+    
     # Same as num but allows nil:
     #
     #   num_or_nil.call('~')    # => nil
     #   num_or_nil.call(nil)    # => nil
     def num_or_nil(); NUMERIC_OR_NIL; end
+    
     NUMERIC_OR_NIL = yaml(Numeric, nil)
+    register_as NUMERIC, NUMERIC_OR_NIL
 
     # Returns a block that checks the input is a regexp. String inputs are
     # loaded as yaml; if the result is not a regexp, it is converted to
@@ -361,7 +393,10 @@ module Configurable
       
       validate(input, [Regexp])
     end
+    
+    # default attributes {:type => :regexp, :example => "/regexp/i"}
     REGEXP = regexp_block
+    register REGEXP, :type => :regexp, :example => "/regexp/i"
 
     # Same as regexp but allows nil. Note the special behavior of the nil
     # string '~' -- rather than being converted to a regexp, it is processed
@@ -376,7 +411,9 @@ module Configurable
       else REGEXP[input]
       end
     end
+    
     REGEXP_OR_NIL = regexp_or_nil_block
+    register_as REGEXP, REGEXP_OR_NIL
 
     # Returns a block that checks the input is a range. String inputs are
     # loaded as yaml; if the result is still a string, it is split into a
@@ -410,8 +447,11 @@ module Configurable
       
       validate(input, [Range])
     end
+    
+    # default attributes {:type => :range, :example => "min..max"}
     RANGE = range_block
-
+    register RANGE, :type => :range, :example => "min..max"
+    
     # Same as range but allows nil:
     #
     #   range_or_nil.call('~')    # => nil
@@ -423,7 +463,9 @@ module Configurable
       else RANGE[input]
       end
     end
+    
     RANGE_OR_NIL = range_or_nil_block
+    register_as RANGE, RANGE_OR_NIL
 
     # Returns a block that checks the input is a Time. String inputs are 
     # loaded using Time.parse and then converted into times.  Parsed times 
@@ -460,8 +502,11 @@ module Configurable
       input = Time.parse(input) if input.kind_of?(String)
       validate(input, [Time])
     end
+    
+    # default attributes {:type => :time, :example => "2008-08-08 08:00:00"}
     TIME = time_block
-
+    register TIME, :type => :time, :example => "2008-08-08 08:00:00"
+    
     # Same as time but allows nil:
     #
     #   time_or_nil.call('~')    # => nil
@@ -474,7 +519,8 @@ module Configurable
       else TIME[input]
       end
     end 
-    TIME_OR_NIL = time_or_nil_block
     
+    TIME_OR_NIL = time_or_nil_block
+    register_as TIME, TIME_OR_NIL
   end
 end

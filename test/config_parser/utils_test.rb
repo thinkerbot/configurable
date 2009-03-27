@@ -272,7 +272,7 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
   def test_setup_list_infers_split_argname_with_split
     options = {:split => ','}
     setup_list(:key, options)
-    assert_equal({:long => '--key', :arg_name => 'A,B,C', :split => ','}, options)
+    assert_equal({:long => '--key', :arg_name => 'KEY', :split => ','}, options)
   end
   
   def test_setup_list_does_not_overwrite_existing_long_and_argname

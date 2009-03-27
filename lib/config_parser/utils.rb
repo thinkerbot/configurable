@@ -120,19 +120,15 @@ class ConfigParser
     # Attributes:
     #
     #   :long      the long key ("--key")
-    #   :arg_name  the argument name ("KEY" or "A,B,C" for a comma split) 
+    #   :arg_name  the argument name ("KEY")
     #   :split     the split character
     #
     def setup_list(key, attributes={})
       attributes[:long] ||= "--#{key}"
+      attributes[:long].to_s =~ /^(--)?(.*)$/ 
+      attributes[:arg_name] ||= $2.upcase
       
-      if split = attributes[:split]
-        attributes[:arg_name] ||= %w{A B C}.join(split)
-      else
-        attributes[:long].to_s =~ /^(--)?(.*)$/ 
-        attributes[:arg_name] ||= $2.upcase
-      end
-      
+      split = attributes[:split]
       n = attributes[:n]
       
       lambda do |value|

@@ -348,12 +348,11 @@ class ConfigParser
     when :flag   then setup_flag(key, default_value, attributes)
     when :list   then setup_list(key, attributes)
     when :hidden then return nil
-    when nil     then setup_option(key, attributes)
     else
       if respond_to?("setup_#{attributes[:type]}")
         send("setup_#{attributes[:type]}", key, default_value, attributes)
       else
-        raise ArgumentError, "unsupported type: #{attributes[:type]}"
+        setup_option(key, attributes)
       end
     end
     
