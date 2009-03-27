@@ -422,4 +422,42 @@ class ValidationTest < Test::Unit::TestCase
     
     assert_equal Time.now.strftime('%Y/%m/%d %H:%M:%S'), time_or_nil.call('str').strftime('%Y/%m/%d %H:%M:%S')
   end
+  
+  #
+  # select test
+  #
+  
+  def test_select_documentation
+    s = select(1,2,3, &integer)
+    assert_equal Proc, s.class
+    assert_equal 1, s.call(1)
+    assert_equal 3, s.call('3')
+  
+    assert_raises(ValidationError) { s.call(nil) }
+    assert_raises(ValidationError) { s.call(0) }
+    assert_raises(ValidationError) { s.call('4') }
+  end
+  
+  def test_select_does_not_transform_inputs_unless_block_is_specified
+    s = select(1,2,3)
+    assert_equal 3, s.call(3)
+    assert_raises(ValidationError) { s.call('3') }
+  end
+  
+  #
+  # list_select test
+  #
+  
+  def test_list_select_documentation
+    s = list_select(1,2,3, &integer)
+    assert_equal Proc, s.class
+    assert_equal [1], s.call([1])
+    assert_equal [1, 3], s.call([1, '3'])
+    assert_equal [], s.call([])
+  
+    assert_raises(ValidationError) { s.call(1) }
+    assert_raises(ValidationError) { s.call([nil]) }
+    assert_raises(ValidationError) { s.call([0]) }
+    assert_raises(ValidationError) { s.call(['4']) }
+  end
 end

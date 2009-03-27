@@ -46,12 +46,14 @@ module Configurable
     # in Configurable::DEFAULT_ATTRIBUTES.
     def register(block, attributes)
       DEFAULT_ATTRIBUTES[block] = attributes
+      block
     end
     
     # Registers the default attributes of the source as the attributes
     # of the target.  Attributes are duplicated so they may be modifed.
     def register_as(source, target)
       DEFAULT_ATTRIBUTES[target] = DEFAULT_ATTRIBUTES[source].dup
+      target
     end
     
     # Returns input if it matches any of the validations as in would in a case
@@ -199,9 +201,9 @@ module Configurable
     #
     def boolean(); BOOLEAN; end
     
-    # default attributes {:type => :boolean, :example => "true"}
+    # default attributes {:type => :boolean, :example => "true, yes"}
     BOOLEAN = yaml(true, false, nil)
-    register BOOLEAN, :type => :boolean, :example => "true"
+    register BOOLEAN, :type => :boolean, :example => "true, yes"
 
     # Same as boolean.
     def switch(); SWITCH; end
@@ -323,9 +325,9 @@ module Configurable
     #
     def float(); FLOAT; end
     
-    # default attributes {:type => :float, :example => "2.2"}
+    # default attributes {:type => :float, :example => "2.2, 2.0e+2"}
     FLOAT = yaml(Float)
-    register FLOAT, :type => :float, :example => "2.2"
+    register FLOAT, :type => :float, :example => "2.2, 2.0e+2"
     
     # Same as float but allows nil:
     #
@@ -350,9 +352,9 @@ module Configurable
     #
     def num(); NUMERIC; end
     
-    # default attributes {:type => :num, :example => "2, 2.2, 2e2"}
+    # default attributes {:type => :num, :example => "2, 2.2, 2.0e+2"}
     NUMERIC = yaml(Numeric)
-    register NUMERIC, :type => :num, :example => "2, 2.2, 2e2"
+    register NUMERIC, :type => :num, :example => "2, 2.2, 2.0e+2"
     
     # Same as num but allows nil:
     #
@@ -522,5 +524,51 @@ module Configurable
     
     TIME_OR_NIL = time_or_nil_block
     register_as TIME, TIME_OR_NIL
+    
+    # Returns a block that only allows the specified values.  Select can take
+    # a block that will validate each individual value.
+    #
+    #   s = select(1,2,3, &integer)
+    #   s.class                      # => Proc
+    #   s.call(1)                    # => 1
+    #   s.call('3')                  # => 3
+    #
+    #   s.call(nil)                  # => ValidationError
+    #   s.call(0)                    # => ValidationError
+    #   s.call('4')                  # => ValidationError
+    #
+    def select(*values, &validation)
+      block = lambda do |input|
+        input = validation.call(input) if validation
+        validate(input, values)
+      end
+      
+      register(block, :type => :select, :values => values)
+    end
+    
+    # Returns a block that checks the input is an array, and that each member
+    # of the array is one of the specified values.  A block may be provided
+    # to validate each individual value.
+    #
+    #   s = list_select(1,2,3, &integer)
+    #   s.class                      # => Proc
+    #   s.call([1])                  # => [1]
+    #   s.call([1, '3'])             # => [1, 3]
+    #   s.call([])                   # => []
+    #
+    #   s.call(1)                    # => ValidationError
+    #   s.call([nil])                # => ValidationError
+    #   s.call([0])                  # => ValidationError
+    #   s.call(['4'])                # => ValidationError
+    #
+    def list_select(*values, &validation)
+      block = lambda do |input|
+        args = validate(input, [Array])
+        args.collect! {|arg| validation.call(arg) } if validation
+        args.each {|arg| validate(arg, values) }
+      end
+      
+      register(block, :type => :list_select, :values => values, :split => ',')
+    end
   end
 end

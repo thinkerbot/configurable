@@ -346,7 +346,7 @@ class ConfigParser
     block = case attributes[:type]
     when :switch then setup_switch(key, default_value, attributes)
     when :flag   then setup_flag(key, default_value, attributes)
-    when :list   then setup_list(key, attributes)
+    when :list, :list_select then setup_list(key, attributes)
     when :hidden then return nil
     else
       if respond_to?("setup_#{attributes[:type]}")

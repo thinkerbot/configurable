@@ -4,6 +4,7 @@
 * added :duplicate_default attribute to turn off default
   value duplication
 * standardized formatting of argument names
+* added select and list_select validations
 
 == 0.4.1 / 2009-03-23
 
