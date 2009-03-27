@@ -79,9 +79,9 @@ module Configurable
         case input
         when *validations then input
         else 
-          if block_given? 
-            yield(input)
-          else 
+          if block_given? && yield(input)
+            input
+          else
             raise ValidationError.new(input, validations)
           end
         end
@@ -90,7 +90,21 @@ module Configurable
       else raise ArgumentError, "validations must be nil, or an array of valid inputs"
       end
     end
-
+    
+    # Helper to load the input into a valid object.  If a valid object is not
+    # loaded as YAML, or if an error occurs, the original input is returned.
+    def load_if_yaml(input, *validations)
+      begin
+        yaml = YAML.load(input)
+        case yaml
+        when *validations then yaml
+        else input
+        end
+      rescue(ArgumentError)
+        input
+      end
+    end
+    
     # Returns a block that calls validate using the block input
     # and validations.
     def check(*validations)
@@ -383,10 +397,7 @@ module Configurable
     def regexp(); REGEXP; end
     regexp_block = lambda do |input|
       if input.kind_of?(String)
-        begin
-          input = validate(YAML.load(input), [Regexp]) {|obj| input }
-        rescue(ArgumentError)
-        end
+        input = load_if_yaml(input, Regexp)
       end
       
       if input.kind_of?(String)
@@ -437,10 +448,7 @@ module Configurable
     def range(); RANGE; end
     range_block = lambda do |input|
       if input.kind_of?(String)
-        begin
-          input = validate(YAML.load(input), [Range]) {|obj| input }
-        rescue(ArgumentError)
-        end
+        input = load_if_yaml(input, Range)
       end
       
       if input.kind_of?(String) && input =~ /^([^.]+)(\.{2,3})([^.]+)$/
@@ -589,7 +597,27 @@ module Configurable
     #   io.call(nil)                 # => ValidationError
     #   io.call(10)                  # => ValidationError
     #
-    def io(); IO_OR_STRING; end
+    # An IO api can be specified to allow other objects to be validated.  This
+    # is useful for duck-typing an IO when a known subset of methods are needed.
+    #
+    #   array_io = io(:<<)
+    #   array_io.call($stdout)       # => $stdout
+    #   array_io.call([])            # => []
+    #   array_io.call(nil)           # => ValidationError
+    #
+    def io(*api)
+      if api.empty?
+        IO_OR_STRING
+      else
+        block = lambda do |input|
+          validate(input, [IO, String]) do
+            api.all? {|m| input.respond_to?(m) }
+          end
+        end
+        
+        register_as IO_OR_STRING, block
+      end
+    end
     
     # default attributes {:type => :io, :example => "/path/to/file"}
     IO_OR_STRING = check(IO, String)
@@ -599,7 +627,19 @@ module Configurable
     #
     #   io_or_nil.call(nil)          # => nil
     #
-    def io_or_nil(); IO_STRING_OR_NIL; end
+    def io_or_nil(*api)
+      if api.empty?
+        IO_STRING_OR_NIL
+      else
+        block = lambda do |input|
+          validate(input, [IO, String]) do
+            api.all? {|m| input.respond_to?(m) }
+          end
+        end
+        
+        register_as IO_STRING_OR_NIL, block
+      end  
+    end
     
     IO_STRING_OR_NIL = check(IO, String, nil)
     register_as IO_OR_STRING, IO_STRING_OR_NIL

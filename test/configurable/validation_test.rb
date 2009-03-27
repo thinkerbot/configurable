@@ -34,9 +34,13 @@ class ValidationTest < Test::Unit::TestCase
     assert_raises(ValidationError) { validate("str", [/non/]) }
   end
   
-  def test_validate_yields_to_block_instead_of_raising_validation_error
-    result = validate("str", [/non/]) {|obj| "block return: #{obj}" }
-    assert_equal "block return: str", result 
+  def test_validate_validates_with_block_if_no_validations_match
+    result = validate("str", [/non/]) {|obj| true }
+    assert_equal "str", result
+    
+    assert_raises(ValidationError) do
+      validate("str", [/non/]) {|obj| false }
+    end
   end
   
   def test_all_inputs_are_valid_if_validations_is_nil
@@ -51,6 +55,23 @@ class ValidationTest < Test::Unit::TestCase
     
     e = assert_raises(ArgumentError) { validate("str", 1) }
     assert_equal "validations must be nil, or an array of valid inputs", e.message
+  end
+  
+  #
+  # load_if_yaml test
+  #
+  
+  def test_load_if_yaml_loads_input_as_yaml_and_returns_object_if_valid
+    assert_equal 2, load_if_yaml("2", Integer, nil)
+    assert_equal nil, load_if_yaml("~", Integer, nil)
+  end
+  
+  def test_load_if_yaml_returns_input_if_loaded_object_causes_error
+    assert_equal " : value", load_if_yaml(" : value", nil)
+  end
+  
+  def test_load_if_yaml_returns_input_if_loaded_object_is_invald
+    assert_equal "string", load_if_yaml("string", Integer, nil)
   end
   
   #
@@ -472,6 +493,11 @@ class ValidationTest < Test::Unit::TestCase
   
     assert_raises(ValidationError) { io.call(nil) }
     assert_raises(ValidationError) { io.call(10)  }
+    
+    array_io = io(:<<)
+    assert_equal $stdout, array_io.call($stdout)
+    assert_equal [], array_io.call([])
+    assert_raises(ValidationError) { array_io.call(nil) }
   end
   
   #
