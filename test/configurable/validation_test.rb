@@ -507,4 +507,9 @@ class ValidationTest < Test::Unit::TestCase
   def test_io_or_nil_documentation
     assert_equal nil, io_or_nil.call(nil)
   end
+  
+  def test_io_or_nil_with_api
+    assert_equal [], io_or_nil(:<<).call([])
+    assert_equal nil, io_or_nil(:<<).call(nil)
+  end
 end

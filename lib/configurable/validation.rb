@@ -632,7 +632,7 @@ module Configurable
         IO_STRING_OR_NIL
       else
         block = lambda do |input|
-          validate(input, [IO, String]) do
+          validate(input, [IO, String, nil]) do
             api.all? {|m| input.respond_to?(m) }
           end
         end
