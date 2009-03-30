@@ -1,4 +1,4 @@
-==
+== 0.4.2 / 2009-03-30
 
 * set delegate default no longer freezes value
 * added :duplicate_default attribute to turn off default
