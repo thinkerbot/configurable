@@ -2,6 +2,7 @@
 
 * fixed io validation to not duplicate IOs
 * fixed :hidden type for nested configurations
+* open_io now returns block result
 
 == 0.4.2 / 2009-03-30
 

@@ -176,7 +176,7 @@ module Configurable
   
   # Opens the file specified by io and yield it to the block.  If io is an
   # IO, it will be yielded immediately, and the mode is ignored.  Nil io are
-  # simply ignored.  The input io is always returned.
+  # simply ignored.
   #
   # === Usage
   #
@@ -202,10 +202,9 @@ module Configurable
       dir = File.dirname(io)
       FileUtils.mkdir_p(dir) unless File.directory?(dir)
       File.open(io, mode) {|file| yield(file) }
-    when nil
+    when nil then nil
     else yield(io)
     end
-    io
   end
 
   # Initializes config. Default config values 

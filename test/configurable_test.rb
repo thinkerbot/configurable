@@ -506,6 +506,7 @@ class ConfigurableTest < Test::Unit::TestCase
     def say_hello
       open_io(output, 'w') do |io|
         io << 'hello!'
+        'result'
       end
     end
   end
@@ -563,10 +564,23 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal ['hello!'], array
   end
   
+  def test_open_io_returns_block_result
+    Tempfile.open('io_sample', Dir::tmpdir) do |io|
+      s = IoSample.new
+      s.output = io
+      assert_equal 'result', s.say_hello
+    end
+    
+    s = IoSample.new
+    s.output = []
+    assert_equal 'result', s.say_hello
+  end
+  
+  
   def test_open_io_does_not_pass_nil_to_block
     s = IoSample.new
     s.output = nil 
-    s.say_hello # no error raised
+    assert_equal nil, s.say_hello
   end
   
   #
