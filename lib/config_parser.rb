@@ -395,7 +395,9 @@ class ConfigParser
       default = delegate.default(false)
       
       if delegate.is_nest?
-        add(default.delegates, key)
+        unless delegate[:type] == :hidden
+          add(default.delegates, key)
+        end
       else
         define(key, default, delegate.attributes)
       end

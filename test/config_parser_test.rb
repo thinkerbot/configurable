@@ -339,6 +339,20 @@ configurations:
     assert_equal({:two => 'two', "one:one" => 'one', "one:two" => 'two'}, c.default_config)
   end
   
+  def test_add_does_not_add_nested_delegates_if_the_option_if_type_is_hidden
+    delegate_hash = DelegateHash.new(
+      :one => Delegate.new(:one, :one=, 'one'),
+      :two => Delegate.new(:two, :two=, 'two')
+    )
+    delegates = {
+      :one => Delegate.new(:one, :one=, delegate_hash, :type => :hidden),
+      :two => Delegate.new(:two, :two=, 'two')
+    }
+    
+    c.add(delegates)
+    assert_equal({:two => 'two'}, c.default_config)
+  end
+  
   def test_add_raises_error_for_nesting_conflict
     delegate_hash = DelegateHash.new(:one => Delegate.new(:one))
     delegates = {
