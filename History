@@ -1,3 +1,7 @@
+==
+
+* fixed io validation to not duplicate IOs
+
 == 0.4.2 / 2009-03-30
 
 * set delegate default no longer freezes value

@@ -605,6 +605,9 @@ module Configurable
     #   array_io.call([])            # => []
     #   array_io.call(nil)           # => ValidationError
     #
+    # Note that by default io configs will not be duplicated (duplicate IOs
+    # flush separately, and this can result in disorder.  see
+    # http://gist.github.com/88808).
     def io(*api)
       if api.empty?
         IO_OR_STRING
@@ -619,9 +622,9 @@ module Configurable
       end
     end
     
-    # default attributes {:type => :io, :example => "/path/to/file"}
+    # default attributes {:type => :io, :duplicate_default => false, :example => "/path/to/file"}
     IO_OR_STRING = check(IO, String)
-    register IO_OR_STRING, :type => :io, :example => "/path/to/file"
+    register IO_OR_STRING, :type => :io, :duplicate_default => false, :example => "/path/to/file"
     
     # Same as io but allows nil:
     #
