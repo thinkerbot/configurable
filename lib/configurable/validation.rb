@@ -429,9 +429,8 @@ module Configurable
     register_as REGEXP, REGEXP_OR_NIL
 
     # Returns a block that checks the input is a range. String inputs are
-    # loaded as yaml; if the result is still a string, it is split into a
-    # beginning and end, if possible, and each part is loaded as yaml
-    # before being used to construct a Range.
+    # loaded as yaml (a '!ruby/range' prefix is added before loading if
+    # if it is not specified).
     #
     #   range.class               # => Proc
     #   range.call(1..10)         # => 1..10
@@ -448,11 +447,8 @@ module Configurable
     def range(); RANGE; end
     range_block = lambda do |input|
       if input.kind_of?(String)
+        input = "!ruby/range #{input}" unless input =~ /\A\s*!ruby\/range\s/
         input = load_if_yaml(input, Range)
-      end
-      
-      if input.kind_of?(String) && input =~ /^([^.]+)(\.{2,3})([^.]+)$/
-        input = Range.new(YAML.load($1), YAML.load($3), $2.length == 3) 
       end
       
       validate(input, [Range])

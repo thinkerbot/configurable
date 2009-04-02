@@ -379,6 +379,11 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal 1..10, range.call(yaml_str)
   end
   
+  def test_range
+    assert_equal 1..10, range.call('1..10')
+    assert_equal 1e-3..1000, range.call('0.001..1000')
+  end
+  
   #
   # range_or_nil test
   #
