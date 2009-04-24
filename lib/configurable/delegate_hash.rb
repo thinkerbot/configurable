@@ -60,10 +60,10 @@ module Configurable
     # Binds self to the specified receiver.  Delegate values are removed from
     # store and sent to their writer on receiver.  If the store has no value
     # for a delegate key, the delegate default value will be used.
-    def bind(receiver)
+    def bind(receiver, rebind=false)
       raise ArgumentError, "receiver cannot be nil" if receiver == nil
       
-      if bound?
+      if bound? && !rebind
         if @receiver == receiver
           return(self)
         else

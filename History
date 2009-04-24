@@ -4,6 +4,7 @@
 * fixed :hidden type for nested configurations
 * open_io now returns block result
 * updated Validation parsing of strings into ranges
+* DelegateHash now has the ability to rebind a receiver
 
 == 0.4.2 / 2009-03-30
 

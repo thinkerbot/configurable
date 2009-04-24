@@ -153,6 +153,20 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal({:key => 2}, d.store)
   end
   
+  def test_bind_rebinds_if_specified
+    assert_nil r.key
+    
+    d.store[:key] = 1
+    d.bind(r)
+    assert_equal 1, r.key
+    assert_equal({}, d.store)
+    
+    d.store[:key] = 2
+    d.bind(r, true)
+    assert_equal 2, r.key
+    assert_equal({}, d.store)
+  end
+  
   def test_bind_raises_error_for_nil_receiver
     e = assert_raises(ArgumentError) { d.bind(nil) }
     assert_equal "receiver cannot be nil", e.message
