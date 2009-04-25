@@ -5,6 +5,7 @@
 * open_io now returns block result
 * updated Validation parsing of strings into ranges
 * DelegateHash now has the ability to rebind a receiver
+* list validation now accepts validation block
 
 == 0.4.2 / 2009-03-30
 

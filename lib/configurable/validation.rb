@@ -266,7 +266,20 @@ module Configurable
     #   list.call('str')          # => ValidationError
     #   list.call(nil)            # => ValidationError
     #
-    def list(); LIST; end
+    def list(&validation)
+      return LIST unless validation
+      
+      block = lambda do |input|
+        args = validate(input, [Array]).collect do |arg| 
+          arg.kind_of?(String) ? YAML.load(arg) : arg
+        end
+        args.collect! {|arg| validation.call(arg) }
+        args
+      end
+      
+      register_as(LIST, block)
+    end
+    
     list_block = lambda do |input|
       validate(input, [Array]).collect do |arg| 
         arg.kind_of?(String) ? YAML.load(arg) : arg

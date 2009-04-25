@@ -227,7 +227,14 @@ class ValidationTest < Test::Unit::TestCase
     assert_raises(ValidationError) { list.call('str') }
     assert_raises(ValidationError) { list.call(nil) }
   end
-
+  
+  def test_list_accepts_block_for_validation
+    block = list(&integer)
+    assert_equal Proc, block.class
+    assert_equal [1,2,3], block.call([1,"2",3])
+    assert_raises(ValidationError) { block.call(['1', 'str']) }
+  end
+  
   #
   # hash test
   #
