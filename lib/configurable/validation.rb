@@ -39,6 +39,18 @@ module Configurable
         end
       end
     end
+    
+    # Raised when validate_api fails.
+    class ApiError < ArgumentError
+      def initialize(input, methods)
+        super case 
+        when methods.empty?
+          "no api specified"
+        else
+          "expected api #{methods.inspect} for: #{input.inspect}"
+        end
+      end
+    end
 
     module_function
 
@@ -69,9 +81,10 @@ module Configurable
     #   end
     #
     # A block may be provided to handle invalid inputs; if provided it will be
-    # called and a ValidationError will not be raised.  Note the validations
-    # input must be an Array or nil; validate will raise an ArgumentError
-    # otherwise.  All inputs are considered VALID if validations == nil.
+    # called with the input and a ValidationError will not be raised unless the
+    # block returns false.  Note the validations input must be an Array or nil;
+    # validate will raise an ArgumentError otherwise.  All inputs are
+    # considered VALID if validations == nil.
     def validate(input, validations)
       case validations
       when Array
@@ -87,8 +100,36 @@ module Configurable
         end
     
       when nil then input
-      else raise ArgumentError, "validations must be nil, or an array of valid inputs"
+      else raise ArgumentError, "validations must be an array of valid inputs or nil"
       end
+    end
+    
+    # Returns input if it responds to all of the specified methods.  Raises an
+    # ApiError otherwise.  For example:
+    #
+    #   validate_api(10, [:to_s, :to_f])             # => 10
+    #   validate_api(Object.new, [:to_s, :to_f])     # !> ApiError
+    #
+    # A block may be provided to handle invalid inputs; if provided it will be
+    # called with the input and an ApiError will not be raised unless the 
+    # block returns false.  Note the methods input must be an Array or nil;
+    # validate_api will raise an ArgumentError otherwise.  All inputs are
+    # considered VALID if methods == nil.
+    def validate_api(input, methods)
+      case methods
+      when Array
+        unless methods.all? {|m| input.respond_to?(m) }
+          if block_given? && yield(input)
+            input
+          else
+            raise ApiError.new(input, methods)
+          end
+        end
+      when nil
+      else raise ArgumentError, "methods must be an array or nil"
+      end
+      
+      input
     end
     
     # Helper to load the input into a valid object.  If a valid object is not
@@ -110,7 +151,15 @@ module Configurable
     def check(*validations)
       lambda {|input| validate(input, validations) }
     end
-
+    
+    # Returns a block that calls validate_api using the block input
+    # and methods.
+    def api(*methods)
+      lambda do |input|
+        validate_api(input, methods)
+      end
+    end
+    
     # Returns a block that loads input strings as YAML, then
     # calls validate with the result and validations. Non-string 
     # inputs are validated directly.
@@ -612,7 +661,7 @@ module Configurable
     #   array_io = io(:<<)
     #   array_io.call($stdout)       # => $stdout
     #   array_io.call([])            # => []
-    #   array_io.call(nil)           # => ValidationError
+    #   array_io.call(nil)           # => ApiError
     #
     # Note that by default io configs will not be duplicated (duplicate IOs
     # flush separately, and this can result in disorder.  see
@@ -623,7 +672,7 @@ module Configurable
       else
         block = lambda do |input|
           validate(input, [IO, String]) do
-            api.all? {|m| input.respond_to?(m) }
+            validate_api(input, api)
           end
         end
         
@@ -645,7 +694,7 @@ module Configurable
       else
         block = lambda do |input|
           validate(input, [IO, String, nil]) do
-            api.all? {|m| input.respond_to?(m) }
+            validate_api(input, api)
           end
         end
         

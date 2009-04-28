@@ -49,12 +49,52 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal nil, validate(nil, nil)
   end
   
-  def test_validate_raisess_error_for_non_array_or_nil_inputs
+  def test_validate_raises_error_for_non_array_or_nil_inputs
     e = assert_raises(ArgumentError) { validate("str", "str") }
-    assert_equal "validations must be nil, or an array of valid inputs", e.message
+    assert_equal "validations must be an array of valid inputs or nil", e.message
     
     e = assert_raises(ArgumentError) { validate("str", 1) }
-    assert_equal "validations must be nil, or an array of valid inputs", e.message
+    assert_equal "validations must be an array of valid inputs or nil", e.message
+  end
+  
+  #
+  # validate_api test
+  #
+  
+  def test_validate_api_documentation
+    assert_equal 10, validate_api(10, [:to_s, :to_f])
+    assert_raises(ApiError) { validate_api(Object.new, [:to_s, :to_f]) }
+  end
+  
+  def test_validate_api
+    assert_equal 1, validate_api(1, [:to_f])
+    assert_equal 1, validate_api(1, [:to_f, :to_s])
+    assert_raises(ApiError) { validate_api(1, [:not_an_int_method]) }
+    assert_raises(ApiError) { validate_api(1, [:not_an_int_method, :to_s]) }
+    assert_raises(ApiError) { validate_api(1, [:to_s, :not_an_int_method]) }
+  end
+  
+  def test_validate_api_validates_with_block_if_api_does_not_match
+    result = validate_api("str", [:not_a_str_method]) {|obj| true }
+    assert_equal "str", result
+    
+    assert_raises(ApiError) do
+      validate_api("str", [:not_a_str_method]) {|obj| false }
+    end
+  end
+  
+  def test_all_inputs_are_valid_if_methods_is_nil
+    assert_equal "str", validate_api("str", nil)
+    assert_equal 1, validate_api(1, nil)
+    assert_equal nil, validate_api(nil, nil)
+  end
+  
+  def test_validate_api_raises_error_for_non_array_or_nil_inputs
+    e = assert_raises(ArgumentError) { validate_api("str", "str") }
+    assert_equal "methods must be an array or nil", e.message
+    
+    e = assert_raises(ArgumentError) { validate_api("str", 1) }
+    assert_equal "methods must be an array or nil", e.message
   end
   
   #
@@ -509,7 +549,7 @@ class ValidationTest < Test::Unit::TestCase
     array_io = io(:<<)
     assert_equal $stdout, array_io.call($stdout)
     assert_equal [], array_io.call([])
-    assert_raises(ValidationError) { array_io.call(nil) }
+    assert_raises(ApiError) { array_io.call(nil) }
   end
   
   #
