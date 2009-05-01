@@ -7,6 +7,8 @@
 * DelegateHash now has the ability to rebind a receiver
 * list validation now accepts validation block
 * added api validation
+* configs may now be specified in modules and included
+  into classes
 
 == 0.4.2 / 2009-03-30
 

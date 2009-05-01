@@ -1,4 +1,4 @@
-require 'configurable/class_methods'
+require 'configurable/module_methods'
 
 # Configurable enables the specification of configurations within a class 
 # definition.
@@ -138,11 +138,6 @@ require 'configurable/class_methods'
 #
 module Configurable
   autoload(:Utils, 'configurable/utils')
-  
-  # Extends including classes with Configurable::ClassMethods
-  def self.included(mod) # :nodoc:
-    mod.extend ClassMethods if mod.kind_of?(Class)
-  end
 
   # A DelegateHash bound to self
   attr_reader :config

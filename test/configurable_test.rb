@@ -221,6 +221,91 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
+  # modules test
+  #
+  
+  module ConfigModule
+    include Configurable
+    
+    config :key, 'value'
+  end
+  
+  def test_configurations_may_be_declared_in_modules
+    assert_equal({
+      :key =>  Delegate.new('key', 'key=', 'value')
+    }, ConfigModule.configurations)
+  end
+  
+  class IncludingConfigModule
+    include ConfigModule
+  end
+  
+  def test_module_configurations_are_added_to_class_on_include
+    assert_equal({
+      :key =>  Delegate.new('key', 'key=', 'value')
+    }, IncludingConfigModule.configurations)
+    
+    c = IncludingConfigModule.new
+    assert_equal 'value', c.key
+  end
+  
+  module ConfigModuleA
+    include Configurable
+    config :a, 'one'
+  end
+  
+  module ConfigModuleB
+    include ConfigModuleA
+    config :b, 'two'
+  end
+  
+  module ConfigModuleC
+    include Configurable
+    config :c, 'three'
+  end
+  
+  class MultiIncludingConfigModule
+    include ConfigModuleB
+    include ConfigModuleC
+  end
+  
+  def test_multiple_modules_may_be_added_to_class_on_include
+    assert_equal({
+      :a =>  Delegate.new('a', 'a=', 'one'),
+      :b =>  Delegate.new('b', 'b=', 'two'),
+      :c =>  Delegate.new('c', 'c=', 'three')
+    }, MultiIncludingConfigModule.configurations)
+    
+    obj = MultiIncludingConfigModule.new
+    assert_equal({
+      :a => 'one',
+      :b => 'two',
+      :c => 'three'
+    }, obj.config)
+  end
+  
+  class IncludingConfigModuleInExistingConfigurable
+    include Configurable
+    
+    config :a, 'ONE'
+    config :d, 'four'
+    
+    include ConfigModuleB
+    include ConfigModuleC
+    
+    config :b, 'TWO'
+  end
+  
+  def test_modules_may_be_added_to_an_existing_configurable_class
+    assert_equal({
+      :a =>  Delegate.new('a', 'a=', 'one'),
+      :b =>  Delegate.new('b', 'b=', 'TWO'),
+      :c =>  Delegate.new('c', 'c=', 'three'),
+      :d =>  Delegate.new('d', 'd=', 'four')
+    }, IncludingConfigModuleInExistingConfigurable.configurations)
+  end
+  
+  #
   # config context test
   #
   
@@ -376,6 +461,33 @@ class ConfigurableTest < Test::Unit::TestCase
     end
   end
   
+  module LazydocConfigModule
+    include Configurable
+
+    config_attr :one, 'value'                           # with documentation
+    config_attr :two, 'value', :desc => "description"   # ignored documentation
+  end
+  
+  class LazydocIncludeClass
+    include LazydocConfigModule
+    
+    config :three, 'value'                              # with documentation
+    config :four, 'value', :desc => "description"       # ignored documentation
+  end
+  
+  def test_configurable_registers_documentation_for_configs_in_modules
+    LazydocIncludeClass.lazydoc.resolve
+    
+    [:one, :three].each do |doc_config|
+      desc = LazydocIncludeClass.configurations[doc_config].attributes[:desc]
+      assert_equal "with documentation", desc.to_s
+    end
+    
+    [:two, :four].each do |nodoc_config|
+      desc = LazydocIncludeClass.configurations[nodoc_config].attributes[:desc]
+      assert_equal "description", desc.to_s
+    end
+  end
   #
   # DEFAULT_ATTRIBUTES test
   #

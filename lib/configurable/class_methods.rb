@@ -15,15 +15,6 @@ module Configurable
     # A hash of (key, Delegate) pairs defining the class configurations.
     attr_reader :configurations
 
-    def self.extended(base) # :nodoc:
-      unless base.instance_variable_defined?(:@source_file)
-        caller[2] =~ Lazydoc::CALLER_REGEXP
-        base.instance_variable_set(:@source_file, File.expand_path($1)) 
-      end
-      
-      base.send(:initialize_configurations).extend(IndifferentAccess)
-    end
-
     def inherited(child) # :nodoc:
       unless child.instance_variable_defined?(:@source_file)
         caller[0] =~ Lazydoc::CALLER_REGEXP
