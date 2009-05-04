@@ -1,4 +1,4 @@
-==
+== 0.4.3 / 2009-05-03
 
 * fixed io validation to not duplicate IOs
 * fixed :hidden type for nested configurations
