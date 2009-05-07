@@ -1,4 +1,4 @@
-== 0.4.3 / 2009-05-03
+== 0.4.3 / 2009-05-06
 
 * fixed io validation to not duplicate IOs
 * fixed :hidden type for nested configurations
@@ -9,6 +9,7 @@
 * added api validation
 * configs may now be specified in modules and included
   into classes
+* ConfigParser can now ignore unknown options
 
 == 0.4.2 / 2009-03-30
 

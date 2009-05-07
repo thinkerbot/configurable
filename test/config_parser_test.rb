@@ -519,7 +519,7 @@ configurations:
   
   def test_parse_does_not_add_defaults_unless_specified
     c.define('opt', 'default')
-    args = c.parse(["a", "b"], {}, false)
+    args = c.parse(["a", "b"], {}, :add_defaults => false)
     
     assert_equal({}, c.config)
     assert_equal(["a", "b"], args)
@@ -531,6 +531,19 @@ configurations:
     
     assert_equal({"opt" => "value"}, c.config)
     assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_raises_error_for_unknown_option
+    err = assert_raises(RuntimeError) { c.parse(["--unknown", "option"]) }
+    assert_equal "unknown option: --unknown", err.message
+  end
+  
+  def test_parse_ignores_unknown_options_if_specified
+    c.define('opt', 'default')
+    args = c.parse(["a", "--opt", "value", "b", "--unknown", "c"], {}, :ignore_unknown_options => true)
+    
+    assert_equal({"opt" => "value"}, c.config)
+    assert_equal(["a", "b", "--unknown", "c"], args)
   end
   
   #

@@ -412,7 +412,17 @@ class ConfigParser
   # A config may be provided to receive configurations; it will be set
   # as self.config.
   #
-  def parse(argv=ARGV, config={}, merge_default=true)
+  # ==== Options
+  #
+  # add_defaults:: adds the default values to config (true)
+  # ignore_unknown_options:: causes unknown options to be ignored (false)
+  #
+  def parse(argv=ARGV, config={}, options={})
+    options = {
+      :add_defaults => true,
+      :ignore_unknown_options => false
+    }.merge(options)
+    
     @config = config
     argv = argv.kind_of?(String) ? Shellwords.shellwords(argv) : argv.dup
     args = []
@@ -440,6 +450,11 @@ class ConfigParser
   
       # lookup the option
       unless option = @switches[$1]
+        if options[:ignore_unknown_options]
+          args << arg
+          next
+        end
+        
         raise "unknown option: #{$1}"
       end
   
@@ -448,14 +463,14 @@ class ConfigParser
     
     default_config.each_pair do |key, default|
       config[key] = default unless config.has_key?(key)
-    end if merge_default
+    end if options[:add_defaults]
     
     args
   end
   
   # Same as parse, but removes parsed args from argv.
-  def parse!(argv=ARGV, config={}, merge_default=true)
-    result = parse(argv, config, merge_default)
+  def parse!(argv=ARGV, config={}, options={})
+    result = parse(argv, config, options)
     argv.kind_of?(Array) ? argv.replace(result) : result
   end
   
