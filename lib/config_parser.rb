@@ -416,6 +416,12 @@ class ConfigParser
   # ignore_unknown_options:: causes unknown options to be ignored (false)
   #
   def parse(argv=ARGV, options={})
+    argv = argv.dup unless argv.kind_of?(String)
+    parse!(argv, options)
+  end
+  
+  # Same as parse, but removes parsed args from argv.
+  def parse!(argv=ARGV, options={})
     options = {
       :clear_config => true,
       :add_defaults => true,
@@ -423,7 +429,7 @@ class ConfigParser
     }.merge(options)
     
     config.clear if options[:clear_config]
-    argv = argv.kind_of?(String) ? Shellwords.shellwords(argv) : argv.dup
+    argv = Shellwords.shellwords(argv) if argv.kind_of?(String)
     args = []
     
     while !argv.empty?
@@ -464,13 +470,8 @@ class ConfigParser
       config[key] = default unless config.has_key?(key)
     end if options[:add_defaults]
     
-    args
-  end
-  
-  # Same as parse, but removes parsed args from argv.
-  def parse!(argv=ARGV, options={})
-    result = parse(argv, options)
-    argv.kind_of?(Array) ? argv.replace(result) : result
+    argv.replace(args)
+    argv
   end
   
   # Converts the options and separators in self into a help string suitable for
