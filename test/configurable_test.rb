@@ -363,20 +363,20 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_parse_parses_configs_from_argv
-    config = {}
-    assert_equal ["a", "b", "c"], ParseClass.parse("a b --one value c", config)
+    args, config = ParseClass.parse("a b --one value c")
+    assert_equal ["a", "b", "c"], args
     assert_equal({:one => 'value'}, config)
   end
   
   def test_parse_is_non_destructive_to_argv
     argv = ["a", "b", "--one", "value", "c"]
-    assert_equal ["a", "b", "c"], ParseClass.parse(argv)
+    ParseClass.parse(argv)
     assert_equal ["a", "b", "--one", "value", "c"], argv
   end
   
   def test_parse_bang_is_destructive_to_argv
     argv = ["a", "b", "--one", "value", "c"]
-    assert_equal ["a", "b", "c"], ParseClass.parse!(argv)
+    ParseClass.parse!(argv)
     assert_equal ["a", "b", "c"], argv
   end
   

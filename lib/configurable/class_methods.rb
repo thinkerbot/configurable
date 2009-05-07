@@ -31,23 +31,25 @@ module Configurable
     end
     
     # Parses configurations from argv in a non-destructive manner by generating
-    # a ConfigParser using the configurations for self.  Parsed configs are 
-    # added to config (note that you must keep a separate reference to 
-    # config as it is not returned by parse).  The parser will is yielded to the
-    # block, if given, to register additonal options.  Returns an array of the 
-    # arguments that remain after parsing.
+    # a ConfigParser using the configurations for self.  Returns an array like
+    # [args, config] where the args are the arguments that remain after parsing,
+    # and config is a hash of the parsed configs. The parser will is yielded to
+    # the block, if given, to register additonal options.  
     #
     # See ConfigParser#parse for more information.
-    def parse(argv=ARGV, config={})
-      ConfigParser.new do |parser|
-        parser.add(configurations)
-        yield(parser) if block_given?
-      end.parse(argv, config)
+    def parse(argv=ARGV, options={}, &block) # :yields: parser
+      parse!(argv.dup, options, &block)
     end
     
     # Same as parse, but removes parsed args from argv.
-    def parse!(argv=ARGV, config={})
-      argv.replace(parse(argv, config))
+    def parse!(argv=ARGV, options={})
+      parser = ConfigParser.new
+      parser.add(configurations)
+      
+      yield(parser) if block_given?
+      
+      args = parser.parse!(argv, options)
+      [args, parser.config]
     end
     
     protected

@@ -519,7 +519,7 @@ configurations:
   
   def test_parse_does_not_add_defaults_unless_specified
     c.define('opt', 'default')
-    args = c.parse(["a", "b"], {}, :add_defaults => false)
+    args = c.parse(["a", "b"], :add_defaults => false)
     
     assert_equal({}, c.config)
     assert_equal(["a", "b"], args)
@@ -540,7 +540,7 @@ configurations:
   
   def test_parse_ignores_unknown_options_if_specified
     c.define('opt', 'default')
-    args = c.parse(["a", "--opt", "value", "b", "--unknown", "c"], {}, :ignore_unknown_options => true)
+    args = c.parse(["a", "--opt", "value", "b", "--unknown", "c"], :ignore_unknown_options => true)
     
     assert_equal({"opt" => "value"}, c.config)
     assert_equal(["a", "b", "--unknown", "c"], args)

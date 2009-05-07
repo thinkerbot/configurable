@@ -156,10 +156,10 @@ class ConfigParser
   # handles them.
   attr_reader :switches
   
-  # The most recent hash of configurations produced by parse.
-  attr_reader :config
+  # The hash receiving configurations produced by parse.
+  attr_accessor :config
   
-  # A hash of default configurations merged into parsed configs.
+  # A hash of default configurations merged into config during parse.
   attr_reader :default_config
 
   # Initializes a new ConfigParser and passes it to the block, if given.
@@ -409,21 +409,20 @@ class ConfigParser
   # string argv is provided, it will be splits into an array using 
   # Shellwords.
   #
-  # A config may be provided to receive configurations; it will be set
-  # as self.config.
-  #
   # ==== Options
   #
+  # clear_config:: clears the currently parsed configs (true)
   # add_defaults:: adds the default values to config (true)
   # ignore_unknown_options:: causes unknown options to be ignored (false)
   #
-  def parse(argv=ARGV, config={}, options={})
+  def parse(argv=ARGV, options={})
     options = {
+      :clear_config => true,
       :add_defaults => true,
       :ignore_unknown_options => false
     }.merge(options)
     
-    @config = config
+    config.clear if options[:clear_config]
     argv = argv.kind_of?(String) ? Shellwords.shellwords(argv) : argv.dup
     args = []
     
@@ -469,8 +468,8 @@ class ConfigParser
   end
   
   # Same as parse, but removes parsed args from argv.
-  def parse!(argv=ARGV, config={}, options={})
-    result = parse(argv, config, options)
+  def parse!(argv=ARGV, options={})
+    result = parse(argv, options)
     argv.kind_of?(Array) ? argv.replace(result) : result
   end
   
