@@ -163,10 +163,10 @@ class ConfigParser
   attr_reader :default_config
 
   # Initializes a new ConfigParser and passes it to the block, if given.
-  def initialize
+  def initialize(config={})
     @options = []
     @switches = {}
-    @config = {}
+    @config = config
     @default_config = {}
   
     yield(self) if block_given?

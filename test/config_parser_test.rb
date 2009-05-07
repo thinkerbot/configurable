@@ -129,6 +129,12 @@ configurations:
     assert_equal({}, c.default_config)
   end
   
+  def test_initialize_sets_config
+    config = {}
+    c = ConfigParser.new(config)
+    assert_equal config.object_id, c.config.object_id
+  end
+  
   #
   # nested_config test
   #
