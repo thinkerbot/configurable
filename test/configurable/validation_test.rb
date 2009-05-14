@@ -342,27 +342,27 @@ class ValidationTest < Test::Unit::TestCase
   end
   
   #
-  # num test
+  # numeric test
   #
 
-  def test_num_documentation
-    assert_equal Proc, num.class
-    assert_equal 1.1, num.call(1.1)
-    assert_equal 1, num.call(1)
-    assert_equal 1e6, num.call(1e6)
-    assert_equal 1.1, num.call('1.1')
-    assert_equal 1e6, num.call('1.0e+6')
-    assert_raises(ValidationError) { num.call(nil) }
-    assert_raises(ValidationError) { num.call('str') }
+  def test_numeric_documentation
+    assert_equal Proc, numeric.class
+    assert_equal 1.1, numeric.call(1.1)
+    assert_equal 1, numeric.call(1)
+    assert_equal 1e6, numeric.call(1e6)
+    assert_equal 1.1, numeric.call('1.1')
+    assert_equal 1e6, numeric.call('1.0e+6')
+    assert_raises(ValidationError) { numeric.call(nil) }
+    assert_raises(ValidationError) { numeric.call('str') }
   end
   
   #
-  # num_or_nil test
+  # numeric_or_nil test
   #
   
-  def test_num_or_nil_documentation
-    assert_equal nil, num_or_nil.call("~") 
-    assert_equal nil, num_or_nil.call(nil) 
+  def test_numeric_or_nil_documentation
+    assert_equal nil, numeric_or_nil.call("~") 
+    assert_equal nil, numeric_or_nil.call(nil) 
   end
   
   #

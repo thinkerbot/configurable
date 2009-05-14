@@ -417,26 +417,26 @@ module Configurable
     # Returns a block that checks the input is a number.
     # String inputs are loaded as yaml first.
     #
-    #   num.class               # => Proc
-    #   num.call(1.1)           # => 1.1
-    #   num.call(1)             # => 1
-    #   num.call(1e6)           # => 1e6
-    #   num.call('1.1')         # => 1.1
-    #   num.call('1.0e+6')      # => 1e6
-    #   num.call(nil)           # => ValidationError
-    #   num.call('str')         # => ValidationError
+    #   numeric.class               # => Proc
+    #   numeric.call(1.1)           # => 1.1
+    #   numeric.call(1)             # => 1
+    #   numeric.call(1e6)           # => 1e6
+    #   numeric.call('1.1')         # => 1.1
+    #   numeric.call('1.0e+6')      # => 1e6
+    #   numeric.call(nil)           # => ValidationError
+    #   numeric.call('str')         # => ValidationError
     #
-    def num(); NUMERIC; end
+    def numeric(); NUMERIC; end
     
     # default attributes {:type => :num, :example => "2, 2.2, 2.0e+2"}
     NUMERIC = yaml(Numeric)
     register NUMERIC, :type => :num, :example => "2, 2.2, 2.0e+2"
     
-    # Same as num but allows nil:
+    # Same as numeric but allows nil:
     #
-    #   num_or_nil.call('~')    # => nil
-    #   num_or_nil.call(nil)    # => nil
-    def num_or_nil(); NUMERIC_OR_NIL; end
+    #   numeric_or_nil.call('~')    # => nil
+    #   numeric_or_nil.call(nil)    # => nil
+    def numeric_or_nil(); NUMERIC_OR_NIL; end
     
     NUMERIC_OR_NIL = yaml(Numeric, nil)
     register_as NUMERIC, NUMERIC_OR_NIL

@@ -10,6 +10,7 @@
 * configs may now be specified in modules and included
   into classes
 * ConfigParser can now ignore unknown options
+* converted num to numeric in Validation (for consistency)
 
 == 0.4.2 / 2009-03-30
 
