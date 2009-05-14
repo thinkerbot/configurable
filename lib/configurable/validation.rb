@@ -591,8 +591,8 @@ module Configurable
     TIME_OR_NIL = time_or_nil_block
     register_as TIME, TIME_OR_NIL
     
-    # Returns a block that only allows the specified values.  Select can take
-    # a block that will validate each individual value.
+    # Returns a block that only allows the specified options.  Select can take
+    # a block that will validate the input individual value.
     #
     #   s = select(1,2,3, &integer)
     #   s.class                      # => Proc
@@ -605,20 +605,20 @@ module Configurable
     #
     # The select block is registered with these default attributes: 
     #
-    #  {:type => :select, :values => values}
+    #  {:type => :select, :options => options}
     #
-    def select(*values, &validation)
+    def select(*options, &validation)
       block = lambda do |input|
         input = validation.call(input) if validation
-        validate(input, values)
+        validate(input, options)
       end
       
-      register(block, :type => :select, :values => values)
+      register(block, :type => :select, :options => options)
     end
     
     # Returns a block that checks the input is an array, and that each member
-    # of the array is one of the specified values.  A block may be provided
-    # to validate each individual value.
+    # of the array is included in options.  A block may be provided to validate
+    # the individual values.
     #
     #   s = list_select(1,2,3, &integer)
     #   s.class                      # => Proc
@@ -633,16 +633,16 @@ module Configurable
     #
     # The list_select block is registered with these default attributes: 
     #
-    #  {:type => :list_select, :values => values, :split => ','}
+    #  {:type => :list_select, :options => options, :split => ','}
     #
-    def list_select(*values, &validation)
+    def list_select(*options, &validation)
       block = lambda do |input|
         args = validate(input, [Array])
         args.collect! {|arg| validation.call(arg) } if validation
-        args.each {|arg| validate(arg, values) }
+        args.each {|arg| validate(arg, options) }
       end
       
-      register(block, :type => :list_select, :values => values, :split => ',')
+      register(block, :type => :list_select, :options => options, :split => ',')
     end
     
     # Returns a block validating the input is an IO or a string.  String inputs
