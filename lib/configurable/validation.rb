@@ -62,10 +62,16 @@ module Configurable
     end
     
     # Registers the default attributes of the source as the attributes
-    # of the target.  Attributes are duplicated so they may be modifed.
-    def register_as(source, target)
-      DEFAULT_ATTRIBUTES[target] = DEFAULT_ATTRIBUTES[source].dup
+    # of the target.  Overridding or additional attributes are merged
+    # to the defaults.
+    def register_as(source, target, attributes={})
+      DEFAULT_ATTRIBUTES[target] = DEFAULT_ATTRIBUTES[source].dup.merge!(attributes)
       target
+    end
+    
+    # Returns the attributes registered to the block.
+    def attributes(block)
+      DEFAULT_ATTRIBUTES[block] || {}
     end
     
     # Returns input if it matches any of the validations as in would in a case
@@ -326,7 +332,7 @@ module Configurable
         args
       end
       
-      register_as(LIST, block)
+      register_as(LIST, block, :validation => attributes(validation))
     end
     
     list_block = lambda do |input|
@@ -428,9 +434,9 @@ module Configurable
     #
     def numeric(); NUMERIC; end
     
-    # default attributes {:type => :num, :example => "2, 2.2, 2.0e+2"}
+    # default attributes {:type => :numeric, :example => "2, 2.2, 2.0e+2"}
     NUMERIC = yaml(Numeric)
-    register NUMERIC, :type => :num, :example => "2, 2.2, 2.0e+2"
+    register NUMERIC, :type => :numeric, :example => "2, 2.2, 2.0e+2"
     
     # Same as numeric but allows nil:
     #
@@ -613,7 +619,10 @@ module Configurable
         validate(input, options)
       end
       
-      register(block, :type => :select, :options => options)
+      register(block, 
+        :type => :select, 
+        :options => options,
+        :validation => attributes(validation))
     end
     
     # Returns a block that checks the input is an array, and that each member
@@ -642,7 +651,11 @@ module Configurable
         args.each {|arg| validate(arg, options) }
       end
       
-      register(block, :type => :list_select, :options => options, :split => ',')
+      register(block, 
+        :type => :list_select, 
+        :options => options, 
+        :split => ',',
+        :validation => attributes(validation))
     end
     
     # Returns a block validating the input is an IO or a string.  String inputs
