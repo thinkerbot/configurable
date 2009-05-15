@@ -152,14 +152,18 @@ module Configurable
 
     # Returns self as a hash.  Any DelegateHash values are recursively
     # hashified, to account for nesting.
-    #
-    # A block may be given to transform keys (typically to strings or
-    # symbols).  The keys in the resulting hash are the block returns.
     def to_hash(&block)
       hash = {}
       each_pair do |key, value|
-        key = yield(key) if block_given?
-        hash[key] = value.kind_of?(DelegateHash) ? value.to_hash(&block) : value
+        if value.kind_of?(DelegateHash)
+          value = value.to_hash(&block)
+        end
+        
+        if block_given?
+          yield(hash, key, value)
+        else
+          hash[key] = value
+        end
       end
       hash
     end

@@ -502,7 +502,7 @@ class DelegateHashTest < Test::Unit::TestCase
     }, d.to_hash)
   end
   
-  def test_to_hash_accepts_a_block_to_transform_keys
+  def test_to_hash_accepts_a_block_to_transform_keys_and_values
     one = DelegateHash.new(
       {:a => Delegate.new(:key, :key=, 'value')}, 
       {:one => 'value'})
@@ -516,18 +516,21 @@ class DelegateHashTest < Test::Unit::TestCase
       {:c => Delegate.new(:key, :key=, two)}, 
       {:e => three})
     
-    result = d.to_hash {|key| key.to_s }
+    result = d.to_hash do |hash, key, value|
+      hash[key.to_s] = value.kind_of?(String) ? value.upcase : value
+    end
+    
     assert_equal({
       'c' => {
         'b' => {
-          'a' => 'value',
-          'one' => 'value'
+          'a' => 'VALUE',
+          'one' => 'VALUE'
         },
-        'two' => 'value'
+        'two' => 'VALUE'
       },
       'e' => {
-        'd' => 'value',
-        'three' => 'value'
+        'd' => 'VALUE',
+        'three' => 'VALUE'
       }
     }, result)
   end
