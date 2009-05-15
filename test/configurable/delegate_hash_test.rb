@@ -502,6 +502,36 @@ class DelegateHashTest < Test::Unit::TestCase
     }, d.to_hash)
   end
   
+  def test_to_hash_accepts_a_block_to_transform_keys
+    one = DelegateHash.new(
+      {:a => Delegate.new(:key, :key=, 'value')}, 
+      {:one => 'value'})
+    two = DelegateHash.new(
+      {:b => Delegate.new(:key, :key=, one)}, 
+      {:two => 'value'})
+    three = DelegateHash.new(
+      {:d => Delegate.new(:key, :key=, 'value')}, 
+      {:three => 'value'})
+    d = DelegateHash.new(
+      {:c => Delegate.new(:key, :key=, two)}, 
+      {:e => three})
+    
+    result = d.to_hash {|key| key.to_s }
+    assert_equal({
+      'c' => {
+        'b' => {
+          'a' => 'value',
+          'one' => 'value'
+        },
+        'two' => 'value'
+      },
+      'e' => {
+        'd' => 'value',
+        'three' => 'value'
+      }
+    }, result)
+  end
+  
   #
   # dup test
   #
