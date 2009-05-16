@@ -136,6 +136,26 @@ configurations:
   end
   
   #
+  # AGET test
+  #
+  
+  def test_AGET_gets_config_value
+    assert_equal(nil, c[:key])
+    c.config[:key] = 'value'
+    assert_equal('value', c[:key])
+  end
+  
+  #
+  # ASET test
+  #
+  
+  def test_ASET_sets_config_value
+    assert_equal({}, c.config)
+    c[:key] = 'value'
+    assert_equal({:key => 'value'}, c.config)
+  end
+  
+  #
   # nested_config test
   #
   

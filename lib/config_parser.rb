@@ -172,6 +172,16 @@ class ConfigParser
     yield(self) if block_given?
   end
   
+  # Returns the config value for key.
+  def [](key)
+    config[key]
+  end
+  
+  # Sets the config value for key.
+  def []=(key, value)
+    config[key] = value
+  end
+  
   # Returns the nested form of config (see ConfigParser.nest).  Primarily
   # useful when nested configurations have been added with add.
   def nested_config
