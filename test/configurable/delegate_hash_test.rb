@@ -118,6 +118,42 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal({:not_a_config => 1}, d.store)
   end
   
+  class IndifferentDelegates < Hash
+    def [](key)
+      super(key.to_sym)
+    end
+    
+    def []=(key, value)
+      super(key.to_sym, value)
+    end
+  end
+  
+  def test_bind_delegates_indifferent_delegates_indifferently
+    delegate = Delegate.new(:key)
+    delegates = IndifferentDelegates.new
+    delegates[:key] = delegate
+    assert_equal delegate, delegates[:key]
+    assert_equal delegate, delegates['key']
+    
+    # from symbol
+    d = DelegateHash.new(delegates)
+    r = Receiver.new
+    
+    d.store[:key] = 1
+    assert_nil r.key
+    d.bind(r)
+    assert_equal 1, r.key
+    
+    # from string
+    d = DelegateHash.new(delegates)
+    r = Receiver.new
+    
+    d.store['key'] = 1
+    assert_nil r.key
+    d.bind(r)
+    assert_equal 1, r.key
+  end
+  
   def test_bind_delegates_default_values_to_receiver_if_no_store_value_is_present
     d.delegates[:key].default = 1
     

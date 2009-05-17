@@ -186,15 +186,25 @@ module Configurable
     
     # helper to map delegate values from source to the receiver
     def map(source) # :nodoc:
+      source_values = {}
+      source.each_key do |key|
+        if delegate = delegates[key]
+          source_values[delegate] = source.delete(key)
+        end
+      end
+      
       delegates.each_pair do |key, delegate|
         # map the value; if no value is set in the source then use the 
         # delegate default.  if map_default is false, then simply skip... 
         # this ensures each config is initialized to a value when bound
         # UNLESS map_default is set (indicating manual initialization)
         value = case
-        when source.has_key?(key) then source.delete(key)
-        when delegate[:set_default, true] then delegate.default
-        else next
+        when source_values.has_key?(delegate)
+          source_values[delegate]
+        when delegate[:set_default, true]
+          delegate.default
+        else
+          next
         end
         
         receiver.send(delegate.writer, value)
