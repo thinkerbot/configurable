@@ -189,6 +189,11 @@ module Configurable
       source_values = {}
       source.each_key do |key|
         if delegate = delegates[key]
+          if source_values.has_key?(delegate)
+            key = delegates.keys.find {|k| delegates[k] == delegate }
+            raise "multiple values mapped to #{key.inspect}"
+          end
+          
           source_values[delegate] = source.delete(key)
         end
       end

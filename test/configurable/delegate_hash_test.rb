@@ -154,6 +154,18 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal 1, r.key
   end
   
+  def test_bind_raises_error_for_ambiguity_in_indifferent_delegates
+    delegates = IndifferentDelegates.new 
+    delegates[:key] = Delegate.new(:key)
+    
+    d = DelegateHash.new(delegates)
+    d.store[:key] = 1
+    d.store['key'] = 2
+    
+    err = assert_raises(RuntimeError) { d.bind(r) }
+    assert_equal "multiple values mapped to :key", err.message
+  end
+  
   def test_bind_delegates_default_values_to_receiver_if_no_store_value_is_present
     d.delegates[:key].default = 1
     
