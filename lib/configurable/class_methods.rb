@@ -293,7 +293,14 @@ module Configurable
       else
         key.to_s.capitalize
       end
-      const_set(const_name, configurable_class) if const_name
+      
+      if const_name
+        # this prevents a warning in cases where the nesting
+        # class defines the configurable_class
+        unless const_defined?(const_name) && const_get(const_name) == configurable_class
+          const_set(const_name, configurable_class)
+        end
+      end
       
       # define instance reader
       instance_reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
