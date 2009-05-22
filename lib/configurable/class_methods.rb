@@ -37,16 +37,14 @@ module Configurable
     # the block, if given, to register additonal options.  
     #
     # See ConfigParser#parse for more information.
-    def parse(argv=ARGV, options={}, &block) # :yields: parser
-      parse!(argv.dup, options, &block)
+    def parse(argv=ARGV, options={}) # :yields: parser
+      parse!(argv.dup, options)
     end
     
     # Same as parse, but removes parsed args from argv.
     def parse!(argv=ARGV, options={})
       parser = ConfigParser.new
       parser.add(configurations)
-      
-      yield(parser) if block_given?
       
       args = parser.parse!(argv, options)
       [args, parser.config]

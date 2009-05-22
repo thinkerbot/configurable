@@ -352,16 +352,6 @@ class ConfigurableTest < Test::Unit::TestCase
     config(:one, 'one') {|v| v.upcase }
   end
   
-  def test_parse_yields_configured_config_parser_to_block_if_given
-    was_in_block = false
-    ParseClass.parse do |psr|
-       assert_equal ConfigParser, psr.class
-       assert_equal ["--one"], psr.switches.keys
-       was_in_block = true
-    end
-    assert was_in_block
-  end
-  
   def test_parse_parses_configs_from_argv
     args, config = ParseClass.parse("a b --one value c")
     assert_equal ["a", "b", "c"], args
