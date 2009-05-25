@@ -542,9 +542,8 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal Proc, io.class
     assert_equal $stdout, io.call($stdout)
     assert_equal '/path/to/file', io.call('/path/to/file')
-  
+    assert_equal 1, io.call(1)
     assert_raises(ValidationError) { io.call(nil) }
-    assert_raises(ValidationError) { io.call(10)  }
     
     array_io = io(:<<)
     assert_equal $stdout, array_io.call($stdout)

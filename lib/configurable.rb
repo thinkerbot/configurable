@@ -197,6 +197,11 @@ module Configurable
       dir = File.dirname(io)
       FileUtils.mkdir_p(dir) unless File.directory?(dir)
       File.open(io, mode) {|file| yield(file) }
+    when Integer
+      # note this does not close the io because, as far as I understand, 
+      # valid integer file descriptors point to files that are already
+      # open and presumably managed elsewhere
+      yield IO.open(io, mode)
     when nil then nil
     else yield(io)
     end

@@ -658,15 +658,15 @@ module Configurable
         :validation => attributes(validation))
     end
     
-    # Returns a block validating the input is an IO or a string.  String inputs
-    # are expected to be filepaths, but io does not open a file immediately.
+    # Returns a block validating the input is an IO, a string, or an integer.
+    # String inputs are expected to be filepaths and integer inputs are expected
+    # to be valid file descriptors, but io does not open an IO immediately.
     #
     #   io.class                     # => Proc
     #   io.call($stdout)             # => $stdout
     #   io.call('/path/to/file')     # => '/path/to/file'
-    #
+    #   io.call(1)                   # => 1
     #   io.call(nil)                 # => ValidationError
-    #   io.call(10)                  # => ValidationError
     #
     # An IO api can be specified to allow other objects to be validated.  This
     # is useful for duck-typing an IO when a known subset of methods are needed.
@@ -684,7 +684,7 @@ module Configurable
         IO_OR_STRING
       else
         block = lambda do |input|
-          validate(input, [IO, String]) do
+          validate(input, [IO, String, Integer]) do
             validate_api(input, api)
           end
         end
@@ -694,7 +694,7 @@ module Configurable
     end
     
     # default attributes {:type => :io, :duplicate_default => false, :example => "/path/to/file"}
-    IO_OR_STRING = check(IO, String)
+    IO_OR_STRING = check(IO, String, Integer)
     register IO_OR_STRING, :type => :io, :duplicate_default => false, :example => "/path/to/file"
     
     # Same as io but allows nil:
@@ -706,7 +706,7 @@ module Configurable
         IO_STRING_OR_NIL
       else
         block = lambda do |input|
-          validate(input, [IO, String, nil]) do
+          validate(input, [IO, String, Integer, nil]) do
             validate_api(input, api)
           end
         end
@@ -715,7 +715,7 @@ module Configurable
       end  
     end
     
-    IO_STRING_OR_NIL = check(IO, String, nil)
+    IO_STRING_OR_NIL = check(IO, String, Integer, nil)
     register_as IO_OR_STRING, IO_STRING_OR_NIL
   end
 end

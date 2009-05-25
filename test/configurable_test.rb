@@ -626,6 +626,20 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_open_io_opens_filepath_and_passes_file_to_block
+    # not a great test....
+    s = IoSample.new
+    
+    was_in_block = false
+    s.send(:open_io, 2) do |io|
+      assert_equal $stdout.stat.dev, io.stat.dev
+      assert $stdout.object_id != io.object_id
+      was_in_block = true
+    end
+
+    assert was_in_block
+  end
+  
+  def test_open_io_opens_integer_file_descriptors_and_yields_to_block
     temp = Tempfile.new('io_sample')
     temp.close
     
