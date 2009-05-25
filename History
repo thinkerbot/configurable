@@ -1,4 +1,4 @@
-== 0.4.3 / 2009-05-06
+== 0.5.0 / 2009-05-25
 
 * fixed io validation to not duplicate IOs
 * fixed :hidden type for nested configurations
@@ -12,6 +12,9 @@
 * ConfigParser can now ignore unknown options
 * converted num to numeric in Validation (for consistency)
 * changed 'values' to 'options' in select and list_select
+* expanded io/open_io to allow integer file descriptors
+* reworked mapping in DelegateHash to respect indifferent
+  access
 
 == 0.4.2 / 2009-03-30
 
