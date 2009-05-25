@@ -630,7 +630,7 @@ class ConfigurableTest < Test::Unit::TestCase
     s = IoSample.new
     
     was_in_block = false
-    s.send(:open_io, 2) do |io|
+    s.send(:open_io, 1) do |io|
       assert_equal $stdout.stat.dev, io.stat.dev
       assert $stdout.object_id != io.object_id
       was_in_block = true
