@@ -470,7 +470,7 @@ class ConfigParser
           next
         end
         
-        raise "unknown option: #{$1}"
+        raise "unknown option: #{$1 || arg}"
       end
   
       option.parse($1, $4 || $3, argv)

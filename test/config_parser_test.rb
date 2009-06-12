@@ -562,6 +562,12 @@ configurations:
   def test_parse_raises_error_for_unknown_option
     err = assert_raises(RuntimeError) { c.parse(["--unknown", "option"]) }
     assert_equal "unknown option: --unknown", err.message
+    
+    err = assert_raises(RuntimeError) { c.parse(["--unknown=option"]) }
+    assert_equal "unknown option: --unknown", err.message
+    
+    err = assert_raises(RuntimeError) { c.parse(["--*"]) }
+    assert_equal "unknown option: --*", err.message
   end
   
   def test_parse_ignores_unknown_options_if_specified

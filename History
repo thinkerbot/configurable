@@ -1,3 +1,7 @@
+==
+
+* minor bug fixes in interface
+
 == 0.5.0 / 2009-05-25
 
 * fixed io validation to not duplicate IOs
