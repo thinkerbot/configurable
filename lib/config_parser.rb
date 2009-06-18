@@ -200,11 +200,23 @@ class ConfigParser
     @options << str
   end
 
-  # Registers the option with self by adding opt to options and mapping
-  # the opt switches. Raises an error for conflicting switches.
-  def register(opt)
-    @options << opt unless @options.include?(opt)
-
+  # Registers the option with self by adding opt to options and mapping the
+  # opt switches. Raises an error for conflicting switches.
+  #
+  # If override is specified, options with conflicting switches are removed
+  # and no error is raised.  Note that this may remove multiple options.
+  def register(opt, override=false)
+    if override
+      existing = opt.switches.collect do |switch|
+        @switches.delete(switch)
+      end
+      @options -= existing
+    end
+    
+    unless @options.include?(opt)
+      @options << opt
+    end
+    
     opt.switches.each do |switch|
       case @switches[switch]
       when opt then next
@@ -253,46 +265,12 @@ class ConfigParser
   #   end
   #
   def on(*args, &block)
-    attributes = args.last.kind_of?(Hash) ? args.pop : {}
-    args.each do |arg|
-      # split switch arguments... descriptions
-      # still won't match as a switch even
-      # after a split
-      switch, arg_name = arg.kind_of?(String) ? arg.split(' ', 2) : arg
-      
-      # determine the kind of argument specified
-      key = case switch
-      when SHORT_OPTION then :short
-      when LONG_OPTION  then :long
-      else :desc
-      end
-      
-      # check for conflicts
-      if attributes[key]
-        raise ArgumentError, "conflicting #{key} options: [#{attributes[key].inspect}, #{arg.inspect}]"
-      end
-      
-      # set the option attributes
-      case key
-      when :long, :short
-        attributes[key] = switch
-        attributes[:arg_name] = arg_name if arg_name
-      else
-        attributes[key] = arg
-      end
-    end
-    
-    # check if a switch-style option is specified
-    klass = case
-    when attributes[:long].to_s =~ /^--\[no-\](.*)$/ 
-      attributes[:long] = "--#{$1}"
-      Switch
-    else 
-      Option
-    end
-    
-    # instantiate and register the new option
-    register klass.new(attributes, &block) 
+    register new_option(args, &block)
+  end
+  
+  # Same as on, but overrides options with overlapping switches.
+  def on!(*args, &block)
+    register new_option(args, &block), true
   end
   
   # Defines and registers a config-style option with self.  Define does not
@@ -490,5 +468,51 @@ class ConfigParser
     @options.collect do |option|
       option.to_s.rstrip
     end.join("\n") + "\n"
+  end
+  
+  protected
+  
+  # helper to parse an option from an argv.  new_option is used
+  # by on and on! to generate options
+  def new_option(argv, &block) # :nodoc:
+    attributes = argv.last.kind_of?(Hash) ? argv.pop : {}
+    argv.each do |arg|
+      # split switch arguments... descriptions
+      # still won't match as a switch even
+      # after a split
+      switch, arg_name = arg.kind_of?(String) ? arg.split(' ', 2) : arg
+      
+      # determine the kind of argument specified
+      key = case switch
+      when SHORT_OPTION then :short
+      when LONG_OPTION  then :long
+      else :desc
+      end
+      
+      # check for conflicts
+      if attributes[key]
+        raise ArgumentError, "conflicting #{key} options: [#{attributes[key].inspect}, #{arg.inspect}]"
+      end
+      
+      # set the option attributes
+      case key
+      when :long, :short
+        attributes[key] = switch
+        attributes[:arg_name] = arg_name if arg_name
+      else
+        attributes[key] = arg
+      end
+    end
+    
+    # check if a switch-style option is specified
+    klass = case
+    when attributes[:long].to_s =~ /^--\[no-\](.*)$/ 
+      attributes[:long] = "--#{$1}"
+      Switch
+    else 
+      Option
+    end
+    
+    klass.new(attributes, &block)
   end
 end

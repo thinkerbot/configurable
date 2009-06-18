@@ -182,7 +182,7 @@ configurations:
     assert_equal({'--long' => opt, '-s' => opt}, c.switches)
   end
   
-  def test_register_raisess_error_for_conflicting_switches
+  def test_register_raises_error_for_conflicting_switches
     c.register(Option.new(:long => 'key', :short => 'k'))
     
     e = assert_raises(ArgumentError) { c.register(Option.new(:long => 'key')) }
@@ -190,6 +190,35 @@ configurations:
     
     e = assert_raises(ArgumentError) { c.register(Option.new(:short => 'k')) }
     assert_equal "switch is already mapped to a different option: -k", e.message
+  end
+  
+  def test_register_removes_conflicting_options_on_override
+    o1 = Option.new(:long => 'key')
+    o2 = Option.new(:short => 'k')
+    o3 = Option.new(:long => 'non-conflict', :short => 'n')
+    
+    c.register(o1)
+    c.register(o2)
+    c.register(o3)
+        
+    assert_equal [o1, o2, o3], c.options
+    assert_equal({
+      '--key' => o1,
+      '-k' => o2,
+      '--non-conflict' => o3,
+      '-n' => o3
+    }, c.switches)
+    
+    o4 = Option.new(:long => 'key', :short => 'k')
+    c.register(o4, true)
+    
+    assert_equal [o3, o4], c.options
+    assert_equal({
+      '--key' => o4,
+      '-k' => o4,
+      '--non-conflict' => o3,
+      '-n' => o3
+    }, c.switches)
   end
   
   def test_register_does_not_raises_errors_for_registering_an_option_twice
@@ -233,7 +262,7 @@ configurations:
     assert_equal nil, opt.desc
   end
   
-  def test_on_raisess_error_for_conflicting_option_attributes
+  def test_on_raises_error_for_conflicting_option_attributes
     e = assert_raises(ArgumentError) { c.on('--long', '--alt') }
     assert_equal "conflicting long options: [\"--long\", \"--alt\"]", e.message
     
@@ -247,6 +276,34 @@ configurations:
   def test_on_creates_Switch_option_with_switch_long
     opt = c.on('--[no-]switch')
     assert_equal ConfigParser::Switch, opt.class
+  end
+  
+  #
+  # on! test
+  #
+  
+  def test_on_bang_overrides_conflicting_options
+    o1 = c.on! "--key"
+    o2 = c.on! "-k"
+    o3 = c.on! "-n", "--non-conflict"
+    
+    assert_equal [o1, o2, o3], c.options
+    assert_equal({
+      '--key' => o1,
+      '-k' => o2,
+      '--non-conflict' => o3,
+      '-n' => o3
+    }, c.switches)
+    
+    o4 = c.on! "-k", "--key"
+    
+    assert_equal [o3, o4], c.options
+    assert_equal({
+      '--key' => o4,
+      '-k' => o4,
+      '--non-conflict' => o3,
+      '-n' => o3
+    }, c.switches)
   end
   
   #
@@ -637,7 +694,7 @@ configurations:
     assert_equal nil, was_in_block
   end
   
-  def test_switch_raisess_error_when_arg_name_is_specified
+  def test_switch_raises_error_when_arg_name_is_specified
     e = assert_raises(ArgumentError) { c.on('--[no-]opt VALUE') }
     assert_equal "arg_name specified for switch: VALUE", e.message
   end
@@ -662,7 +719,7 @@ configurations:
     assert_equal(["a", "b"], args)
   end
   
-  def test_parse_list_with_limit_raisess_error_for_too_many_entries
+  def test_parse_list_with_limit_raises_error_for_too_many_entries
     c.define('opt', [], :type => :list, :n => 1)
     e = assert_raises(RuntimeError) { c.parse(["a", "--opt", "one", "--opt", "three", "b"]) }
     assert_equal "too many assignments: \"opt\"", e.message

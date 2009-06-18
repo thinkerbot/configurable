@@ -1,6 +1,7 @@
 ==
 
 * minor bug fixes in interface
+* added on! to ConfigParser to specify override options
 
 == 0.5.0 / 2009-05-25
 
