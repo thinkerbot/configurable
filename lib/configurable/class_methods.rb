@@ -14,14 +14,17 @@ module Configurable
 
     # A hash of (key, Delegate) pairs defining the class configurations.
     attr_reader :configurations
-
-    def inherited(child) # :nodoc:
+    
+    # Inherits configurations to the child by duplication.
+    def inherited(child)
+      
       # deep duplicate configurations
       unless child.instance_variable_defined?(:@configurations)
         duplicate = child.instance_variable_set(:@configurations, configurations.dup)
         duplicate.each_pair {|key, config| duplicate[key] = config.dup }
         duplicate.extend(IndifferentAccess) if configurations.kind_of?(IndifferentAccess)
       end
+      
       super
     end
     

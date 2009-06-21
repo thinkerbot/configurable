@@ -8,6 +8,9 @@ module Configurable
       mod.extend ClassMethods
       mod.extend ModuleMethods unless mod.kind_of?(Class)
       
+      # Normally source_file is set when a class is extended by Lazydoc::Attributes.
+      # In this case, Attributes is *included* via ClassMethods (extend is not used).
+      # As a result, source_file needs to be set here.
       unless mod.instance_variable_defined?(:@source_file)
         caller[1] =~ Lazydoc::CALLER_REGEXP
         mod.instance_variable_set(:@source_file, File.expand_path($1)) 
