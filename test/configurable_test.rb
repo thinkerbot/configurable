@@ -427,14 +427,14 @@ class ConfigurableTest < Test::Unit::TestCase
   class LazydocClass
     include Configurable
   
-    config_attr :one, 'value'                           # with documentation
-    config_attr :two, 'value', :desc => "description"   # ignored documentation
+    config_attr :one, 'value'                               # one with documentation
+    config_attr :two, 'value', :desc => "two description"   # two ignored documentation
     
-    config :three, 'value'                              # with documentation
-    config :four, 'value', :desc => "description"       # ignored documentation
+    config :three, 'value'                                  # three with documentation
+    config :four, 'value', :desc => "four description"      # four ignored documentation
     
-    nest :five, LazydocNestClass                        # with documentation
-    nest :six, LazydocNestClass, :desc => "description" # ignored documentation
+    nest :five, LazydocNestClass                            # five with documentation
+    nest :six, LazydocNestClass, :desc => "six description" # six ignored documentation
   end
   
   def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
@@ -442,27 +442,27 @@ class ConfigurableTest < Test::Unit::TestCase
     
     [:one, :three, :five].each do |doc_config|
       desc = LazydocClass.configurations[doc_config].attributes[:desc]
-      assert_equal "with documentation", desc.to_s
+      assert_equal "#{doc_config} with documentation", desc.to_s
     end
     
     [:two, :four, :six].each do |nodoc_config|
       desc = LazydocClass.configurations[nodoc_config].attributes[:desc]
-      assert_equal "description", desc.to_s
+      assert_equal "#{nodoc_config} description", desc.to_s
     end
   end
   
   module LazydocConfigModule
     include Configurable
 
-    config_attr :one, 'value'                           # with documentation
-    config_attr :two, 'value', :desc => "description"   # ignored documentation
+    config_attr :one, 'value'                             # one with documentation
+    config_attr :two, 'value', :desc => "two description" # two ignored documentation
   end
   
   class LazydocIncludeClass
     include LazydocConfigModule
     
-    config :three, 'value'                              # with documentation
-    config :four, 'value', :desc => "description"       # ignored documentation
+    config :three, 'value'                                # three with documentation
+    config :four, 'value', :desc => "four description"    # four ignored documentation
   end
   
   def test_configurable_registers_documentation_for_configs_in_modules
@@ -470,14 +470,34 @@ class ConfigurableTest < Test::Unit::TestCase
     
     [:one, :three].each do |doc_config|
       desc = LazydocIncludeClass.configurations[doc_config].attributes[:desc]
-      assert_equal "with documentation", desc.to_s
+      assert_equal "#{doc_config} with documentation", desc.to_s
     end
     
     [:two, :four].each do |nodoc_config|
       desc = LazydocIncludeClass.configurations[nodoc_config].attributes[:desc]
-      assert_equal "description", desc.to_s
+      assert_equal "#{nodoc_config} description", desc.to_s
     end
   end
+  
+  class LazydocIncludeClassDocSubclass < LazydocIncludeClass
+    config_attr :five, 'value'                            # five with documentation
+    config_attr :six, 'value', :desc => "six description" #  ignored documentation
+  end
+  
+  def test_configurable_registers_documentation_for_configs_in_subclasses
+    LazydocIncludeClassDocSubclass.lazydoc.resolve
+    
+    [:one, :three, :five].each do |doc_config|
+      desc = LazydocClass.configurations[doc_config].attributes[:desc]
+      assert_equal "#{doc_config} with documentation", desc.to_s
+    end
+    
+    [:two, :four, :six].each do |nodoc_config|
+      desc = LazydocClass.configurations[nodoc_config].attributes[:desc]
+      assert_equal "#{nodoc_config} description", desc.to_s
+    end
+  end
+  
   #
   # DEFAULT_ATTRIBUTES test
   #

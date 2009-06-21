@@ -2,6 +2,7 @@
 
 * minor bug fixes in interface
 * added on! to ConfigParser to specify override options
+* updates to use latest Lazydoc
 
 == 0.5.0 / 2009-05-25
 

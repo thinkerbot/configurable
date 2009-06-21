@@ -16,11 +16,6 @@ module Configurable
     attr_reader :configurations
 
     def inherited(child) # :nodoc:
-      unless child.instance_variable_defined?(:@source_file)
-        caller[0] =~ Lazydoc::CALLER_REGEXP
-        child.instance_variable_set(:@source_file, File.expand_path($1)) 
-      end
-
       # deep duplicate configurations
       unless child.instance_variable_defined?(:@configurations)
         duplicate = child.instance_variable_set(:@configurations, configurations.dup)
