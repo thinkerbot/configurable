@@ -106,7 +106,7 @@ class OptionTest < Test::Unit::TestCase
     opt = Option.new
     
     e = assert_raises(RuntimeError) { opt.parse('--switch', 'value', []) }
-    assert_equal "value specified for flag", e.message
+    assert_equal "value specified for flag: --switch", e.message
   end
   
   #

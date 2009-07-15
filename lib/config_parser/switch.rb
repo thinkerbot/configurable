@@ -29,7 +29,7 @@ class ConfigParser
     # or calls the block with true in all other cases.  Raises an
     # error if a value is specified.
     def parse(switch, value, argv)
-      raise "value specified for switch" if value
+      raise "value specified for switch: #{switch}" if value
       value = (switch == negative_long ? false : true)
       block ? block.call(value) : value
     end

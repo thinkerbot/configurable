@@ -66,7 +66,7 @@ class ConfigParser
         end
         block ? block.call(value) : value
       else
-        raise "value specified for flag" if value
+        raise "value specified for flag: #{switch}" if value
         block ? block.call : nil
       end
     end
