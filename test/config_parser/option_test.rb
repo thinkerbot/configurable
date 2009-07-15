@@ -37,7 +37,7 @@ class OptionTest < Test::Unit::TestCase
     assert_equal '-s', o.short
   end
   
-  def test_initialization_raisess_error_for_bad_switches
+  def test_initialization_raises_error_for_bad_switches
     e = assert_raises(ArgumentError) { Option.new(:long => '') }
     assert_equal "invalid long option: --", e.message
     
@@ -102,7 +102,7 @@ class OptionTest < Test::Unit::TestCase
     assert_equal 'return value', opt.parse('--switch', nil, [])
   end
   
-  def test_parse_with_no_arg_name_raisess_error_if_value_is_provided
+  def test_parse_with_no_arg_name_raises_error_if_value_is_provided
     opt = Option.new
     
     e = assert_raises(RuntimeError) { opt.parse('--switch', 'value', []) }
@@ -141,7 +141,7 @@ class OptionTest < Test::Unit::TestCase
     assert_equal 'return value', opt.parse('--switch', 'value', [])
   end
   
-  def test_parse_with_arg_name_raisess_error_if_no_value_is_provided_and_argv_is_empty
+  def test_parse_with_arg_name_raises_error_if_no_value_is_provided_and_argv_is_empty
     opt = Option.new(:arg_name => 'ARG')
     
     e = assert_raises(RuntimeError) { opt.parse('--switch', nil, []) }
