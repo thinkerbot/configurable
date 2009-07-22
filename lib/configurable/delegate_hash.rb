@@ -152,11 +152,16 @@ module Configurable
 
     # Returns self as a hash.  Any DelegateHash values are recursively
     # hashified, to account for nesting.
-    def to_hash(&block)
+    def to_hash(scrub=false, &block)
       hash = {}
       each_pair do |key, value|
         if value.kind_of?(DelegateHash)
-          value = value.to_hash(&block)
+          value = value.to_hash(scrub, &block)
+        end
+        
+        if scrub
+          delegate = delegates[key]
+          next if delegate && delegate.default(false) == value
         end
         
         if block_given?

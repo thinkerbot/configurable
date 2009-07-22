@@ -583,6 +583,54 @@ class DelegateHashTest < Test::Unit::TestCase
     }, result)
   end
   
+  def test_to_hash_scrubs_delegates_set_to_default_value_if_specified
+    d.store[:one] = nil
+    d.store[:key] = nil
+    
+    d.bind(r)
+    assert_equal({:one => nil, :key => nil}, d.to_hash)
+    assert_equal({:one => nil}, d.to_hash(true))
+    
+    r.key = :value
+    assert_equal({:one => nil, :key => :value}, d.to_hash(true))
+  end
+  
+  def test_to_hash_scrub_works_with_unbound_objects
+    d.store[:one] = nil
+    d.store[:key] = nil
+    
+    assert_equal({:one => nil}, d.to_hash(true))
+    d.store[:key] = :value
+    assert_equal({:one => nil, :key => :value}, d.to_hash(true))
+  end
+  
+  def test_to_hash_scrubs_delgates_recursively
+    one = DelegateHash.new(
+      {:a => Delegate.new(:key, :key=, 'value')}, 
+      {:one => 'value'})
+    two = DelegateHash.new(
+      {:b => Delegate.new(:key, :key=, one)}, 
+      {:two => 'value'})
+    three = DelegateHash.new(
+      {:d => Delegate.new(:key, :key=, 'value')}, 
+      {:three => 'value'})
+    d = DelegateHash.new(
+      {:c => Delegate.new(:key, :key=, two)}, 
+      {:e => three})
+    
+    assert_equal({
+      :c => {
+        :b => {
+          :one => 'value'
+        },
+        :two => 'value'
+      },
+      :e => {
+        :three => 'value'
+      }
+    }, d.to_hash(true))
+  end
+  
   #
   # dup test
   #
