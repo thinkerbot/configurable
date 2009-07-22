@@ -253,6 +253,46 @@ module Configurable
     SYMBOL_OR_NIL = yaml(Symbol, nil)
     register_as SYMBOL, SYMBOL_OR_NIL
     
+    # Returns a block that checks the input is a symbol.
+    # String inputs are directly converted to a symbol.
+    #
+    #   strbol.class              # => Proc
+    #   strbol.call(:sym)         # => :sym
+    #   strbol.call(':sym')       # => :":sym"
+    #   strbol.call('str')        # => :sym
+    #   strbol.call(nil)          # => ValidationError
+    #
+    def strbol(); STRBOL; end
+
+    # default attributes {:type => :symbol, :example => ":sym"}
+    STRBOL = lambda do |input|
+      if input.kind_of?(String)
+        input = input.to_sym
+      end
+      
+      validate(input, [Symbol])
+    end
+    register STRBOL, :type => :symbol, :example => ":sym"
+
+    # Same as strbol but allows nil.  Tilde is considered a string
+    # equivalent of nil (this behavior is consistent with the YAML
+    # methods but obviously inconsistent with the strbol behavior).
+    #
+    #   strbol_or_nil.call('~')   # => nil
+    #   strbol_or_nil.call(nil)   # => nil
+    def strbol_or_nil(); STRBOL_OR_NIL; end
+
+    STRBOL_OR_NIL = lambda do |input|
+      input = case input
+      when "~"    then nil
+      when String then input.to_sym
+      else input
+      end
+      
+      validate(input, [Symbol, nil])
+    end
+    register_as STRBOL, STRBOL_OR_NIL
+    
     # Returns a block that checks the input is true, false or nil.
     # String inputs are loaded as yaml first.
     #

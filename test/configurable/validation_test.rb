@@ -200,6 +200,27 @@ class ValidationTest < Test::Unit::TestCase
   end
 
   #
+  # strbol test
+  #
+
+  def test_strbol_documentation
+    assert_equal Proc, strbol.class
+    assert_equal :sym, strbol.call(:sym)
+    assert_equal :":sym", strbol.call(':sym')
+    assert_equal :sym, strbol.call('sym')
+    assert_raises(ValidationError) { strbol.call(nil) }
+  end
+
+  #
+  # strbol_or_nil test
+  #
+  
+  def test_strbol_or_nil_documentation
+    assert_equal nil, strbol_or_nil.call("~") 
+    assert_equal nil, strbol_or_nil.call(nil) 
+  end
+  
+  #
   # boolean test
   #
 
