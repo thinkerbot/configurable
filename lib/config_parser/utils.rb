@@ -85,7 +85,7 @@ class ConfigParser
     # Infers the default long using key and adds it to attributes.  Returns
     # attributes.
     #
-    #   infer_long(:key, {})                # => {:long => '--key'}
+    #   infer_long(:key, {})                      # => {:long => '--key'}
     #
     def infer_long(key, attributes)
       unless attributes.has_key?(:long)
@@ -98,12 +98,19 @@ class ConfigParser
     # Infers the default argname from attributes[:long] and sets it in
     # attributes.  Returns attributes.
     #
-    #   infer_arg_name(:long => '--opt')     # => {:long => '--opt', :arg_name => 'OPT'}
+    #   infer_arg_name(:key, {:long => '--opt'})  # => {:long => '--opt', :arg_name => 'OPT'}
+    #   infer_arg_name(:key, {})                  # => {:arg_name => 'KEY'}
     #
-    def infer_arg_name(attributes)
+    def infer_arg_name(key, attributes)
+      if attributes.has_key?(:arg_name)
+        return attributes
+      end
+      
       if long = attributes[:long]
         long.to_s =~ /^(?:--)?(.*)$/
-        attributes[:arg_name] ||= $1.upcase
+        attributes[:arg_name] = $1.upcase
+      else
+        attributes[:arg_name] = key.to_s.upcase
       end
       
       attributes
@@ -116,7 +123,7 @@ class ConfigParser
     #
     def setup_option(key, attributes={})
       infer_long(key, attributes)
-      infer_arg_name(attributes)
+      infer_arg_name(key, attributes)
       
       lambda {|value| config[key] = value }
     end
@@ -153,7 +160,7 @@ class ConfigParser
     #
     def setup_list(key, attributes={})
       infer_long(key, attributes)
-      infer_arg_name(attributes)
+      infer_arg_name(key, attributes)
       
       split = attributes[:split]
       n = attributes[:n]

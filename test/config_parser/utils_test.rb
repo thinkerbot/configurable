@@ -192,7 +192,12 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
   #
   
   def test_infer_arg_name_documentation
-    assert_equal({:long => '--opt', :arg_name => 'OPT'}, infer_arg_name(:long => '--opt'))
+    assert_equal({:long => '--opt', :arg_name => 'OPT'}, infer_arg_name(:key, {:long => '--opt'}))
+    assert_equal({:arg_name => 'KEY'}, infer_arg_name(:key, {}))
+  end
+  
+  def test_infer_arg_name_does_not_infer_argname_if_nil
+    assert_equal({:arg_name => nil}, infer_arg_name(:key, {:arg_name => nil}))
   end
   
   #
@@ -211,15 +216,15 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     assert_equal({:long => 'long', :arg_name => 'arg'}, options)
   end
   
-  def test_setup_option_block_sets_value_in_config
-    setup_option(:key).call('value')
-    assert_equal({:key => 'value'}, config)
-  end
-  
   def test_setup_option_does_not_infer_long_if_nil
     options = {:long => nil}
     setup_option(:key, options)
-    assert_equal({:long => nil}, options)
+    assert_equal({:long => nil, :arg_name=>"KEY"}, options)
+  end
+  
+  def test_setup_option_block_sets_value_in_config
+    setup_option(:key).call('value')
+    assert_equal({:key => 'value'}, config)
   end
   
   #
@@ -234,7 +239,7 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
   
   def test_setup_flag_does_not_infer_long_if_nil
     options = {:long => nil}
-    setup_option(:key, options)
+    setup_flag(:key, options)
     assert_equal({:long => nil}, options)
   end
   
@@ -263,7 +268,7 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
   
   def test_setup_switch_does_not_infer_long_if_nil
     options = {:long => nil}
-    setup_option(:key, options)
+    setup_switch(:key, options)
     assert_equal({:long => nil}, options)
   end
   
@@ -305,8 +310,8 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
   
   def test_setup_switch_does_not_infer_long_if_nil
     options = {:long => nil}
-    setup_option(:key, options)
-    assert_equal({:long => nil}, options)
+    setup_list(:key, options)
+    assert_equal({:long => nil, :arg_name=>"KEY"}, options)
   end
   
   def test_setup_list_infers_split_argname_with_split

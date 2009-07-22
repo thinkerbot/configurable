@@ -751,6 +751,18 @@ specials:
     assert_equal expected, "\n" + c.to_s
   end
   
+  def test_to_s_for_options_without_long
+    c.define('flag', true, :long => nil, :short => :f, :type => :flag, :desc => 'desc')
+    c.define('opt', true, :long => nil, :short => :o, :arg_name => 'OPT', :desc => 'desc')
+    c.define('alt', true, :desc => 'desc')
+    expected = %Q{
+    -f                               desc
+    -o OPT                           desc
+        --alt ALT                    desc
+}
+    assert_equal expected, "\n" + c.to_s
+  end
+  
   def test_to_s_format_for_nested_delegates
     delegates = {
       :opt => Delegate.new(:opt, :opt=, 'value', :desc => 'desc', :short => 'o', :type => :switch),
