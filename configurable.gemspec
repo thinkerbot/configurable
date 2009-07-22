@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "configurable"
-  s.version = "0.5.0"
+  s.version = "0.5.1"
   s.author = "Simon Chiang"
   s.email = "simon.a.chiang@gmail.com"
   s.homepage = "http://tap.rubyforge.org/configurable"

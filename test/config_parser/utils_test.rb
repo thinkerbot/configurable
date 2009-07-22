@@ -180,6 +180,22 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
   end
   
   #
+  # infer_long test
+  #
+  
+  def test_infer_long_documentation
+    assert_equal({:long => '--key'}, infer_long(:key, {}))
+  end
+  
+  #
+  # infer_arg_name test
+  #
+  
+  def test_infer_arg_name_documentation
+    assert_equal({:long => '--opt', :arg_name => 'OPT'}, infer_arg_name(:long => '--opt'))
+  end
+  
+  #
   # setup_option test
   #
   
@@ -200,6 +216,12 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     assert_equal({:key => 'value'}, config)
   end
   
+  def test_setup_option_does_not_infer_long_if_nil
+    options = {:long => nil}
+    setup_option(:key, options)
+    assert_equal({:long => nil}, options)
+  end
+  
   #
   # setup_flag test
   #
@@ -208,6 +230,12 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     options = {}
     setup_flag(:key, true, options)
     assert_equal({:long => '--key'}, options)
+  end
+  
+  def test_setup_flag_does_not_infer_long_if_nil
+    options = {:long => nil}
+    setup_option(:key, options)
+    assert_equal({:long => nil}, options)
   end
   
   def test_setup_flag_does_not_overwrite_existing_long
@@ -231,6 +259,12 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     options = {}
     setup_switch(:key, true, options)
     assert_equal({:long => '--[no-]key'}, options)
+  end
+  
+  def test_setup_switch_does_not_infer_long_if_nil
+    options = {:long => nil}
+    setup_option(:key, options)
+    assert_equal({:long => nil}, options)
   end
   
   def test_setup_switch_uses_existing_long_to_make_switch_key
@@ -267,6 +301,12 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     options = {}
     setup_list(:key, options)
     assert_equal({:long => '--key', :arg_name => 'KEY'}, options)
+  end
+  
+  def test_setup_switch_does_not_infer_long_if_nil
+    options = {:long => nil}
+    setup_option(:key, options)
+    assert_equal({:long => nil}, options)
   end
   
   def test_setup_list_infers_split_argname_with_split

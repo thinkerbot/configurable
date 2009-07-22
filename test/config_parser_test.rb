@@ -359,6 +359,11 @@ configurations:
     assert_equal [], c.options
   end
   
+  def test_define_does_not_add_a_long_option_if_nil
+    opt = c.define(:key, 'value', :long => nil, :short => :s)
+    assert_equal nil, opt.long
+  end
+  
   def test_define_raises_error_for_conflicting_keys
     c.define(:key)
     

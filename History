@@ -6,6 +6,7 @@
 * added scrub to DelegateHash#to_hash, to remove keys
   set to the default value
 * added strbol validation
+* nil long options are now respected
     
 == 0.5.0 / 2009-05-25
 

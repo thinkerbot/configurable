@@ -82,15 +82,41 @@ class ConfigParser
       "--#{switch.join(':')}"
     end
     
+    # Infers the default long using key and adds it to attributes.  Returns
+    # attributes.
+    #
+    #   infer_long(:key, {})                # => {:long => '--key'}
+    #
+    def infer_long(key, attributes)
+      unless attributes.has_key?(:long)
+        attributes[:long] = "--#{key}"
+      end
+      
+      attributes
+    end
+    
+    # Infers the default argname from attributes[:long] and sets it in
+    # attributes.  Returns attributes.
+    #
+    #   infer_arg_name(:long => '--opt')     # => {:long => '--opt', :arg_name => 'OPT'}
+    #
+    def infer_arg_name(attributes)
+      if long = attributes[:long]
+        long.to_s =~ /^(?:--)?(.*)$/
+        attributes[:arg_name] ||= $1.upcase
+      end
+      
+      attributes
+    end
+    
     # Attributes:
     #
     #   :long      the long key ("--key") 
     #   :arg_name  the argument name ("KEY") 
     #
     def setup_option(key, attributes={})
-      attributes[:long] ||= "--#{key}"
-      attributes[:long].to_s =~ /^(--)?(.*)$/ 
-      attributes[:arg_name] ||= $2.upcase
+      infer_long(key, attributes)
+      infer_arg_name(attributes)
       
       lambda {|value| config[key] = value }
     end
@@ -100,7 +126,7 @@ class ConfigParser
     #   :long      the long key ("--key") 
     #
     def setup_flag(key, default=true, attributes={})
-      attributes[:long] ||= "--#{key}"
+      infer_long(key, attributes)
       
       lambda {config[key] = !default }
     end
@@ -110,9 +136,11 @@ class ConfigParser
     #   :long      the long key ("--[no-]key") 
     #
     def setup_switch(key, default=true, attributes={})
-      attributes[:long] ||= "--#{key}"
-      attributes[:long].to_s =~ /^(--)?(\[no-\])?(.*)$/ 
-      attributes[:long] = "--[no-]#{$3}" unless $2
+      infer_long(key, attributes)
+      
+      if attributes[:long].to_s =~ /^(?:--)?(\[no-\])?(.*)$/ 
+        attributes[:long] = "--[no-]#{$2}" unless $1
+      end
       
       lambda {|value| config[key] = value }
     end
@@ -124,9 +152,8 @@ class ConfigParser
     #   :split     the split character
     #
     def setup_list(key, attributes={})
-      attributes[:long] ||= "--#{key}"
-      attributes[:long].to_s =~ /^(--)?(.*)$/ 
-      attributes[:arg_name] ||= $2.upcase
+      infer_long(key, attributes)
+      infer_arg_name(attributes)
       
       split = attributes[:split]
       n = attributes[:n]
