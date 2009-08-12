@@ -12,25 +12,25 @@ class ConfigParser
     # the match:
     #
     #   $1:: the switch
-    #   $3:: the value
+    #   $2:: the value
     #
-    LONG_OPTION = /^(--[A-z].*?)(=(.*))?$/
+    LONG_OPTION = /^(--[A-z].*?)(?:=(.*))?$/
 
     # Matches a nested short option, with or without a value
     # (ex: '-o', '-n:o', '-o=value').  After the match:
     #
     #   $1:: the switch
-    #   $4:: the value
+    #   $2:: the value
     #
-    SHORT_OPTION = /^(-[A-z](:[A-z])*)(=(.*))?$/
+    SHORT_OPTION = /^(-[A-z](?::[A-z])*)(?:=(.*))?$/
 
     # Matches the alternate syntax for short options
     # (ex: '-n:ovalue', '-ovalue').  After the match:
     #
     #   $1:: the switch
-    #   $3:: the value
+    #   $2:: the value
     #
-    ALT_SHORT_OPTION = /^(-[A-z](:[A-z])*)(.+)$/
+    ALT_SHORT_OPTION = /^(-[A-z](?::[A-z])*)(.+)$/
     
     # Turns the input string into a short-format option.  Raises
     # an error if the option does not match SHORT_OPTION.  Nils
@@ -44,7 +44,7 @@ class ConfigParser
   
       str = str.to_s
       str = "-#{str}" unless str[0] == ?-
-      unless str =~ SHORT_OPTION && $3 == nil
+      unless str =~ SHORT_OPTION && $2 == nil
         raise ArgumentError, "invalid short option: #{str}"
       end
       str
@@ -64,7 +64,7 @@ class ConfigParser
       str = str.to_s
       str = "--#{str}" unless str =~ /^--/
       str.gsub!(/_/, '-')
-      unless str =~ LONG_OPTION && $3 == nil
+      unless str =~ LONG_OPTION && $2 == nil
         raise ArgumentError, "invalid long option: #{str}"
       end
       str

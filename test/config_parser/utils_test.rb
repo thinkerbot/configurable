@@ -19,23 +19,23 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     
     assert "--long-option" =~ r
     assert_equal "--long-option", $1
-    assert_equal nil, $3
+    assert_equal nil, $2
     
     assert "--long-option=value" =~ r
     assert_equal "--long-option", $1
-    assert_equal "value", $3
+    assert_equal "value", $2
     
     assert "--long-option=" =~ r
     assert_equal "--long-option", $1
-    assert_equal "", $3
+    assert_equal "", $2
     
     assert "--nested:long-option=value" =~ r
     assert_equal "--nested:long-option", $1
-    assert_equal "value", $3
+    assert_equal "value", $2
     
     assert "--long-option=value=with=equals" =~ r
     assert_equal "--long-option", $1
-    assert_equal "value=with=equals", $3
+    assert_equal "value=with=equals", $2
     
     # non-matching
     assert "arg" !~ r
@@ -56,23 +56,23 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     
     assert "-o" =~ r
     assert_equal "-o", $1
-    assert_equal nil, $4
+    assert_equal nil, $2
     
     assert "-o=value" =~ r
     assert_equal "-o", $1
-    assert_equal "value", $4
+    assert_equal "value", $2
     
     assert "-o=" =~ r
     assert_equal "-o", $1
-    assert_equal "", $4
+    assert_equal "", $2
     
     assert "-n:l:o=value" =~ r
     assert_equal "-n:l:o", $1
-    assert_equal "value", $4
+    assert_equal "value", $2
     
     assert "-o=value=with=equals" =~ r
     assert_equal "-o", $1
-    assert_equal "value=with=equals", $4
+    assert_equal "value=with=equals", $2
     
     # non-matching
     assert "arg" !~ r
@@ -93,11 +93,11 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     
     assert "-ovalue" =~ r
     assert_equal "-o", $1
-    assert_equal "value", $3
+    assert_equal "value", $2
 
     assert "-n:l:ovalue" =~ r
     assert_equal "-n:l:o", $1
-    assert_equal "value", $3
+    assert_equal "value", $2
     
     # non-matching
     assert "arg" !~ r
@@ -128,7 +128,7 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     assert_equal nil, shortify(nil)
   end
   
-  def test_shortify_raisess_error_for_invalid_short
+  def test_shortify_raises_error_for_invalid_short
     e = assert_raises(ArgumentError) { shortify("-long") }
     assert_equal "invalid short option: -long", e.message
     
@@ -137,6 +137,9 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     
     e = assert_raises(ArgumentError) { shortify("") }
     assert_equal "invalid short option: -", e.message
+    
+    e = assert_raises(ArgumentError) { shortify("-s=10") }
+    assert_equal "invalid short option: -s=10", e.message
   end
   
   #
@@ -159,7 +162,7 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     assert_equal nil, longify(nil)
   end
   
-  def test_longify_raisess_error_for_invalid_long
+  def test_longify_raises_error_for_invalid_long
     e = assert_raises(ArgumentError) { longify("-long") }
     assert_equal "invalid long option: ---long", e.message
     
@@ -168,6 +171,9 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     
     e = assert_raises(ArgumentError) { longify("") }
     assert_equal "invalid long option: --", e.message
+    
+    e = assert_raises(ArgumentError) { longify("--long=10") }
+    assert_equal "invalid long option: --long=10", e.message
   end
   
   #
@@ -308,7 +314,7 @@ class ConfigParser::UtilsTest < Test::Unit::TestCase
     assert_equal({:long => '--key', :arg_name => 'KEY'}, options)
   end
   
-  def test_setup_switch_does_not_infer_long_if_nil
+  def test_setup_list_does_not_infer_long_if_nil
     options = {:long => nil}
     setup_list(:key, options)
     assert_equal({:long => nil, :arg_name=>"KEY"}, options)

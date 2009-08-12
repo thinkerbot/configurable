@@ -444,7 +444,7 @@ class ConfigParser
   
       # split the arg...
       # switch= $1
-      # value = $4 || $3 (if arg matches SHORT_OPTION, value is $4 or $3 otherwise)
+      # value = $2
       arg =~ LONG_OPTION || arg =~ SHORT_OPTION || arg =~ ALT_SHORT_OPTION 
   
       # lookup the option
@@ -457,7 +457,7 @@ class ConfigParser
         raise "unknown option: #{$1 || arg}"
       end
   
-      option.parse($1, $4 || $3, argv)
+      option.parse($1, $2, argv)
     end
     
     default_config.each_pair do |key, default|
