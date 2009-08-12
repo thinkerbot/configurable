@@ -107,7 +107,7 @@ Rake::TestTask.new(:check) do |t|
 end
 
 desc 'run benchmarks.'
-Rake::TestTask.new(:bench) do |t|
+Rake::TestTask.new(:benchmark) do |t|
   t.libs = ['lib']
   unless ENV['gems']
     t.libs << 'submodule/lazydoc/lib'
