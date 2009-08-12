@@ -408,13 +408,15 @@ class ConfigParser
     parse!(argv, options)
   end
   
+  DEFAULT_PARSE_OPTIONS = {
+    :clear_config => true,
+    :add_defaults => true,
+    :ignore_unknown_options => false
+  }
+  
   # Same as parse, but removes parsed args from argv.
   def parse!(argv=ARGV, options={})
-    options = {
-      :clear_config => true,
-      :add_defaults => true,
-      :ignore_unknown_options => false
-    }.merge(options)
+    options = DEFAULT_PARSE_OPTIONS.merge(options)
     
     config.clear if options[:clear_config]
     argv = Shellwords.shellwords(argv) if argv.kind_of?(String)
