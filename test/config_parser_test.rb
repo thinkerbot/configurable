@@ -551,6 +551,13 @@ configurations:
     assert_equal(["a", "--", "b"], args)
   end
   
+  def test_parse_can_configure_option_break
+    c.on('--opt') {}
+    
+    args = c.parse(["a", "---", "--opt", "b"], :option_break => "---")
+    assert_equal(["a", "--opt", "b"], args)
+  end
+  
   def test_parse_with_non_string_inputs
     value_in_block = nil
     c.on('--opt VALUE') {|value| value_in_block = value}

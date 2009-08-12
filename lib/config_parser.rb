@@ -412,6 +412,7 @@ class ConfigParser
     :clear_config => true,
     :add_defaults => true,
     :ignore_unknown_options => false,
+    :option_break => OPTION_BREAK,
     :keep_break => false
   }
   
@@ -423,6 +424,7 @@ class ConfigParser
     argv = Shellwords.shellwords(argv) if argv.kind_of?(String)
     args = []
     
+    option_break = options[:option_break]
     while !argv.empty?
       arg = argv.shift
   
@@ -434,7 +436,7 @@ class ConfigParser
       
       # add the remaining args and break
       # for the option break
-      if arg == OPTION_BREAK
+      if arg == option_break
         args << arg if options[:keep_break]
         args.concat(argv)
         break
