@@ -411,7 +411,8 @@ class ConfigParser
   DEFAULT_PARSE_OPTIONS = {
     :clear_config => true,
     :add_defaults => true,
-    :ignore_unknown_options => false
+    :ignore_unknown_options => false,
+    :keep_break => false
   }
   
   # Same as parse, but removes parsed args from argv.
@@ -434,6 +435,7 @@ class ConfigParser
       # add the remaining args and break
       # for the option break
       if arg == OPTION_BREAK
+        args << arg if options[:keep_break]
         args.concat(argv)
         break
       end
