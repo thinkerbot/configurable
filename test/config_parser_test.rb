@@ -119,6 +119,31 @@ configurations:
   end
   
   #
+  # bind test
+  #
+  
+  def test_bind_documentation
+    psr = ConfigParser.bind
+    psr.define('a', 'default')
+    psr.define('b', 'default')
+  
+    psr.parse %w{--a value}
+    assert_equal({"a" => "value"}, psr.config)
+  
+    psr.parse %w{--b value}
+    assert_equal({"a" => "value", "b" => "value"}, psr.config)
+  end
+  
+  def test_bind_yields_self_to_block_if_given
+    parser = nil
+    c = ConfigParser.bind({}) do |psr|
+      parser = psr
+    end
+    
+    assert_equal c, parser
+  end
+  
+  #
   # initialize test
   #
   
@@ -603,6 +628,17 @@ configurations:
     
     assert_equal({"opt" => "default"}, c.config)
     assert_equal(["a", "b"], args)
+  end
+  
+  def test_parse_clears_config_unless_specified_otherwise
+    c.define('a', 'default')
+    c.define('b', 'default')
+    
+    c.parse(["--a", "value"])
+    assert_equal({"a" => "value", "b" => "default"}, c.config)
+    
+    c.parse(["--b", "value"])
+    assert_equal({"a" => "default", "b" => "value"}, c.config)
   end
   
   def test_parse_does_not_add_defaults_unless_specified

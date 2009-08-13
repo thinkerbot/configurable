@@ -147,6 +147,28 @@ class ConfigParser
   
       result
     end
+    
+    # Generates a new parser bound to a specific config.  All this really
+    # means is that each time the parser calls parse, configurations will
+    # be added to the config without clearing the config, or adding default
+    # values. This can be useful in signaling situations where a config
+    # needs to be updated multiple times.
+    #
+    #   psr = ConfigParser.bind
+    #   psr.define('a', 'default')
+    #   psr.define('b', 'default')
+    # 
+    #   psr.parse %w{--a value}
+    #   psr.config                       # => {"a" => "value"}
+    # 
+    #   psr.parse %w{--b value}
+    #   psr.config                       # => {"a" => "value", "b" => "value"}
+    #
+    def bind(config={})
+      parser = new(config, :clear_config => false, :add_defaults => false)
+      yield(parser) if block_given?
+      parser
+    end
   end
   
   include Utils
@@ -168,12 +190,21 @@ class ConfigParser
   # and do not need to be manually specified.
   attr_reader :defaults
   
+  # A hash of default parsing options that adjust the behavior of parse
+  # (see parse).
+  attr_reader :default_parse_options
+  
   # Initializes a new ConfigParser and passes it to the block, if given.
-  def initialize(config={})
+  def initialize(config={}, default_parse_options={})
     @registry = []
     @switches = {}
     @config = config
     @defaults = {}
+    @default_parse_options = {
+      :clear_config => true,
+      :add_defaults => true,
+      :ignore_unknown_options => false
+    }.merge(default_parse_options)
 
     yield(self) if block_given?
   end
@@ -414,15 +445,9 @@ class ConfigParser
     parse!(argv, options)
   end
   
-  DEFAULT_PARSE_OPTIONS = {
-    :clear_config => true,
-    :add_defaults => true,
-    :ignore_unknown_options => false
-  }
-  
   # Same as parse, but removes parsed args from argv.
   def parse!(argv=ARGV, options={})
-    options = DEFAULT_PARSE_OPTIONS.merge(options)
+    options = default_parse_options.merge(options)
     
     config.clear if options[:clear_config]
     argv = Shellwords.shellwords(argv) if argv.kind_of?(String)
