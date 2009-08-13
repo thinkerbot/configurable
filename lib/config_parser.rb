@@ -150,7 +150,11 @@ class ConfigParser
   end
   
   include Utils
-
+  
+  # Returns an array of the options registered with self, in the order in
+  # which they were added.  Separators are also stored in the registry.
+  attr_reader :registry
+  
   # A hash of (switch, Option) pairs mapping command line
   # switches like '-s' or '--long' to the Option that
   # handles them.
@@ -163,14 +167,14 @@ class ConfigParser
   # defaults are defined as options are added to self (via define, add, etc)
   # and do not need to be manually specified.
   attr_reader :defaults
-
+  
   # Initializes a new ConfigParser and passes it to the block, if given.
   def initialize(config={})
-    @options = []
+    @registry = []
     @switches = {}
     @config = config
     @defaults = {}
-  
+
     yield(self) if block_given?
   end
   
@@ -189,17 +193,17 @@ class ConfigParser
   def nested_config
     ConfigParser.nest(config)
   end
-
+  
   # Returns an array of the options registered with self.
   def options
-    @options.select do |opt|
+    @registry.select do |opt|
       opt.kind_of?(Option)
     end
   end
-
+  
   # Adds a separator string to self, used in to_s.
   def separator(str)
-    @options << str
+    @registry << str
   end
 
   # Registers the option with self by adding opt to options and mapping the
@@ -212,11 +216,11 @@ class ConfigParser
       existing = opt.switches.collect do |switch|
         @switches.delete(switch)
       end
-      @options -= existing
+      @registry -= existing
     end
     
-    unless @options.include?(opt)
-      @options << opt
+    unless @registry.include?(opt)
+      @registry << opt
     end
     
     opt.switches.each do |switch|
@@ -469,7 +473,7 @@ class ConfigParser
   # Converts the options and separators in self into a help string suitable for
   # display on the command line.
   def to_s
-    @options.collect do |option|
+    @registry.collect do |option|
       option.to_s.rstrip
     end.join("\n") + "\n"
   end

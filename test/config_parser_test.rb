@@ -168,11 +168,11 @@ configurations:
   # register test
   #
   
-  def test_register_adds_opt_to_options
+  def test_register_adds_opt_to_registry
     opt = Option.new
     c.register(opt)
     
-    assert_equal [opt], c.options
+    assert_equal [opt], c.registry
   end
   
   def test_register_adds_opt_to_switches_by_switches
@@ -201,7 +201,7 @@ configurations:
     c.register(o2)
     c.register(o3)
         
-    assert_equal [o1, o2, o3], c.options
+    assert_equal [o1, o2, o3], c.registry
     assert_equal({
       '--key' => o1,
       '-k' => o2,
@@ -212,7 +212,7 @@ configurations:
     o4 = Option.new(:long => 'key', :short => 'k')
     c.register(o4, true)
     
-    assert_equal [o3, o4], c.options
+    assert_equal [o3, o4], c.registry
     assert_equal({
       '--key' => o4,
       '-k' => o4,
@@ -233,7 +233,7 @@ configurations:
   
   def test_on_adds_and_returns_option
     opt = c.on
-    assert_equal [opt], c.options
+    assert_equal [opt], c.registry
   end
   
   def test_on_sets_block_in_option
@@ -287,7 +287,7 @@ configurations:
     o2 = c.on! "-k"
     o3 = c.on! "-n", "--non-conflict"
     
-    assert_equal [o1, o2, o3], c.options
+    assert_equal [o1, o2, o3], c.registry
     assert_equal({
       '--key' => o1,
       '-k' => o2,
@@ -297,7 +297,7 @@ configurations:
     
     o4 = c.on! "-k", "--key"
     
-    assert_equal [o3, o4], c.options
+    assert_equal [o3, o4], c.registry
     assert_equal({
       '--key' => o4,
       '-k' => o4,
@@ -346,7 +346,7 @@ configurations:
   
   def test_define_adds_and_returns_an_option
     opt = c.define(:key)
-    assert_equal [opt], c.options
+    assert_equal [opt], c.registry
   end
   
   def test_define_adds_default_value_to_defaults
@@ -356,7 +356,7 @@ configurations:
   
   def test_define_does_not_add_or_generate_an_option_if_type_is_hidden
     assert_equal nil, c.define(:key, 'value', :type => :hidden)
-    assert_equal [], c.options
+    assert_equal [], c.registry
   end
   
   def test_define_does_not_add_a_long_option_if_nil
