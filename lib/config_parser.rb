@@ -159,15 +159,17 @@ class ConfigParser
   # The hash receiving configurations produced by parse.
   attr_accessor :config
   
-  # A hash of default configurations merged into config during parse.
-  attr_reader :default_config
+  # A hash of default configurations merged into config during parse. These
+  # defaults are defined as options are added to self (via define, add, etc)
+  # and do not need to be manually specified.
+  attr_reader :defaults
 
   # Initializes a new ConfigParser and passes it to the block, if given.
   def initialize(config={})
     @options = []
     @switches = {}
     @config = config
-    @default_config = {}
+    @defaults = {}
   
     yield(self) if block_given?
   end
@@ -323,10 +325,10 @@ class ConfigParser
   # key is already set by a different option.
   def define(key, default_value=nil, attributes={})
     # check for conflicts and register
-    if default_config.has_key?(key)
+    if defaults.has_key?(key)
       raise ArgumentError, "already set by a different option: #{key.inspect}"
     end
-    default_config[key] = default_value
+    defaults[key] = default_value
     
     # ensure setup does not modifiy input attributes
     attributes = attributes.dup
@@ -456,7 +458,7 @@ class ConfigParser
       option.parse($1, $2, argv)
     end
     
-    default_config.each_pair do |key, default|
+    defaults.each_pair do |key, default|
       config[key] = default unless config.has_key?(key)
     end if options[:add_defaults]
     

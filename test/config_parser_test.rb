@@ -126,7 +126,7 @@ configurations:
     c = ConfigParser.new
     assert_equal({}, c.switches)
     assert_equal({}, c.config)
-    assert_equal({}, c.default_config)
+    assert_equal({}, c.defaults)
   end
   
   def test_initialize_sets_config
@@ -349,9 +349,9 @@ configurations:
     assert_equal [opt], c.options
   end
   
-  def test_define_adds_default_value_to_default_config
+  def test_define_adds_default_value_to_defaults
     c.define(:key, 'value')
-    assert_equal({:key => 'value'}, c.default_config)
+    assert_equal({:key => 'value'}, c.defaults)
   end
   
   def test_define_does_not_add_or_generate_an_option_if_type_is_hidden
@@ -401,7 +401,7 @@ configurations:
     }
     
     c.add(delegates, "nest")
-    assert_equal({"nest:one" => 'one', "nest:two" => 'two'}, c.default_config)
+    assert_equal({"nest:one" => 'one', "nest:two" => 'two'}, c.defaults)
   end
   
   def test_add_nests_switches_properly
@@ -424,7 +424,7 @@ configurations:
     }
     
     c.add(delegates)
-    assert_equal({:two => 'two', "one:one" => 'one', "one:two" => 'two'}, c.default_config)
+    assert_equal({:two => 'two', "one:one" => 'one', "one:two" => 'two'}, c.defaults)
   end
   
   def test_add_does_not_add_nested_delegates_if_the_option_if_type_is_hidden
@@ -438,7 +438,7 @@ configurations:
     }
     
     c.add(delegates)
-    assert_equal({:two => 'two'}, c.default_config)
+    assert_equal({:two => 'two'}, c.defaults)
   end
   
   def test_add_raises_error_for_nesting_conflict
