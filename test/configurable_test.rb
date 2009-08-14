@@ -39,6 +39,14 @@ class ConfigurableTest < Test::Unit::TestCase
     end
   end
   
+  class DocAttributesClass 
+    include Configurable
+    block = c.register(:type => :upcase) {|v| v.upcase }
+
+    config :a, 'A', &block
+    config :b, 'B', &block
+  end
+  
   def test_documentation
     c = ConfigClass.new
     assert_equal(DelegateHash, c.config.class)
@@ -77,6 +85,9 @@ class ConfigurableTest < Test::Unit::TestCase
   
     alt.set_sym('two')
     assert_equal :two, alt.config[:sym]
+    
+    assert_equal :upcase, DocAttributesClass.configurations[:a][:type]
+    assert_equal :upcase, DocAttributesClass.configurations[:b][:type]
   end
   
   #
@@ -218,6 +229,22 @@ class ConfigurableTest < Test::Unit::TestCase
     
     e = assert_raises(ArgumentError) { InvalidAttrClass.send(:config_attr, :b, 'val', :writer => false) {} }
     assert_equal "a block may not be specified without writer == true", e.message
+  end
+  
+  class AttributesClass
+    include Configurable
+    
+    config_attr :switch, true, :key => 'value', &c.switch
+    config_attr :flag, false, :type => 'alt', &c.flag
+  end
+  
+  def test_config_attr_merges_default_attributes
+    switch = AttributesClass.configurations[:switch]
+    assert_equal :switch, switch.attributes[:type]
+    assert_equal 'value', switch.attributes[:key]
+
+    flag = AttributesClass.configurations[:flag]
+    assert_equal 'alt', flag.attributes[:type]
   end
   
   #

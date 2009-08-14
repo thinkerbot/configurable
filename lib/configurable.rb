@@ -136,6 +136,21 @@ require 'configurable/module_methods'
 # long::         The long option (default: key)
 # short::        The short option.
 #
+# Validation blocks have default attributes already assigned to them (ex type).
+# In cases where a user-defined block gets used multiple times, it may be useful
+# to register default attributes for that block.  To do so, use this pattern:
+#
+#   class AttributesClass
+#     include Configurable
+#     block = c.register(:type => :upcase) {|v| v.upcase }
+#
+#     config :a, 'A', &block
+#     config :b, 'B', &block
+#   end
+#   
+#   AttributesClass.configurations[:a][:type]   # => :upcase
+#   AttributesClass.configurations[:b][:type]   # => :upcase
+#
 module Configurable
   autoload(:Utils, 'configurable/utils')
 

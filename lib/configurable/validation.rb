@@ -8,7 +8,7 @@ module Configurable
   
   # Validation generates blocks for common validations and transformations of 
   # configurations set through Configurable.  In general these blocks load
-  # string inputs as YAML and valdiate the results; non-string inputs are
+  # string inputs as YAML and validate the results; non-string inputs are
   # simply validated.
   #
   #   integer = Validation.integer
@@ -56,7 +56,7 @@ module Configurable
 
     # Registers the default attributes with the specified block
     # in Configurable::DEFAULT_ATTRIBUTES.
-    def register(block, attributes)
+    def register(attributes={}, &block)
       DEFAULT_ATTRIBUTES[block] = attributes
       block
     end
@@ -207,7 +207,7 @@ module Configurable
     
     # default attributes {:type => :string, :example => "string"}
     STRING = string_validation_block
-    register STRING, :type => :string, :example => "string"
+    #register :type => :string, :example => "string", &STRING
     
     # Same as string but allows nil.  Note the special
     # behavior of the nil string '~' -- rather than
@@ -242,7 +242,7 @@ module Configurable
     
     # default attributes {:type => :symbol, :example => ":sym"}
     SYMBOL = yaml(Symbol)
-    register SYMBOL, :type => :symbol, :example => ":sym"
+    register :type => :symbol, :example => ":sym", &SYMBOL
     
     # Same as symbol but allows nil:
     #
@@ -272,7 +272,7 @@ module Configurable
       
       validate(input, [Symbol])
     end
-    register STRBOL, :type => :symbol, :example => ":sym"
+    register :type => :symbol, :example => ":sym", &STRBOL
 
     # Same as strbol but allows nil.  Tilde is considered a string
     # equivalent of nil (this behavior is consistent with the YAML
@@ -312,21 +312,21 @@ module Configurable
     
     # default attributes {:type => :boolean, :example => "true, yes"}
     BOOLEAN = yaml(true, false, nil)
-    register BOOLEAN, :type => :boolean, :example => "true, yes"
+    register :type => :boolean, :example => "true, yes", &BOOLEAN
 
     # Same as boolean.
     def switch(); SWITCH; end
     
     # default attributes {:type => :switch}
     SWITCH = yaml(true, false, nil)
-    register SWITCH, :type => :switch
+    register :type => :switch, &SWITCH
     
     # Same as boolean.
     def flag(); FLAG; end
     
     # default attributes {:type => :flag}
     FLAG = yaml(true, false, nil)
-    register FLAG, :type => :flag
+    register :type => :flag, &FLAG
 
     # Returns a block that checks the input is an array.
     # String inputs are loaded as yaml first.
@@ -341,7 +341,7 @@ module Configurable
     
     # default attributes {:type => :array, :example => "[a, b, c]"}
     ARRAY = yaml(Array)
-    register ARRAY, :type => :array, :example => "[a, b, c]"
+    register :type => :array, :example => "[a, b, c]", &ARRAY
 
     # Same as array but allows nil:
     #
@@ -383,7 +383,7 @@ module Configurable
     
     # default attributes {:type => :list, :split => ','}
     LIST = list_block
-    register LIST, :type => :list, :split => ','
+    register :type => :list, :split => ',', &LIST
     
     # Returns a block that checks the input is a hash.
     # String inputs are loaded as yaml first.
@@ -398,7 +398,7 @@ module Configurable
     
     # default attributes {:type => :hash, :example => "{one: 1, two: 2}"}
     HASH = yaml(Hash)
-    register HASH, :type => :hash, :example => "{one: 1, two: 2}"
+    register :type => :hash, :example => "{one: 1, two: 2}", &HASH
 
     # Same as hash but allows nil:
     #
@@ -423,7 +423,7 @@ module Configurable
     
     # default attributes {:type => :integer, :example => "2"}
     INTEGER = yaml(Integer)
-    register INTEGER, :type => :integer, :example => "2"
+    register :type => :integer, :example => "2", &INTEGER
     
     # Same as integer but allows nil:
     #
@@ -449,7 +449,7 @@ module Configurable
     
     # default attributes {:type => :float, :example => "2.2, 2.0e+2"}
     FLOAT = yaml(Float)
-    register FLOAT, :type => :float, :example => "2.2, 2.0e+2"
+    register :type => :float, :example => "2.2, 2.0e+2", &FLOAT
     
     # Same as float but allows nil:
     #
@@ -476,7 +476,7 @@ module Configurable
     
     # default attributes {:type => :numeric, :example => "2, 2.2, 2.0e+2"}
     NUMERIC = yaml(Numeric)
-    register NUMERIC, :type => :numeric, :example => "2, 2.2, 2.0e+2"
+    register :type => :numeric, :example => "2, 2.2, 2.0e+2", &NUMERIC
     
     # Same as numeric but allows nil:
     #
@@ -517,7 +517,7 @@ module Configurable
     
     # default attributes {:type => :regexp, :example => "/regexp/i"}
     REGEXP = regexp_block
-    register REGEXP, :type => :regexp, :example => "/regexp/i"
+    register :type => :regexp, :example => "/regexp/i", &REGEXP
 
     # Same as regexp but allows nil. Note the special behavior of the nil
     # string '~' -- rather than being converted to a regexp, it is processed
@@ -564,7 +564,7 @@ module Configurable
     
     # default attributes {:type => :range, :example => "min..max"}
     RANGE = range_block
-    register RANGE, :type => :range, :example => "min..max"
+    register :type => :range, :example => "min..max", &RANGE
     
     # Same as range but allows nil:
     #
@@ -619,7 +619,7 @@ module Configurable
     
     # default attributes {:type => :time, :example => "2008-08-08 08:00:00"}
     TIME = time_block
-    register TIME, :type => :time, :example => "2008-08-08 08:00:00"
+    register :type => :time, :example => "2008-08-08 08:00:00", &TIME
     
     # Same as time but allows nil:
     #
@@ -654,15 +654,14 @@ module Configurable
     #  {:type => :select, :options => options}
     #
     def select(*options, &validation)
-      block = lambda do |input|
+      register(
+        :type => :select, 
+        :options => options,
+        :validation => attributes(validation)
+      ) do |input|
         input = validation.call(input) if validation
         validate(input, options)
       end
-      
-      register(block, 
-        :type => :select, 
-        :options => options,
-        :validation => attributes(validation))
     end
     
     # Returns a block that checks the input is an array, and that each member
@@ -685,17 +684,16 @@ module Configurable
     #  {:type => :list_select, :options => options, :split => ','}
     #
     def list_select(*options, &validation)
-      block = lambda do |input|
+      register( 
+        :type => :list_select, 
+        :options => options, 
+        :split => ',',
+        :validation => attributes(validation)
+      ) do |input|
         args = validate(input, [Array])
         args.collect! {|arg| validation.call(arg) } if validation
         args.each {|arg| validate(arg, options) }
       end
-      
-      register(block, 
-        :type => :list_select, 
-        :options => options, 
-        :split => ',',
-        :validation => attributes(validation))
     end
     
     # Returns a block validating the input is an IO, a string, or an integer.
@@ -735,7 +733,7 @@ module Configurable
     
     # default attributes {:type => :io, :duplicate_default => false, :example => "/path/to/file"}
     IO_OR_STRING = check(IO, String, Integer)
-    register IO_OR_STRING, :type => :io, :duplicate_default => false, :example => "/path/to/file"
+    register :type => :io, :duplicate_default => false, :example => "/path/to/file", &IO_OR_STRING
     
     # Same as io but allows nil:
     #
