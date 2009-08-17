@@ -668,14 +668,6 @@ configurations:
     assert_equal "unknown option: --*", err.message
   end
   
-  def test_parse_ignores_unknown_options_if_specified
-    c.define('opt', 'default')
-    args = c.parse(["a", "--opt", "value", "b", "--unknown", "c"], :ignore_unknown_options => true)
-    
-    assert_equal({"opt" => "value"}, c.config)
-    assert_equal(["a", "b", "--unknown", "c"], args)
-  end
-  
   #
   # parse flag test
   #
@@ -764,6 +756,33 @@ configurations:
     c.define('opt', [], :type => :list, :n => 1)
     e = assert_raises(RuntimeError) { c.parse(["a", "--opt", "one", "--opt", "three", "b"]) }
     assert_equal "too many assignments: \"opt\"", e.message
+  end
+  
+  #
+  # scan test
+  #
+  
+  def test_scan_yields_each_non_opt_arg_to_block
+    was_in_block = false
+    c.on('--opt') { was_in_block = true }
+    
+    args = []
+    c.scan(["a", "--opt", "b", "--opt", "c"]) {|arg| args << arg}
+    
+    assert_equal ["a", "b", "c"], args
+    assert_equal true, was_in_block
+  end
+  
+  def test_scan_returns_remaining_args
+    was_in_block = false
+    c.on('--opt') { was_in_block = true }
+    
+    args = []
+    res = c.scan(["a", "--opt", "b", "--", "c"]) {|arg| args << arg}
+    
+    assert_equal ["a", "b"], args
+    assert_equal ["c"], res
+    assert_equal true, was_in_block
   end
   
   #

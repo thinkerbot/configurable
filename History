@@ -9,6 +9,8 @@
 * nil long options are now respected
 * refactored default_config to defaults in ConfigParser
 * refactored Validation register syntax
+* added scan method to ConfigParser
+* ConfigParser can no longer ignore unknown options
 
 == 0.5.0 / 2009-05-25
 
