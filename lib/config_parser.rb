@@ -476,7 +476,7 @@ class ConfigParser
       # add the remaining args and break
       # for the option break
       if option_break === arg
-        yield(arg) if options[:keep_break]
+        argv.unshift(arg) if options[:keep_break]
         break
       end
   

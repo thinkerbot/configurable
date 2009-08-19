@@ -803,6 +803,14 @@ configurations:
     assert_equal true, was_in_block
   end
   
+  def test_scan_keeps_option_break_without_yielding_to_block
+    args = []
+    res = c.scan(["a", "--", "b"], :keep_break => true) {|arg| args << arg}
+    
+    assert_equal(["a"], args)
+    assert_equal(["--", "b"], res)
+  end
+  
   #
   # to_s test
   #
