@@ -301,8 +301,8 @@ module Configurable
       end
       
       # define instance reader
+      instance_variable = "@#{key}".to_sym
       instance_reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
-        instance_variable = "@#{key}".to_sym
         
         # gets or initializes the instance
         define_method(attribute) do
@@ -318,7 +318,10 @@ module Configurable
       
       # define instance writer
       instance_writer = define_attribute_method(:instance_writer, attributes, "#{key}=") do |attribute|
-        attr_writer(key)
+        define_method(attribute) do |value|
+          Validation.validate(value, [configurable_class])
+          instance_variable_set(instance_variable, value)
+        end
         public(attribute)
       end
       
@@ -334,7 +337,7 @@ module Configurable
       writer = define_attribute_method(:writer, attributes, "#{key}_config_writer") do |attribute|
         define_method(attribute) do |value|
           if value.kind_of?(configurable_class)
-            send(instance_writer, value)
+            instance_variable_set(instance_variable, value)
           else
             send(instance_reader).reconfigure(value)
           end

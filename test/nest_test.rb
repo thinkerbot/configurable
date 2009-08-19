@@ -3,7 +3,8 @@ require 'configurable'
 
 class NestTest < Test::Unit::TestCase
   DelegateHash = Configurable::DelegateHash
-
+  ValidationError = Configurable::Validation::ValidationError
+  
   #
   # nest test
   #
@@ -276,6 +277,11 @@ class NestTest < Test::Unit::TestCase
     
     p.reconfigure :nest => c
     assert_equal c.object_id, p.nest.object_id
+  end
+  
+  def test_instance_writer_is_validated
+    p = NestParent.new
+    assert_raises(ValidationError) { p.nest = Object.new }
   end
   
   #
