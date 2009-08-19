@@ -11,6 +11,7 @@
 * refactored Validation register syntax
 * added scan method to ConfigParser
 * ConfigParser can no longer ignore unknown options
+* added configurable option breaks to ConfigParser
 
 == 0.5.0 / 2009-05-25
 

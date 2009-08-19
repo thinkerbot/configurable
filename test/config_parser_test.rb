@@ -649,6 +649,24 @@ configurations:
     assert_equal(["a", "b"], args)
   end
 
+  def test_parse_keeps_option_break_if_specified
+    args = c.parse(["a", "--", "b"])
+    assert_equal(["a", "b"], args)
+    
+    args = c.parse(["a", "--", "b"], :keep_break => true)
+    assert_equal(["a", "--", "b"], args)
+  end
+  
+  def test_parse_can_configure_option_break
+    c.on('--opt') {}
+    
+    args = c.parse(["a", "---", "--opt", "b"], :option_break => "---")
+    assert_equal(["a", "--opt", "b"], args)
+    
+    args = c.parse(["a", "---", "--opt", "b"], :option_break => /-{3}/)
+    assert_equal(["a", "--opt", "b"], args)
+  end
+  
   def test_parse_sets_config_values
     c.define('opt', 'default')
     args = c.parse(["a", "--opt", "value", "b"])

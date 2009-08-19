@@ -203,7 +203,9 @@ class ConfigParser
     @default_parse_options = {
       :clear_config => true,
       :add_defaults => true,
-      :ignore_unknown_options => false
+      :ignore_unknown_options => false,
+      :option_break => OPTION_BREAK,
+      :keep_break => false
     }.merge(default_parse_options)
 
     yield(self) if block_given?
@@ -447,24 +449,21 @@ class ConfigParser
   
   # Same as parse, but removes parsed args from argv.
   def parse!(argv=ARGV, options={})
-    options = default_parse_options.merge(options)
     argv = Shellwords.shellwords(argv) if argv.kind_of?(String)
     
-    config.clear if options[:clear_config]
-    
     args = []
-    remainder = scan(argv) {|arg| args << arg}
+    remainder = scan(argv, options) {|arg| args << arg}
     args.concat(remainder)
     argv.replace(args)
-    
-    defaults.each_pair do |key, default|
-      config[key] = default unless config.has_key?(key)
-    end if options[:add_defaults]
     
     argv
   end
   
-  def scan(argv=ARGV)
+  def scan(argv=ARGV, options={})
+    options = default_parse_options.merge(options)
+    config.clear if options[:clear_config]
+    
+    option_break = options[:option_break]
     while !argv.empty?
       arg = argv.shift
   
@@ -476,7 +475,8 @@ class ConfigParser
       
       # add the remaining args and break
       # for the option break
-      if arg == OPTION_BREAK
+      if option_break === arg
+        yield(arg) if options[:keep_break]
         break
       end
   
@@ -492,6 +492,10 @@ class ConfigParser
   
       option.parse($1, $2, argv)
     end
+    
+    defaults.each_pair do |key, default|
+      config[key] = default unless config.has_key?(key)
+    end if options[:add_defaults]
     
     argv
   end
