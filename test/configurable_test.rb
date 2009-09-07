@@ -465,8 +465,6 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
-    LazydocClass.lazydoc.resolve
-    
     [:one, :three, :five].each do |doc_config|
       desc = LazydocClass.configurations[doc_config].attributes[:desc]
       assert_equal "#{doc_config} with documentation", desc.to_s
@@ -493,8 +491,6 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_configurable_registers_documentation_for_configs_in_modules
-    LazydocIncludeClass.lazydoc.resolve
-    
     [:one, :three].each do |doc_config|
       desc = LazydocIncludeClass.configurations[doc_config].attributes[:desc]
       assert_equal "#{doc_config} with documentation", desc.to_s
@@ -512,8 +508,6 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_configurable_registers_documentation_for_configs_in_subclasses
-    LazydocIncludeClassDocSubclass.lazydoc.resolve
-    
     [:one, :three, :five].each do |doc_config|
       desc = LazydocClass.configurations[doc_config].attributes[:desc]
       assert_equal "#{doc_config} with documentation", desc.to_s

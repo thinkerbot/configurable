@@ -1,4 +1,3 @@
-require 'lazydoc'
 require 'configurable/delegate_hash'
 require 'configurable/indifferent_access'
 require 'configurable/validation'
@@ -10,22 +9,26 @@ module Configurable
   # ClassMethods extends classes that include Configurable and
   # provides methods for declaring configurations.
   module ClassMethods
-    include Lazydoc::Attributes
-
+    CONFIGURATIONS_CLASS = Hash
+    
     # A hash of (key, Delegate) pairs defining the class configurations.
     attr_reader :configurations
     
-    # Inherits configurations to the child by duplication.
-    def inherited(child)
-      
-      # deep duplicate configurations
+    def self.initialize(child, parent)
       unless child.instance_variable_defined?(:@configurations)
-        duplicate = child.instance_variable_set(:@configurations, configurations.dup)
-        duplicate.each_pair {|key, config| duplicate[key] = config.dup }
-        duplicate.extend(IndifferentAccess) if configurations.kind_of?(IndifferentAccess)
+        configurations = CONFIGURATIONS_CLASS.new
+        
+        if parent == Configurable || parent.configurations.kind_of?(IndifferentAccess)
+          configurations.extend(IndifferentAccess)
+        end
+        
+        child.instance_variable_set(:@configurations, configurations)
       end
       
-      super
+      # inherit configurations from parent
+      parent.configurations.each_pair do |key, config| 
+        child.configurations[key] = config.dup
+      end unless parent == Configurable
     end
     
     # Parses configurations from argv in a non-destructive manner by generating
@@ -359,6 +362,11 @@ module Configurable
 
     private
     
+    def inherited(base)
+     ClassMethods.initialize(base, self)
+     super
+    end
+    
     # a helper to define methods that may be overridden in attributes.
     # yields the default to the block if the default is supposed to
     # be defined.  returns the symbolized method name.
@@ -383,12 +391,6 @@ module Configurable
       # and lets the user define the method.
 
       attribute.to_sym
-    end
-    
-    # a helper to initialize configurations for the first time,
-    # mainly implemented as a hook for OrderedHashPatch
-    def initialize_configurations # :nodoc:
-      @configurations ||= {}
     end
     
     # a helper method to merge the default attributes for the block with
@@ -489,11 +491,7 @@ module Configurable
   end
   
   module ClassMethods
-    undef_method :initialize_configurations
-    
-    # applies OrderedHashPatch
-    def initialize_configurations # :nodoc:
-      @configurations ||= OrderedHashPatch.new
-    end
+    remove_const(:CONFIGURATIONS_CLASS)
+    CONFIGURATIONS_CLASS = OrderedHashPatch
   end
 end if RUBY_VERSION < '1.9'
