@@ -7,6 +7,10 @@ class DelegateHashTest < Test::Unit::TestCase
   
   # a dummy receiver
   class Receiver
+    class << self
+      attr_accessor :configurations
+    end
+    
     attr_accessor :key
     
     def initialize
@@ -16,10 +20,16 @@ class DelegateHashTest < Test::Unit::TestCase
   
   # a receiver to log the order in which values are sent to key
   class OrderedReceiver
+    class << self
+      attr_accessor :configurations
+    end
+    
     attr_reader :order
+    
     def initialize
       @order = []
     end
+    
     def key=(value)
       order << value
     end
@@ -41,8 +51,9 @@ class DelegateHashTest < Test::Unit::TestCase
   attr_reader :d, :r
   
   def setup
+    Receiver.configurations = {:key => Delegate.new(:key)}
     @r = Receiver.new
-    @d = DelegateHash.new({:key => Delegate.new(:key)})
+    @d = DelegateHash.new
   end
   
   #
@@ -50,15 +61,13 @@ class DelegateHashTest < Test::Unit::TestCase
   #
   
   class Sample
-    attr_accessor :key
+    include Configurable
+    config :key
   end
   
   def test_documentation
     sample = Sample.new
-    
-    dhash = DelegateHash.new
-    dhash.delegates[:key] = Delegate.new(:key)
-    dhash.bind(sample)
+    dhash = DelegateHash.new.bind(sample)
   
     sample.key = 'value'
     assert_equal 'value', dhash[:key]
@@ -81,14 +90,13 @@ class DelegateHashTest < Test::Unit::TestCase
     d = DelegateHash.new
     assert_equal(nil, d.receiver)
     assert_equal({}, d.store)
-    assert_equal({}, d.delegates)
   end
   
   def test_initialize_sets_receiver_without_mapping_store_or_delegate_default_values
     r = Receiver.new
     r.key = "existing value"
     
-    d = DelegateHash.new({:key => Delegate.new(:key)}, {:key => 'value'}, r)
+    d = DelegateHash.new({:key => 'value'}, r)
     
     assert d.bound?
     assert_equal({:key => 'value'}, d.store)
@@ -155,36 +163,22 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   def test_bind_raises_error_for_ambiguity_in_indifferent_delegates
-    delegates = IndifferentDelegates.new 
-    delegates[:key] = Delegate.new(:key)
+    Receiver.configurations = IndifferentDelegates.new
+    Receiver.configurations[:key] = Delegate.new(:key)
     
-    d = DelegateHash.new(delegates)
-    d.store[:key] = 1
-    d.store['key'] = 2
-    
+    d = DelegateHash.new(:key => 1, 'key' => 2)
     err = assert_raises(RuntimeError) { d.bind(r) }
     assert_equal "multiple values mapped to :key", err.message
   end
   
   def test_bind_delegates_default_values_to_receiver_if_no_store_value_is_present
-    d.delegates[:key].default = 1
+    Receiver.configurations = {:key => Delegate.new(:key, :key=, 1)}
     
     assert_nil r.key
     assert_equal({}, d.store)
     
     d.bind(r)
     assert_equal 1, r.key
-  end
-  
-  def test_bind_does_not_delegates_default_value_if_no_store_value_is_present_and_map_default_is_false
-    d.delegates[:key].default = 1
-    d.delegates[:key][:set_default] = false
-    
-    assert_nil r.key
-    assert_equal({}, d.store)
-    
-    d.bind(r)
-    assert_nil r.key
   end
   
   def test_bind_does_nothing_if_bound_again_to_the_current_receiver
@@ -236,14 +230,15 @@ class DelegateHashTest < Test::Unit::TestCase
     delegates[:b] = Delegate.new(:key, :key=, 'b')
     delegates[:c] = Delegate.new(:key, :key=, 'c')
     
+    OrderedReceiver.configurations = delegates
     r = OrderedReceiver.new
-    d = DelegateHash.new(delegates)
+    d = DelegateHash.new
     d.bind(r)
     
     assert_equal ['a', 'b', 'c'], r.order
     
     r = OrderedReceiver.new
-    d = DelegateHash.new(delegates, {:a => 'A', :c => 'C'})
+    d = DelegateHash.new({:a => 'A', :c => 'C'})
     d.bind(r)
     
     assert_equal ['A', 'b', 'C'], r.order
@@ -322,17 +317,8 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal "value", d[:unmapped]
   end
   
-  def test_AGET_sets_missing_default_values_for_delegates_in_store_if_unbound
-    d.delegates[:key].default = "default"
-    
-    assert !d.bound?
-    assert_equal nil, d.store[:key]
-    assert_equal "default", d[:key]
-    assert_equal "default", d.store[:key]
-  end
-  
   def test_AGET_does_not_regard_nil_values_as_missing
-    d.delegates[:key].default = "default"
+    Receiver.configurations = {:key => Delegate.new(:key, :key=, 'default')}
     d.store[:key] = nil
     
     assert !d.bound?
@@ -372,6 +358,7 @@ class DelegateHashTest < Test::Unit::TestCase
   #
   
   def test_keys_returns_union_of_delegates_and_store_keys
+    d.bind(r)
     d.store[:unmapped] = nil
     
     assert_equal [:key], d.delegates.keys
@@ -455,10 +442,11 @@ class DelegateHashTest < Test::Unit::TestCase
     letters = [:a, :b, :c, :d, :e, :f, :g, :h]
     delegates = OrderedHash.new(*letters)
     letters.each {|letter| delegates[letter] = Delegate.new(:key, :key=, letter.to_s) }
-
+    
+    OrderedReceiver.configurations = delegates
     r = OrderedReceiver.new
-    d = DelegateHash.new(delegates, {}, r)
-
+    d = DelegateHash.new({}, r)
+  
     d.merge!({:a => 'A', :g => 'G', :c => 'C', :h => 'H', :b => 'B'})
     assert_equal ['A', 'B', 'C', 'G', 'H'], r.order
   end
@@ -494,7 +482,7 @@ class DelegateHashTest < Test::Unit::TestCase
     d[:one] = 'one'
     assert d == {:one => 'one'}
     
-    d2 = DelegateHash.new({}, {:one => 'one'})
+    d2 = DelegateHash.new({:one => 'one'})
     assert d == d2
   end
   
@@ -522,63 +510,39 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_recursively_hashifies_DelegateHash_values
-    one = DelegateHash.new(
-      {:a => Delegate.new(:key, :key=, 'value')}, 
-      {:one => 'value'})
-    two = DelegateHash.new(
-      {:b => Delegate.new(:key, :key=, one)}, 
-      {:two => 'value'})
-    three = DelegateHash.new(
-      {:d => Delegate.new(:key, :key=, 'value')}, 
-      {:three => 'value'})
-    d = DelegateHash.new(
-      {:c => Delegate.new(:key, :key=, two)}, 
-      {:e => three})
+    a = DelegateHash.new({:a => 'value'}).bind(r)
+    b = DelegateHash.new({:b => a}).bind(r)
+    c = DelegateHash.new({:c => b}).bind(r)
     
     assert_equal({
+      :key => nil,
       :c => {
+        :key => nil,
         :b => {
-          :a => 'value',
-          :one => 'value'
-        },
-        :two => 'value'
-      },
-      :e => {
-        :d => 'value',
-        :three => 'value'
+          :key => nil,
+          :a => 'value'
+        }
       }
-    }, d.to_hash)
+    }, c.to_hash)
   end
   
   def test_to_hash_accepts_a_block_to_transform_keys_and_values
-    one = DelegateHash.new(
-      {:a => Delegate.new(:key, :key=, 'value')}, 
-      {:one => 'value'})
-    two = DelegateHash.new(
-      {:b => Delegate.new(:key, :key=, one)}, 
-      {:two => 'value'})
-    three = DelegateHash.new(
-      {:d => Delegate.new(:key, :key=, 'value')}, 
-      {:three => 'value'})
-    d = DelegateHash.new(
-      {:c => Delegate.new(:key, :key=, two)}, 
-      {:e => three})
+    a = DelegateHash.new({:a => 'value'}).bind(r)
+    b = DelegateHash.new({:b => a}).bind(r)
+    c = DelegateHash.new({:c => b}).bind(r)
     
-    result = d.to_hash do |hash, key, value|
+    result = c.to_hash do |hash, key, value|
       hash[key.to_s] = value.kind_of?(String) ? value.upcase : value
     end
     
     assert_equal({
+      'key' => nil,
       'c' => {
+        'key' => nil,
         'b' => {
-          'a' => 'VALUE',
-          'one' => 'VALUE'
-        },
-        'two' => 'VALUE'
-      },
-      'e' => {
-        'd' => 'VALUE',
-        'three' => 'VALUE'
+          'key' => nil,
+          'a' => 'VALUE'
+        }
       }
     }, result)
   end
@@ -595,40 +559,14 @@ class DelegateHashTest < Test::Unit::TestCase
     assert_equal({:one => nil, :key => :value}, d.to_hash(true))
   end
   
-  def test_to_hash_scrub_works_with_unbound_objects
-    d.store[:one] = nil
-    d.store[:key] = nil
-    
-    assert_equal({:one => nil}, d.to_hash(true))
-    d.store[:key] = :value
-    assert_equal({:one => nil, :key => :value}, d.to_hash(true))
-  end
-  
   def test_to_hash_scrubs_delgates_recursively
-    one = DelegateHash.new(
-      {:a => Delegate.new(:key, :key=, 'value')}, 
-      {:one => 'value'})
-    two = DelegateHash.new(
-      {:b => Delegate.new(:key, :key=, one)}, 
-      {:two => 'value'})
-    three = DelegateHash.new(
-      {:d => Delegate.new(:key, :key=, 'value')}, 
-      {:three => 'value'})
-    d = DelegateHash.new(
-      {:c => Delegate.new(:key, :key=, two)}, 
-      {:e => three})
+    a = DelegateHash.new({:a => 'value'}).bind(r)
+    b = DelegateHash.new({:b => a}).bind(r)
+    c = DelegateHash.new({:c => b}).bind(r)
     
     assert_equal({
-      :c => {
-        :b => {
-          :one => 'value'
-        },
-        :two => 'value'
-      },
-      :e => {
-        :three => 'value'
-      }
-    }, d.to_hash(true))
+      :c => {:b => {:a => 'value'}}
+    }, c.to_hash(true))
   end
   
   #
@@ -645,11 +583,6 @@ class DelegateHashTest < Test::Unit::TestCase
     duplicate = d.dup
     assert d.bound?
     assert !duplicate.bound?
-  end
-  
-  def test_duplicate_delegates_are_the_same_object_as_parent
-    duplicate = d.dup
-    assert_equal d.delegates.object_id, duplicate.delegates.object_id
   end
   
   def test_duplicate_stores_delegate_values_from_receiver

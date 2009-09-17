@@ -6,11 +6,8 @@ module Configurable
     module_function
     
     default_dump_block = lambda do |key, delegate|
-      default = delegate.default(false)
-      
       # note: this causes order to be lost...
-      default = default.to_hash if delegate.is_nest?
-      YAML.dump({key => default})[5..-1]
+      YAML.dump({key => delegate.default})[5..-1]
     end
     
     # A block performing the default YAML dump.
@@ -107,11 +104,8 @@ module Configurable
       dumps = [[path, current]]
       
       dump(delegates, current) do |key, delegate|
-        if recurse && delegate.is_nest?
-          nested_delegates = delegate.default(false).delegates
-          nested_dumps = dump_file(nested_delegates, recursive_path(key, path), true, true, &block)
-          
-          dumps.concat(nested_dumps)
+        if recurse && delegate.kind_of?(NestDelegate)
+          dumps.concat(dump_file(delegate.nest_class.configurations, recursive_path(key, path), true, true, &block))
           ""
         else
           yield(key, delegate)

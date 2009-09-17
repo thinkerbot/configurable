@@ -1,3 +1,4 @@
+require 'configurable/nest_delegate'
 require 'configurable/delegate_hash'
 require 'configurable/indifferent_access'
 require 'configurable/validation'
@@ -11,24 +12,17 @@ module Configurable
   module ClassMethods
     CONFIGURATIONS_CLASS = Hash
     
-    # A hash of (key, Delegate) pairs defining the class configurations.
-    attr_reader :configurations
+    # A hash of (key, Delegate) pairs tracking configuration delegates set to self.
+    attr_reader :delegates
     
-    def self.initialize(child, parent)
-      unless child.instance_variable_defined?(:@configurations)
-        configurations = CONFIGURATIONS_CLASS.new
-        
-        if parent == Configurable || parent.configurations.kind_of?(IndifferentAccess)
-          configurations.extend(IndifferentAccess)
-        end
-        
-        child.instance_variable_set(:@configurations, configurations)
+    def self.initialize(child)
+      unless child.instance_variable_defined?(:@delegates)
+        child.instance_variable_set(:@delegates, CONFIGURATIONS_CLASS.new)
       end
       
-      # inherit configurations from parent
-      parent.configurations.each_pair do |key, config| 
-        child.configurations[key] = config.dup
-      end unless parent == Configurable
+      unless child.instance_variable_defined?(:@use_indifferent_access)
+        child.instance_variable_set(:@use_indifferent_access, true)
+      end
     end
     
     # Parses configurations from argv in a non-destructive manner by generating
@@ -51,17 +45,25 @@ module Configurable
       [args, parser.config]
     end
     
-    protected
+    def configurations
+      configurations = CONFIGURATIONS_CLASS.new
+      configurations.extend(IndifferentAccess) if @use_indifferent_access
+      
+      ancestors.reverse.each do |ancestor|
+        next unless ancestor.kind_of?(ClassMethods)
+        configurations.merge!(ancestor.delegates)
+      end
+      
+      configurations
+    end
     
+    protected
+
     # Sets configurations to symbolize keys for AGET ([]) and ASET([]=)
     # operations, or not.  By default, configurations will use
     # indifferent access.
     def use_indifferent_access(input=true)
-      if input
-        @configurations.extend(IndifferentAccess)
-      else
-        @configurations = configurations.dup
-      end
+      @use_indifferent_access = input
     end
 
     # Declares a class configuration and generates the associated accessors. 
@@ -162,7 +164,7 @@ module Configurable
         public(attribute)
       end
       
-      configurations[key] = Delegate.new(reader, writer, value, attributes)
+      delegates[key] = Delegate.new(reader, writer, value, attributes)
     end
     
     # Adds nested configurations to self.  Nest creates a new configurable
@@ -278,17 +280,21 @@ module Configurable
       attributes = {
         :instance_reader => true,
         :instance_writer => true,
+        :type => :nest
       }.merge(attributes)
       
       # define the nested configurable
       if configurable_class
-        raise "a block is not allowed when a configurable class is specified" if block_given?
+        if block_given?
+          configurable_class = Class.new(configurable_class)
+          configurable_class.class_eval(&block)
+        end
       else
         configurable_class = Class.new { include Configurable }
         configurable_class.class_eval(&block) if block_given?
       end
       
-      # set the new constant
+      # set the new constant (todo: make into a separate method so const_name is gc'ed)
       const_name = if attributes.has_key?(:const_name) 
         attributes.delete(:const_name) 
       else
@@ -303,24 +309,22 @@ module Configurable
         end
       end
       
-      # define instance reader
+      # define the instance reader.
       instance_variable = "@#{key}".to_sym
-      instance_reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
-        
-        # gets or initializes the instance
+      reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
         define_method(attribute) do
           if instance_variable_defined?(instance_variable)
             instance_variable_get(instance_variable)
           else
-            instance_variable_set(instance_variable, configurable_class.new)
+            nil
           end
         end
-        
-        public(key)
+        public(attribute)
       end
       
-      # define instance writer
-      instance_writer = define_attribute_method(:instance_writer, attributes, "#{key}=") do |attribute|
+      # define the instance writer.  the default instance writer validates the
+      # nested instance is the correct class then sets the instance variable
+      writer = define_attribute_method(:instance_writer, attributes, "#{key}=") do |attribute|
         define_method(attribute) do |value|
           Validation.validate(value, [configurable_class])
           instance_variable_set(instance_variable, value)
@@ -328,31 +332,9 @@ module Configurable
         public(attribute)
       end
       
-      # define the reader
-      reader = define_attribute_method(:reader, attributes, "#{key}_config_reader") do |attribute|
-        define_method(attribute) do
-          send(instance_reader).config
-        end
-        private(attribute)
-      end
-      
-      # define the writer
-      writer = define_attribute_method(:writer, attributes, "#{key}_config_writer") do |attribute|
-        define_method(attribute) do |value|
-          if value.kind_of?(configurable_class)
-            instance_variable_set(instance_variable, value)
-          else
-            send(instance_reader).reconfigure(value)
-          end
-        end
-        private(attribute)
-      end
-      
       # define the configuration
-      nested_config = DelegateHash.new(configurable_class.configurations)
-      configurations[key] = Delegate.new(reader, writer, nested_config, attributes)
-      
-      check_infinite_nest(configurable_class.configurations)
+      delegates[key] = NestDelegate.new(configurable_class, reader, writer, attributes)
+      check_infinite_nest(configurable_class)
     end  
     
     # Alias for Validation
@@ -363,8 +345,19 @@ module Configurable
     private
     
     def inherited(base)
-     ClassMethods.initialize(base, self)
+     ClassMethods.initialize(base)
      super
+    end
+    
+    def each_ancestor
+      yield(self)
+    
+      blank, *ancestors = self.ancestors
+      ancestors.each do |ancestor|
+        yield(ancestor) if ancestor.kind_of?(ClassMethods)
+      end
+    
+      nil
     end
     
     # a helper to define methods that may be overridden in attributes.
@@ -407,12 +400,12 @@ module Configurable
     end
     
     # helper to recursively check for an infinite nest
-    def check_infinite_nest(delegates) # :nodoc:
-      raise "infinite nest detected" if delegates == self.configurations
+    def check_infinite_nest(klass) # :nodoc:
+      raise "infinite nest detected" if klass == self
       
-      delegates.each_pair do |key, delegate|
-        if delegate.is_nest?
-          check_infinite_nest(delegate.default(false).delegates)
+      klass.configurations.each_value do |delegate|
+        if delegate.kind_of?(NestDelegate)
+          check_infinite_nest(delegate.nest_class)
         end
       end
     end
@@ -453,6 +446,13 @@ module Configurable
     def each_pair
       keys.each do |key|
         yield(key, fetch(key))
+      end
+    end
+    
+    # Merges another into self in a way that preserves insertion order.
+    def merge!(another)
+      another.each_pair do |key, value|
+        self[key] = value
       end
     end
     

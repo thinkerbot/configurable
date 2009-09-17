@@ -5,13 +5,12 @@ module Configurable
   # DelegateHash delegates get and set operations to instance methods on a receiver.  
   #
   #   class Sample
-  #     attr_accessor :key
+  #     include Configurable
+  #     config :key
   #   end
-  #   sample = Sample.new
   #
-  #   dhash = DelegateHash.new
-  #   dhash.delegates[:key] = Delegate.new(:key)
-  #   dhash.bind(sample)
+  #   sample = Sample.new
+  #   dhash = DelegateHash.new.bind(sample)
   #
   #   sample.key = 'value'
   #   dhash[:key]                # => 'value'
@@ -41,20 +40,23 @@ module Configurable
 
     # The underlying data store
     attr_reader :store
-
-    # A hash of (key, Delegate) pairs identifying which
-    # keys to delegate to the receiver
-    attr_reader :delegates
   
     # Initializes a new DelegateHash.  Note that initialize simply sets the
     # receiver, it does NOT map stored values the same way bind does.  This
     # allows quick, implicit binding when the store is set up beforehand.
     #
     # For more standard binding use: DelegateHash.new.bind(receiver)
-    def initialize(delegates={}, store={}, receiver=nil)
+    def initialize(store={}, receiver=nil)
       @store = store
-      @delegates = delegates
       @receiver = receiver
+    end
+
+    # A hash of (key, Delegate) pairs identifying which keys to delegate to the
+    # receiver. 
+    #
+    # Note that this is an inefficent method to call.
+    def delegates
+      receiver ? receiver.class.configurations : {}
     end
 
     # Binds self to the specified receiver.  Delegate values are removed from
@@ -94,15 +96,10 @@ module Configurable
     # value in store will be returned.  When unbound, if the store has no value
     # for a delegate, the delgate default value will be returned.
     def [](key)
-      return store[key] unless delegate = delegates[key]
-      
-      case
-      when bound?
-        receiver.send(delegate.reader)
-      when store.has_key?(key)
-        store[key]
+      if delegate = delegates[key]
+        delegate.get(receiver)
       else
-        store[key] = delegate.default
+        store[key]
       end
     end
 
@@ -110,8 +107,8 @@ module Configurable
     # receiver using the delegate.writer method; otherwise values are stored in
     # store.
     def []=(key, value)
-      if bound? && delegate = delegates[key]
-        receiver.send(delegate.writer, value)
+      if delegate = delegates[key]
+        delegate.set(receiver, value)
       else
         store[key] = value
       end
@@ -161,7 +158,7 @@ module Configurable
         
         if scrub
           delegate = delegates[key]
-          next if delegate && delegate.default(false) == value
+          next if delegate && delegate.default == value
         end
         
         if block_given?
@@ -191,6 +188,11 @@ module Configurable
     
     # helper to map delegate values from source to the receiver
     def map(source) # :nodoc:
+      
+      # optimization to prevent regeneration of delegates
+      # for the duration of this method
+      delegates = self.delegates
+      
       source_values = {}
       source.each_key do |key|
         if delegate = delegates[key]
@@ -204,27 +206,21 @@ module Configurable
       end
       
       delegates.each_pair do |key, delegate|
-        # map the value; if no value is set in the source then use the 
-        # delegate default.  if map_default is false, then simply skip... 
-        # this ensures each config is initialized to a value when bound
-        # UNLESS map_default is set (indicating manual initialization)
-        value = case
-        when source_values.has_key?(delegate)
-          source_values[delegate]
-        when delegate[:set_default, true]
-          delegate.default
+        # map the override value or the delegate default (if allowed)
+        # this ensures each config is initialized to a value unless
+        # manual initialization is specified
+        if source_values.has_key?(delegate)
+          delegate.set(receiver, source_values[delegate])
         else
-          next
+          delegate.init(receiver)
         end
-        
-        receiver.send(delegate.writer, value)
       end
     end
     
     # helper to unmap delegates from the receiver to a target hash
     def unmap(target) # :nodoc:
       delegates.each_pair do |key, delegate|
-        target[key] = receiver.send(delegate.reader)
+        target[key] = delegate.get(receiver)
       end
     end
   end

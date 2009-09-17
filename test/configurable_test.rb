@@ -313,14 +313,11 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class IncludingConfigModuleInExistingConfigurable
     include Configurable
-    
-    config :a, 'ONE'
-    config :d, 'four'
-    
     include ConfigModuleB
     include ConfigModuleC
     
     config :b, 'TWO'
+    config :d, 'four'
   end
   
   def test_modules_may_be_added_to_an_existing_configurable_class
@@ -434,13 +431,6 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_inherited_configurations_can_be_overridden
     assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
     assert_equal({:one => Delegate.new(:one, :one=, 'ONE')}, OverrideSubclass.configurations)
-  end
-  
-  def test_manual_changes_to_inherited_configurations_do_not_propogate_to_superclass
-    ChangeDefaultSubclass.configurations[:one].default = 'two'
-    
-    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
-    assert_equal({:one => Delegate.new(:one, :one=, 'two')}, ChangeDefaultSubclass.configurations)
   end
   
   #
@@ -587,29 +577,6 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_initialize_config_merges_class_defaults_with_overrides
     t = Sample.new(:two => 2)
     assert_equal({:one => 'ONE', :two => 2}, t.config)
-  end
-  
-  class SetNoDefaultAttribute
-    include Configurable
-    
-    def initialize(overrides={})
-      initialize_config(overrides)
-    end
-    
-    config :a, 'default'
-    config :b, 'default', :set_default => false
-  end
-  
-  def test_initialize_config_does_not_set_a_default_value_as_specified
-    c = SetNoDefaultAttribute.new
-    assert_equal "default", c.a
-    assert_equal nil, c.b
-  end
-  
-  def test_initialize_config_sets_overrides_when_set_default_is_false
-    c = SetNoDefaultAttribute.new :a => 'over', :b => 'ride'
-    assert_equal "over", c.a
-    assert_equal 'ride', c.b
   end
   
   #

@@ -243,15 +243,6 @@ class NestTest < Test::Unit::TestCase
     assert_equal({:key => 'two'}, p.config[:nest])
   end
   
-  def test_nested_configs_are_nests
-    assert NestParent.configurations[:nest].is_nest?
-  end
-  
-  def test_nested_delegates_are_nested_class_configs
-    delegates = NestParent.configurations[:nest].default.delegates
-    assert_equal NestChild.configurations.object_id, delegates.object_id
-  end
-  
   def test_instance_is_initialized_with_defaults
     p = NestParent.new 
     assert_equal({:nest => {:key => 'value'}}, p.config.to_hash)

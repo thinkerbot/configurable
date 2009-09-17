@@ -11,7 +11,7 @@ module Configurable
       base.extend Lazydoc::Attributes
       base.extend ModuleMethods unless base.kind_of?(Class)
       
-      ClassMethods.initialize(base, self)
+      ClassMethods.initialize(base)
       super
     end
   end

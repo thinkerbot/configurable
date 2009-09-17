@@ -19,7 +19,26 @@ class Configurable::UtilsTest < Test::Unit::TestCase
     end
   end
   
+  class NestClassOne
+    include Configurable
+    config :one, 'value'
+  end
+  
+  class NestClassTwo
+    include Configurable
+    nest :key, NestClassOne
+    config :two, 'value'
+  end
+  
+  class NestClassThree
+    include Configurable
+    nest :key, NestClassTwo
+    config :three, 'value'
+  end
+  
+  
   Delegate = Configurable::Delegate
+  NestDelegate = Configurable::NestDelegate
   DelegateHash = Configurable::DelegateHash
   IndifferentAccess = Configurable::IndifferentAccess
   
@@ -88,27 +107,15 @@ str: value
   end
   
   def test_dump_dumps_nested_delegate_to_target_as_hash
-    one = {
-      :one => Delegate.new(:r, :w, 'value')
-    }
-    two = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(one)), 
-      :two => Delegate.new(:r, :w, 'value')
-    }
-    three = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(two)), 
-      :three => Delegate.new(:r, :w, 'value')
-    }
-    
     assert_equal({
-      :key => {
+      'key' => {
         :key => {
           :one => 'value'
         },
         :two => 'value'
       },
-      :three => 'value'
-    }, YAML.load(dump(three)))
+      'three' => 'value'
+    }, YAML.load(dump(NestClassThree.configurations)))
   end
   
   def test_dump_dumps_delegates_to_target_in_each_pair_order
@@ -197,23 +204,11 @@ hash:
     two_path = File.join(method_root, 'path/key.yml')
     one_path = File.join(method_root, 'path/key/key.yml')
     
-    one = {
-      :one => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-    two = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(one)), 
-      :two => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-    three = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(two)), 
-      :three => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-    
     assert !File.exists?(three_path)
     assert !File.exists?(two_path)
     assert !File.exists?(one_path)
     
-    dump_file(three, three_path, true)
+    dump_file(NestClassThree.configurations, three_path, true)
 
     assert_equal %q{
 three: value
@@ -231,46 +226,24 @@ one: value
   def test_dump_file_dumps_to_a_single_file_when_recurse_is_false
     FileUtils.mkdir_p(method_root)
     path = File.join(method_root, 'path.yml')
-    
-    one = OrderedHash.new()
-    one[:one] = Delegate.new(:r, :w, 'value')
-
-    two = OrderedHash.new(:key, :two)
-    two[:key] = Delegate.new(:r, :w, DelegateHash.new(one))
-    two[:two] = Delegate.new(:r, :w, 'value')
-
-    three = OrderedHash.new(:key, :three)
-    three[:key] = Delegate.new(:r, :w, DelegateHash.new(two))
-    three[:three] = Delegate.new(:r, :w, 'value')
 
     assert !File.exists?(path)
-    dump_file(three, path)
+    dump_file(NestClassThree.configurations, path)
 
     assert_equal({
-    :key => {
+    'key' => {
       :key => {
         :one => 'value'}, 
       :two => 'value'}, 
-    :three => 'value'}, YAML.load(File.read(path)))
+    'three' => 'value'}, YAML.load(File.read(path)))
   end
   
   def test_dump_file_uses_block_to_format_each_line_in_the_dump
     FileUtils.mkdir_p(method_root)
     path = File.join(method_root, 'path.yml')
 
-    one = OrderedHash.new()
-    one[:one] = Delegate.new(:r, :w, 'value')
-
-    two = OrderedHash.new(:key, :two)
-    two[:key] = Delegate.new(:r, :w, DelegateHash.new(one))
-    two[:two] = Delegate.new(:r, :w, 'value')
-
-    three = OrderedHash.new(:key, :three)
-    three[:key] = Delegate.new(:r, :w, DelegateHash.new(two))
-    three[:three] = Delegate.new(:r, :w, 'value')
-
     assert !File.exists?(path)
-    dump_file(three, path) {|key, delegate| "#{key} "}
+    dump_file(NestClassThree.configurations, path) {|key, delegate| "#{key} "}
     
     # note only the keys in three are shown, since
     # recurse is false.
@@ -283,23 +256,11 @@ one: value
     two_path = File.join(method_root, 'path/key.yml')
     one_path = File.join(method_root, 'path/key/key.yml')
 
-    one = {
-      :one => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-    two = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(one)), 
-      :two => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-    three = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(two)), 
-      :three => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-
     assert !File.exists?(three_path)
     assert !File.exists?(two_path)
     assert !File.exists?(one_path)
     
-    dump_file(three, three_path, true) {|key, delegate| "#{key} "}
+    dump_file(NestClassThree.configurations, three_path, true) {|key, delegate| "#{key} "}
 
     assert_equal %q{three }, File.read(three_path)
     assert_equal %q{two }, File.read(two_path)
@@ -416,23 +377,11 @@ one: value
     two_path = File.join(method_root, 'path/key.yml')
     one_path = File.join(method_root, 'path/key/key.yml')
 
-    one = {
-      :one => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-    two = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(one)), 
-      :two => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-    three = {
-      :key => Delegate.new(:r, :w, DelegateHash.new(two)), 
-      :three => Delegate.new(:r, :w, 'value')
-    }.extend(IndifferentAccess)
-
     assert !File.exists?(three_path)
     assert !File.exists?(two_path)
     assert !File.exists?(one_path)
     
-    preview = dump_file(three, three_path, true, true)
+    preview = dump_file(NestClassThree.configurations, three_path, true, true)
     
     assert_equal([
       [three_path, "three: value\n"],

@@ -1,25 +1,40 @@
 require 'test/unit'
 require 'benchmark'
-require 'configurable/delegate_hash'
+require 'configurable'
 
 class DelegateHashBenchmark < Test::Unit::TestCase
   Delegate = Configurable::Delegate
   DelegateHash = Configurable::DelegateHash
   
   class Receiver
-    attr_accessor :one, :two, :three, :four, :five
+    include Configurable
+    config :one
+    config :two
+    config :three
+    config :four
+    config :five
   end
 
+  def test_initialize_speed
+    puts "test_initialize_speed"
+    
+    Benchmark.bm(25) do |x|
+      n = 10
+      x.report("#{n}k reference") do 
+        (n * 1000).times { Object.new }
+      end
+      
+      x.report("#{n}k new") do 
+        (n * 1000).times { Receiver.new }
+      end
+    end
+  end
+  
   def test_merge_speed
     puts "test_merge_speed"
     
     r = Receiver.new
-    d = DelegateHash.new(
-      :one => Delegate.new(:one),
-      :two => Delegate.new(:two),
-      :three => Delegate.new(:three),
-      :four => Delegate.new(:four),
-      :five => Delegate.new(:five))
+    d = DelegateHash.new
     hash = {}
     
     Benchmark.bm(25) do |x|

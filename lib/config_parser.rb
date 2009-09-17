@@ -387,8 +387,7 @@ class ConfigParser
   end
   
   # Adds a hash of delegates (for example the configurations for a Configurable
-  # class) to self.  Delegates will be sorted by their :declaration_order
-  # attribute, then added like:
+  # class) to self.  Delegates are added like:
   #
   #   define(key, delegate.default, delegate.attributes)
   #
@@ -396,16 +395,18 @@ class ConfigParser
   #
   # When you nest Configurable classes, a special syntax is necessary to
   # specify nested configurations in a flat format compatible with the
-  # command line.  As such, nested delegates, ie delegates with a 
-  # DelegateHash as a default value, are recursively added with their
-  # key as a prefix.  For instance:
+  # command line.  As such, nested delegates are recursively added with
+  # their key as a prefix.  For instance:
   #
-  #   delegate_hash = DelegateHash.new(:key => Delegate.new(:reader))
-  #   delegates = {}
-  #   delegates[:nest] = Delegate.new(:reader, :writer=, delegate_hash)
-  #
+  #   class NestClass
+  #     include Configurable
+  #     nest :nest do
+  #       config :key, 'value'
+  #     end
+  #   end
+  #  
   #   psr = ConfigParser.new
-  #   psr.add(delegates)
+  #   psr.add(NestClass.delegates)
   #   psr.parse('--nest:key value')
   #
   #   psr.config                 # => {'nest:key' => 'value'}
@@ -419,14 +420,14 @@ class ConfigParser
   def add(delegates, nesting=nil)
     delegates.each_pair do |key, delegate|
       key = nesting ? "#{nesting}:#{key}" : key
-      default = delegate.default(false)
       
-      if delegate.is_nest?
-        unless delegate[:type] == :hidden
-          add(default.delegates, key)
-        end
+      case delegate[:type]
+      when :nest
+        add(delegate.nest_class.configurations, key)
+      when :hidden
+        next
       else
-        define(key, default, delegate.attributes)
+        define(key, delegate.default, delegate.attributes)
       end
     end
   end

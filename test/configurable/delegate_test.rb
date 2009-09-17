@@ -51,14 +51,14 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal({}, c.attributes)
   end
   
-  #
-  # ASET test
-  #
+  def test_reader_may_not_be_set_to_nil
+    e = assert_raises(ArgumentError) { Delegate.new(nil) }
+    assert_equal "reader may not be nil", e.message
+  end
   
-  def test_ASET_sets_an_attribute_value
-    assert_equal nil, c.attributes[:key]
-    c[:key] = 'value'
-    assert_equal 'value', c.attributes[:key]
+  def test_writer_may_not_be_set_to_nil
+    e = assert_raises(ArgumentError) { Delegate.new('key', nil) }
+    assert_equal "writer may not be nil", e.message
   end
   
   #
@@ -76,115 +76,29 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   #
-  # default= test
-  #
-  
-  def test_set_default_sets_default
-    assert_nil c.default
-    c.default = 1
-    assert_equal 1, c.default
-  end
-  
-  #
   # default test
   #
 
   def test_default_returns_default
     assert_equal nil, c.default
     
-    c.default = 'value'
-    assert_equal 'value', c.default
+    c = Delegate.new(:reader, :writer, 'default')
+    assert_equal 'default', c.default
   end
   
   def test_default_returns_duplicate_values
     a = [1,2,3]
-    c.default = a
+    c = Delegate.new(:reader, :writer, a)
   
     assert_equal a, c.default
     assert a.object_id != c.default.object_id
-  end
-  
-  def test_default_does_not_duplicate_if_specified
-    a = [1,2,3]
-    c.default = a
-  
-    assert_equal a, c.default(false)
-    assert_equal a.object_id, c.default(false).object_id
   end
   
   def test_default_does_not_duplicate_if_default_is_not_duplicable
     a = NonDuplicable.new
-    c.default = a
+    c = Delegate.new(:reader, :writer, a)
     
-    assert_equal a.object_id, c.default(false).object_id
     assert_equal a.object_id, c.default.object_id
-  end
-  
-  def test_default_does_not_duplicate_if_specified_by_duplicate_default_attribute
-    a = [1,2,3]
-    c.default = a
-    c[:duplicate_default] = false
-  
-    assert_equal a, c.default
-    assert_equal a.object_id, c.default.object_id
-  end
-  
-  def test_default_does_duplicate_if_specified_by_duplicate_default_attribute
-    a = [1,2,3]
-    c.default = a
-    c[:duplicate_default] = true
-  
-    assert_equal a, c.default
-    assert a.object_id != c.default.object_id
-  end
-  
-  def test_duplicate_default_attribute_may_be_set_before_default_is_set
-    a = [1,2,3]
-    c[:duplicate_default] = false
-    c.default = a
-    
-    assert_equal a, c.default
-    assert_equal a.object_id, c.default.object_id
-  end
-  
-  #
-  # reader= test
-  #
-
-  def test_set_reader_symbolizes_input
-    c.reader = 'reader'
-    assert_equal :reader, c.reader
-  end
-  
-  def test_reader_may_not_be_set_to_nil
-    e = assert_raises(ArgumentError) { c.reader = nil }
-    assert_equal "reader may not be nil", e.message
-  end
-  
-  #
-  # writer= test
-  #
-
-  def test_set_writer_symbolizes_input
-    c.writer = 'writer='
-    assert_equal :writer=, c.writer
-  end  
-  
-  def test_writer_may_not_be_set_to_nil
-    e = assert_raises(ArgumentError) { c.writer = nil }
-    assert_equal "writer may not be nil", e.message
-  end
-  
-  #
-  # is_nest? test
-  #
-  
-  def test_is_nest_returns_true_if_default_is_a_DelegateHash
-    assert !c.default.kind_of?(Configurable::DelegateHash)
-    assert !c.is_nest?
-    
-    c.default = Configurable::DelegateHash.new
-    assert c.is_nest?
   end
   
   #

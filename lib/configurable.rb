@@ -225,7 +225,7 @@ module Configurable
   # Initializes config. Default config values 
   # are overridden as specified by overrides.
   def initialize_config(overrides={})
-    @config = overrides.kind_of?(DelegateHash) ? overrides : DelegateHash.new(self.class.configurations, overrides)
+    @config = overrides.kind_of?(DelegateHash) ? overrides : DelegateHash.new(overrides)
     @config.bind(self)
   end
 end
