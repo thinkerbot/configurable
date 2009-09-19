@@ -164,7 +164,9 @@ module Configurable
         public(attribute)
       end
       
-      delegates[key] = Delegate.new(reader, writer, value, attributes)
+      # define the configuration
+      init = attributes.has_key?(:init) ? attributes.delete(:init) : true
+      delegates[key] = Delegate.new(reader, writer, value, init, attributes)
     end
     
     # Adds nested configurations to self.  Nest creates a new configurable
@@ -333,7 +335,8 @@ module Configurable
       end
       
       # define the configuration
-      delegates[key] = NestDelegate.new(configurable_class, reader, writer, attributes)
+      init = attributes.has_key?(:init) ? attributes.delete(:init) : true
+      delegates[key] = NestDelegate.new(configurable_class, reader, writer, init, attributes)
       check_infinite_nest(configurable_class)
     end  
     

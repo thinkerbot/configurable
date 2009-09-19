@@ -27,14 +27,15 @@ module Configurable
     # contexts (ex on the command line, in a web form, or a desktop app).
     # Note that attributes should be set through []= and not through this
     # reader.
-    attr_accessor :attributes
+    attr_reader :attributes
 
     # Initializes a new Delegate with the specified key and default value.
-    def initialize(reader, writer="#{reader}=", default=nil, attributes={})
+    def initialize(reader, writer="#{reader}=", default=nil, init=true, attributes={})
       self.reader = reader
       self.writer = writer
       self.default = default
       
+      @init = init
       @attributes = attributes
     end
     
@@ -60,14 +61,8 @@ module Configurable
       receiver.send(writer, default)
     end
     
-    # True if another is a kind of Delegate with the same
-    # reader, writer, and default value.  Attributes are
-    # not considered.
-    def ==(another)
-      another.kind_of?(self.class) &&
-      self.reader == another.reader &&
-      self.writer == another.writer &&
-      self.default == another.default
+    def init?
+      @init
     end
     
     def inspect

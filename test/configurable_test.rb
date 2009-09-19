@@ -7,6 +7,16 @@ class ConfigurableTest < Test::Unit::TestCase
   DelegateHash = Configurable::DelegateHash
   Validation = Configurable::Validation
   
+  # helper
+  def assert_configurations_equal(expected, delegate)
+    actual = delegate.inject({}) do |hash, (key, delegate)|
+      hash[key] = [delegate.reader, delegate.writer, delegate.default]
+      hash
+    end
+    
+    assert_equal(expected, actual)
+  end
+  
   #
   # documentation test
   #
@@ -113,8 +123,8 @@ class ConfigurableTest < Test::Unit::TestCase
   class DeclarationClass
     include Configurable
     
-    def initialize
-      @zero = @one = @two = @three = nil
+    def initialize(config={})
+      initialize_config(config)
     end
     
     config_attr :zero, 'zero' do |value|
@@ -126,17 +136,17 @@ class ConfigurableTest < Test::Unit::TestCase
       value.upcase
     end
     
-    config :two, 'two'
+    config :two, 'two', :init => false
     
     config :three
   end
   
   def test_config_adds_configurations_to_class_configuration
-    assert_equal({
-      :zero =>  Delegate.new('zero', 'zero=', 'zero'),
-      :one =>   Delegate.new('one', 'one=', 'one'),
-      :two =>   Delegate.new('two', 'two=', 'two'),
-      :three => Delegate.new('three', 'three=', nil)
+    assert_configurations_equal({
+      :zero =>  [:zero, :zero=, 'zero'],
+      :one =>   [:one, :one=, 'one'],
+      :two =>   [:two, :two=, 'two'],
+      :three => [:three, :three=, nil]
     },
     DeclarationClass.configurations)
   end
@@ -164,13 +174,20 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_with_block_uses_block_return_to_set_instance_variable
-    t = DeclarationClass.new
+    t = DeclarationClass.new(:one => "one")
+    assert_equal "ONE", t.one
     
-    assert_nil t.one
     t.one = 'one'
-    
     assert_equal 'ONE', t.one
     assert_equal 'ONE', t.instance_variable_get(:@one)
+  end
+  
+  def test_config_with_init_false_will_not_initialize_from_configs
+    t = DeclarationClass.new
+    assert_equal false, t.instance_variable_defined?(:@two)
+        
+    err = assert_raises(RuntimeError) { DeclarationClass.new(:two => 2) }
+    assert_equal "initialization values are not allowed for: :two", err.message
   end
   
   #
@@ -258,8 +275,8 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_configurations_may_be_declared_in_modules
-    assert_equal({
-      :key =>  Delegate.new('key', 'key=', 'value')
+    assert_configurations_equal({
+      :key =>  [:key, :key=, 'value']
     }, ConfigModule.configurations)
   end
   
@@ -268,8 +285,8 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_module_configurations_are_added_to_class_on_include
-    assert_equal({
-      :key =>  Delegate.new('key', 'key=', 'value')
+    assert_configurations_equal({
+      :key =>  [:key, :key=, 'value']
     }, IncludingConfigModule.configurations)
     
     c = IncludingConfigModule.new
@@ -297,10 +314,10 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_multiple_modules_may_be_added_to_class_on_include
-    assert_equal({
-      :a =>  Delegate.new('a', 'a=', 'one'),
-      :b =>  Delegate.new('b', 'b=', 'two'),
-      :c =>  Delegate.new('c', 'c=', 'three')
+    assert_configurations_equal({
+      :a =>  [:a, :a=, 'one'],
+      :b =>  [:b, :b=, 'two'],
+      :c =>  [:c, :c=, 'three']
     }, MultiIncludingConfigModule.configurations)
     
     obj = MultiIncludingConfigModule.new
@@ -321,11 +338,11 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_modules_may_be_added_to_an_existing_configurable_class
-    assert_equal({
-      :a =>  Delegate.new('a', 'a=', 'one'),
-      :b =>  Delegate.new('b', 'b=', 'TWO'),
-      :c =>  Delegate.new('c', 'c=', 'three'),
-      :d =>  Delegate.new('d', 'd=', 'four')
+    assert_configurations_equal({
+      :a =>  [:a, :a=, 'one'],
+      :b =>  [:b, :b=, 'TWO'],
+      :c =>  [:c, :c=, 'three'],
+      :d =>  [:d, :d=, 'four']
     }, IncludingConfigModuleInExistingConfigurable.configurations)
   end
   
@@ -415,10 +432,13 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_subclasses_inherit_configurations
-    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
-    assert_equal({
-      :one => Delegate.new(:one, :one=, 'one'), 
-      :two => Delegate.new(:two, :two=, 'two')
+    assert_configurations_equal({
+      :one => [:one, :one=, 'one']
+    }, IncludeBase.configurations)
+    
+    assert_configurations_equal({
+      :one => [:one, :one=, 'one'], 
+      :two => [:two, :two=, 'two']
     }, IncludeSubclass.configurations)
   end
   
@@ -429,8 +449,8 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_inherited_configurations_can_be_overridden
-    assert_equal({:one => Delegate.new(:one, :one=, 'one')}, IncludeBase.configurations)
-    assert_equal({:one => Delegate.new(:one, :one=, 'ONE')}, OverrideSubclass.configurations)
+    assert_configurations_equal({:one => [:one, :one=, 'one']}, IncludeBase.configurations)
+    assert_configurations_equal({:one => [:one, :one=, 'ONE']}, OverrideSubclass.configurations)
   end
   
   #
@@ -567,7 +587,7 @@ class ConfigurableTest < Test::Unit::TestCase
     include Configurable
     
     def initialize(overrides={})
-      initialize_config(overrides)
+      initialize_config(overrides, true)
     end
     
     config(:one, 'one') {|v| v.upcase }

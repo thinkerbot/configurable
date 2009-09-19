@@ -5,10 +5,12 @@ module Configurable
     
     attr_reader :nest_class
     
-    def initialize(nest_class, reader, writer="#{reader}=", attributes={})
+    def initialize(nest_class, reader, writer="#{reader}=", init=true, attributes={})
       self.nest_class = nest_class
       self.reader = reader
       self.writer = writer
+      
+      @init = init
       @attributes = attributes
     end
     
@@ -35,16 +37,6 @@ module Configurable
     
     def init(receiver)
       receiver.send(writer, nest_class.new)
-    end
-    
-    # True if another is a kind of Delegate with the same
-    # reader, writer, and default value.  Attributes are
-    # not considered.
-    def ==(another)
-      another.kind_of?(self.class) &&
-      self.reader == another.reader &&
-      self.writer == another.writer &&
-      self.nest_class == another.nest_class
     end
     
     def inspect

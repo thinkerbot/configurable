@@ -224,8 +224,36 @@ module Configurable
 
   # Initializes config. Default config values 
   # are overridden as specified by overrides.
-  def initialize_config(overrides={})
-    @config = overrides.kind_of?(DelegateHash) ? overrides : DelegateHash.new(overrides)
-    @config.bind(self)
+  def initialize_config(overrides={}, log=false)
+    @config = DelegateHash.new(self, overrides, false)
+    delegates = @config.delegates
+    
+    initial_values = {}
+    overrides.each_key do |key|
+      if delegate = delegates[key]
+
+        unless delegate.init?
+          key = delegates.keys.find {|k| delegates[k] == delegate }
+          raise "initialization values are not allowed for: #{key.inspect}"
+        end
+
+        if initial_values.has_key?(delegate)
+          key = delegates.keys.find {|k| delegates[k] == delegate }
+          raise "multiple values map to config: #{key.inspect}"
+        end
+
+        initial_values[delegate] = overrides.delete(key)
+      end
+    end
+    
+    delegates.each_pair do |key, delegate|
+      next unless delegate.init?
+
+      if initial_values.has_key?(delegate)
+        delegate.set(self, initial_values[delegate])
+      else
+        delegate.init(self)
+      end
+    end
   end
 end

@@ -48,349 +48,145 @@ class DelegateHashTest < Test::Unit::TestCase
     end
   end
   
-  attr_reader :d, :r
+  attr_reader :dhash
   
   def setup
     Receiver.configurations = {:key => Delegate.new(:key)}
-    @r = Receiver.new
-    @d = DelegateHash.new
+    @dhash = DelegateHash.new(Receiver.new)
   end
   
   #
   # documentation test
   #
   
-  class Sample
-    include Configurable
-    config :key
-  end
-  
-  def test_documentation
-    sample = Sample.new
-    dhash = DelegateHash.new.bind(sample)
-  
-    sample.key = 'value'
-    assert_equal 'value', dhash[:key]
-  
-    dhash[:key] = 'another'
-    assert_equal 'another', sample.key
-  
-    dhash[:not_delegated] = 'value'
-    assert_equal 'value', dhash[:not_delegated]
-  
-    assert_equal({:not_delegated => 'value'}, dhash.store)
-    assert_equal({:key => 'another', :not_delegated => 'value'}, dhash.to_hash)
-  end
+  # class Sample
+  #   include Configurable
+  #   config :key
+  # end
+  # 
+  # def test_documentation
+  #   sample = Sample.new
+  #   dhash = DelegateHash.new(sample)
+  # 
+  #   sample.key = 'value'
+  #   assert_equal 'value', dhash[:key]
+  # 
+  #   dhash[:key] = 'another'
+  #   assert_equal 'another', sample.key
+  # 
+  #   dhash[:not_delegated] = 'value'
+  #   assert_equal 'value', dhash[:not_delegated]
+  # 
+  #   assert_equal({:not_delegated => 'value'}, dhash.store)
+  #   assert_equal({:key => 'another', :not_delegated => 'value'}, dhash.to_hash)
+  # end
   
   #
   # initialization test
   #
   
-  def test_default_initialize
-    d = DelegateHash.new
-    assert_equal(nil, d.receiver)
-    assert_equal({}, d.store)
+  def test_initialize
+    receiver = Receiver.new
+    store = {}
+    dhash = DelegateHash.new(receiver, store)
+    
+    assert_equal(receiver, dhash.receiver)
+    assert_equal(store, dhash.store)
   end
   
-  def test_initialize_sets_receiver_without_mapping_store_or_delegate_default_values
-    r = Receiver.new
-    r.key = "existing value"
+  def test_initialize_imports_store_to_receiver
+    receiver = Receiver.new
+    receiver.key = "existing value"
     
-    d = DelegateHash.new({:key => 'value'}, r)
-    
-    assert d.bound?
-    assert_equal({:key => 'value'}, d.store)
-    assert_equal r, d.receiver
-    assert_equal "existing value", r.key
+    dhash = DelegateHash.new(receiver, {:key => 'new value'})
+    assert_equal({}, dhash.store)
+    assert_equal "new value", receiver.key
   end
   
-  #
-  # bind test
-  #
-  
-  def test_bind_sets_receiver
-    d.bind(r)
-    assert_equal r, d.receiver
-  end
-  
-  def test_bind_delegates_stored_values_to_receiver
-    d.store[:key] = 1
-    d.store[:not_a_config] = 1
+  def test_initialize_does_not_import_store_to_receiver_if_specified
+    receiver = Receiver.new
+    receiver.key = "existing value"
     
-    assert_nil r.key
-    assert_equal({:key => 1, :not_a_config => 1}, d.store)
-    
-    d.bind(r)
-    
-    assert_equal 1, r.key
-    assert_equal({:not_a_config => 1}, d.store)
-  end
-  
-  class IndifferentDelegates < Hash
-    def [](key)
-      super(key.to_sym)
-    end
-    
-    def []=(key, value)
-      super(key.to_sym, value)
-    end
-  end
-  
-  def test_bind_delegates_indifferent_delegates_indifferently
-    delegate = Delegate.new(:key)
-    delegates = IndifferentDelegates.new
-    delegates[:key] = delegate
-    assert_equal delegate, delegates[:key]
-    assert_equal delegate, delegates['key']
-    
-    # from symbol
-    d = DelegateHash.new(delegates)
-    r = Receiver.new
-    
-    d.store[:key] = 1
-    assert_nil r.key
-    d.bind(r)
-    assert_equal 1, r.key
-    
-    # from string
-    d = DelegateHash.new(delegates)
-    r = Receiver.new
-    
-    d.store['key'] = 1
-    assert_nil r.key
-    d.bind(r)
-    assert_equal 1, r.key
-  end
-  
-  def test_bind_raises_error_for_ambiguity_in_indifferent_delegates
-    Receiver.configurations = IndifferentDelegates.new
-    Receiver.configurations[:key] = Delegate.new(:key)
-    
-    d = DelegateHash.new(:key => 1, 'key' => 2)
-    err = assert_raises(RuntimeError) { d.bind(r) }
-    assert_equal "multiple values mapped to :key", err.message
-  end
-  
-  def test_bind_delegates_default_values_to_receiver_if_no_store_value_is_present
-    Receiver.configurations = {:key => Delegate.new(:key, :key=, 1)}
-    
-    assert_nil r.key
-    assert_equal({}, d.store)
-    
-    d.bind(r)
-    assert_equal 1, r.key
-  end
-  
-  def test_bind_does_nothing_if_bound_again_to_the_current_receiver
-    assert_nil r.key
-    
-    d.store[:key] = 1
-    d.bind(r)
-    assert_equal 1, r.key
-    assert_equal({}, d.store)
-    
-    d.store[:key] = 2
-    d.bind(r)
-    assert_equal 1, r.key
-    assert_equal({:key => 2}, d.store)
-  end
-  
-  def test_bind_rebinds_if_specified
-    assert_nil r.key
-    
-    d.store[:key] = 1
-    d.bind(r)
-    assert_equal 1, r.key
-    assert_equal({}, d.store)
-    
-    d.store[:key] = 2
-    d.bind(r, true)
-    assert_equal 2, r.key
-    assert_equal({}, d.store)
-  end
-  
-  def test_bind_raises_error_for_nil_receiver
-    e = assert_raises(ArgumentError) { d.bind(nil) }
-    assert_equal "receiver cannot be nil", e.message
-  end
-  
-  def test_bind_raises_error_if_already_bound
-    d.bind(r)
-    e = assert_raises(ArgumentError) { d.bind(Receiver.new) }
-    assert_equal "already bound to: #{r}", e.message
-  end
-  
-  def test_bind_returns_self
-    assert_equal d, d.bind(r)
-  end
-  
-  def test_bind_sets_delegates_in_order
-    delegates = OrderedHash.new(:a, :b, :c)
-    delegates[:a] = Delegate.new(:key, :key=, 'a')
-    delegates[:b] = Delegate.new(:key, :key=, 'b')
-    delegates[:c] = Delegate.new(:key, :key=, 'c')
-    
-    OrderedReceiver.configurations = delegates
-    r = OrderedReceiver.new
-    d = DelegateHash.new
-    d.bind(r)
-    
-    assert_equal ['a', 'b', 'c'], r.order
-    
-    r = OrderedReceiver.new
-    d = DelegateHash.new({:a => 'A', :c => 'C'})
-    d.bind(r)
-    
-    assert_equal ['A', 'b', 'C'], r.order
+    dhash = DelegateHash.new(receiver, {:key => 'new value'}, false)
+    assert_equal({:key => 'new value'}, dhash.store)
+    assert_equal "existing value", receiver.key
   end
   
   #
-  # bound? test
+  # inconsistent? test
   #
   
-  def test_bind_unbind_toggles_bound
-    assert !d.bound?
+  def test_inconsistent_returns_true_if_the_store_has_delegateable_values
+    assert_equal false, dhash.inconsistent?
     
-    d.bind(r)
-    assert d.bound?
+    dhash.store[:key] = 'value'
+    assert_equal true, dhash.inconsistent?
     
-    d.unbind
-    assert !d.bound?
-  end
-  
-  #
-  # unbind test
-  #
-  
-  def test_unbind_unsets_receiver
-    d.bind(r)
-    assert_equal r, d.receiver
-    
-    d.unbind
-    assert_equal nil, d.receiver
-  end
-  
-  def test_unbind_sets_store_with_receiver_values
-    d.bind(r)
-    
-    r.key = 1
-    assert_equal({}, d.store)
-    
-    d.unbind
-    
-    assert_equal 1, r.key
-    assert_equal({:key => 1}, d.store)
-  end
-   
-  def test_unbind_returns_self
-    d.bind(r)
-    assert_equal d, d.unbind
+    dhash.store.delete(:key)
+    assert_equal false, dhash.inconsistent?
   end
   
   #
   # AGET test
   #
   
-  def test_AGET_returns_store_value_if_not_bound
-    assert !d.bound?
+  def test_AGET_returns_value_stored_on_receiver_for_delegate_key
+    dhash.store[:key] = 'dhash value'
     
-    assert_equal({}, d.store)
-    assert_equal nil, d[:key]
+    dhash.receiver.key = nil
+    assert_equal nil, dhash[:key]
     
-    d.store[:key] = 'value'
-    assert_equal 'value', d[:key]
+    dhash.receiver.key = "receiver value"
+    assert_equal 'receiver value', dhash[:key]
   end
   
-  def test_AGET_returns_mapped_method_on_receiver_if_bound_and_key_is_mapped
-    d.bind(r)
-  
-    assert_equal nil, d[:key]
-    r.key = "value"
-    assert_equal "value", d[:key]
-  end
-  
-  def test_AGET_returns_stored_value_if_bound_and_key_is_not_mapped
-    d.bind(r)
-     
-    assert_equal nil, d[:unmapped]
-    d.store[:unmapped] = "value"
-    assert_equal "value", d[:unmapped]
-  end
-  
-  def test_AGET_does_not_regard_nil_values_as_missing
-    Receiver.configurations = {:key => Delegate.new(:key, :key=, 'default')}
-    d.store[:key] = nil
-    
-    assert !d.bound?
-    assert_equal nil, d[:key]
-    assert_equal nil, d.store[:key]
+  def test_AGET_returns_store_value_for_non_delegate_key
+    dhash.store[:alt] = 'dhash value'
+    assert_equal 'dhash value', dhash[:alt]
   end
   
   #
   # ASET test
   #
   
-  def test_ASET_stores_value_in_store_if_not_bound
-    assert !d.bound?
-    assert_equal({}, d.store)
-    d[:key] = 'value'
-    assert_equal({:key => 'value'}, d.store)
+  def test_ASET_stores_value_on_receiver_for_delegate_key
+    assert_equal nil, dhash.receiver.key
+    dhash[:key] = 'value'
+    assert_equal "value", dhash.receiver.key
   end
   
-  def test_ASET_send_value_to_mapped_method_on_receiver_if_bound_and_key_is_mapped
-    d.bind(r)
+  def test_ASET_stores_value_in_store_for_non_delegate_key
+    assert_equal nil, dhash.receiver.key
+    assert_equal({}, dhash.store)
     
-    assert_equal nil, r.key
-    d[:key] = 'value'
-    assert_equal "value", r.key
-  end
-  
-  def test_ASET_stores_value_in_store_if_bound_and_key_is_not_mapped
-    d.bind(r)
-  
-    assert_equal nil, d.store[:unmapped]
-    d[:unmapped] = "value"
-    assert_equal "value", d.store[:unmapped]
+    dhash[:alt] = 'value'
+    
+    assert_equal nil, dhash.receiver.key
+    assert_equal({:alt => 'value'}, dhash.store)
   end
   
   #
   # keys test
   #
   
-  def test_keys_returns_union_of_delegates_and_store_keys
-    d.bind(r)
-    d.store[:unmapped] = nil
+  def test_keys_returns_union_of_delegate_keys_and_store_keys
+    dhash.store[:alt] = nil
     
-    assert_equal [:key], d.delegates.keys
-    assert_equal [:unmapped], d.store.keys
-    assert_equal [:key, :unmapped], d.keys
-    
-    d.store[:key] = nil
-    
-    assert_equal [:key], d.delegates.keys
-    assert_equal ['key', 'unmapped'], d.store.keys.collect {|key| key.to_s }.sort
-    assert_equal [:key, :unmapped], d.keys
+    assert_equal [:key], dhash.delegates.keys
+    assert_equal [:alt], dhash.store.keys
+    assert_equal [:key, :alt], dhash.keys
   end
   
   #
   # has_key? test
   #
   
-  def test_has_key_is_true_if_the_key_is_assigned_in_delegates_or_in_store
-    d[:key] = 'value'
-    d[:another] = 'value'
+  def test_has_key_is_true_if_the_key_is_a_delegate_key_or_a_store_key
+    dhash.store[:alt] = 'value'
     
-    assert_equal({:key => 'value', :another => 'value'}, d.store)
-    assert d.has_key?(:key)
-    assert d.has_key?(:another)
-    assert !d.has_key?(:not_a_key)
-    
-    d.bind(r)
-    
-    assert_equal({:another => 'value'}, d.store)
-    assert d.has_key?(:key)
-    assert d.has_key?(:another)
-    assert !d.has_key?(:not_a_key)
+    assert dhash.has_key?(:key)
+    assert dhash.has_key?(:alt)
+    assert !dhash.has_key?(:not_a_key)
   end
   
   #
@@ -398,44 +194,30 @@ class DelegateHashTest < Test::Unit::TestCase
   #
   
   def test_merge_merges_another_with_self
-    d[:key] = 'a'
-    d[:one] = 'A'
-    assert_equal({:key => 'a', :one => 'A'}, d.to_hash)
+    dhash[:key] = 'value'
+    dhash[:a] = 'a'
     
-    # unbound merge!
-    d.merge!(:key => 'b', :one => 'B', :two => :B)
-    assert_equal({:key => 'b', :one => 'B', :two => :B}, d.to_hash)
+    assert_equal 'value', dhash.receiver.key
+    assert_equal({:a => 'a'}, dhash.store)
     
-    # bound merge!
-    d.bind(r)
-    d.merge!(:key => 'c')
-    assert_equal 'c', r.key
+    dhash.merge!(:key => 'VALUE', :b => 'B')
+    assert_equal 'VALUE', dhash.receiver.key
+    assert_equal({:a => 'a', :b => 'B'}, dhash.store)
   end
   
   def test_merge_can_merge_another_DelegateHash
-    d[:key] = 'a'
-    d[:one] = 'A'
-    assert_equal({:key => 'a', :one => 'A'}, d.to_hash)
+    dhash[:key] = 'value'
+    dhash[:a] = 'a'
+    assert_equal 'value', dhash.receiver.key
+    assert_equal({:a => 'a'}, dhash.store)
     
-    # unbound merge!
-    r2 = Receiver.new
-    d2 = DelegateHash.new({:key => Delegate.new(:key)})
-    d2.bind(r2)
-    d2[:key] = 'b'
-    d2[:one] = 'B'
-    d2[:two] = :B
+    another = DelegateHash.new(Receiver.new, :key => 'VALUE', :b => 'B')
+    assert_equal 'VALUE', another.receiver.key
+    assert_equal({:b => 'B'}, another.store)
     
-    d.merge!(d2)
-    assert_equal({:key => 'b', :one => 'B', :two => :B}, d.to_hash)
-    
-    # bound merge!
-    d3 = DelegateHash.new({:key => Delegate.new(:key)})
-    d3.bind(Receiver.new)
-    d3[:key] = 'c'
-    
-    d.bind(r)
-    d.merge!(d3)
-    assert_equal 'c', r.key
+    dhash.merge!(another)
+    assert_equal 'VALUE', dhash.receiver.key
+    assert_equal({:a => 'a', :b => 'B'}, dhash.store)
   end
   
   def test_merge_sets_delegates_in_order
@@ -444,11 +226,10 @@ class DelegateHashTest < Test::Unit::TestCase
     letters.each {|letter| delegates[letter] = Delegate.new(:key, :key=, letter.to_s) }
     
     OrderedReceiver.configurations = delegates
-    r = OrderedReceiver.new
-    d = DelegateHash.new({}, r)
+    dhash = DelegateHash.new(OrderedReceiver.new)
   
-    d.merge!({:a => 'A', :g => 'G', :c => 'C', :h => 'H', :b => 'B'})
-    assert_equal ['A', 'B', 'C', 'G', 'H'], r.order
+    dhash.merge!({:a => 'A', :g => 'G', :c => 'C', :h => 'H', :b => 'B'})
+    assert_equal ['A', 'B', 'C', 'G', 'H'], dhash.receiver.order
   end
   
   #
@@ -456,63 +237,29 @@ class DelegateHashTest < Test::Unit::TestCase
   #
   
   def test_each_pair_yields_each_key_value_pair_stored_in_self
-    d[:key] = 'value'
-    d[:another] = 'value'
+    dhash[:key] = 'value'
+    dhash[:alt] = 'VALUE'
     
     results = {}
-    d.each_pair {|key, value| results[key] = value }
-    assert_equal({:key => 'value', :another => 'value'}, results)
-    
-    d.bind(r)
-    
-    r.key = 'VALUE'
-    results = {}
-    d.each_pair {|key, value| results[key] = value }
-    assert_equal({:key => 'VALUE', :another => 'value'}, results)
-  end
-  
-  #
-  # == test
-  #
-  
-  def test_equals_compares_to_hash_values
-    d = DelegateHash.new
-    assert d == {}
-    
-    d[:one] = 'one'
-    assert d == {:one => 'one'}
-    
-    d2 = DelegateHash.new({:one => 'one'})
-    assert d == d2
+    dhash.each_pair {|key, value| results[key] = value }
+    assert_equal({:key => 'value', :alt => 'VALUE'}, results)
   end
   
   #
   # to_hash test
   #
   
-  def test_to_hash_returns_duplicate_store_when_unbound
-    d.store[:one] = 'one'
-    d.store[:key] = 'value'
+  def test_to_hash_returns_hash_merging_receiver_and_store_entries
+    dhash.store[:alt] = 'VALUE'
+    dhash.receiver.key = 'value'
     
-    assert_equal({:one => 'one', :key => 'value'}, d.store)
-    assert_equal({:one => 'one', :key => 'value'}, d.to_hash)
-    assert d.store.object_id != d.to_hash.object_id
-  end
-  
-  def test_to_hash_returns_hash_with_mapped_and_unmapped_values_when_bound
-    d.store[:one] = 'one'
-    d.store[:key] = 'value'
-    d.bind(r)
-    assert_equal({:one => 'one', :key => 'value'}, d.to_hash)
-    
-    r.key = "VALUE"
-    assert_equal({:one => 'one', :key => 'VALUE'}, d.to_hash)
+    assert_equal({:key => 'value', :alt => 'VALUE'}, dhash.to_hash)
   end
   
   def test_to_hash_recursively_hashifies_DelegateHash_values
-    a = DelegateHash.new({:a => 'value'}).bind(r)
-    b = DelegateHash.new({:b => a}).bind(r)
-    c = DelegateHash.new({:c => b}).bind(r)
+    a = DelegateHash.new(Receiver.new, :a => 'value')
+    b = DelegateHash.new(Receiver.new, :b => a)
+    c = DelegateHash.new(Receiver.new, :c => b)
     
     assert_equal({
       :key => nil,
@@ -527,9 +274,9 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_accepts_a_block_to_transform_keys_and_values
-    a = DelegateHash.new({:a => 'value'}).bind(r)
-    b = DelegateHash.new({:b => a}).bind(r)
-    c = DelegateHash.new({:c => b}).bind(r)
+    a = DelegateHash.new(Receiver.new, :a => 'value')
+    b = DelegateHash.new(Receiver.new, :b => a)
+    c = DelegateHash.new(Receiver.new, :c => b)
     
     result = c.to_hash do |hash, key, value|
       hash[key.to_s] = value.kind_of?(String) ? value.upcase : value
@@ -548,21 +295,20 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_scrubs_delegates_set_to_default_value_if_specified
-    d.store[:one] = nil
-    d.store[:key] = nil
+    dhash.store[:alt] = nil
+    dhash.receiver.key = nil
+
+    assert_equal({:alt => nil, :key => nil}, dhash.to_hash)
+    assert_equal({:alt => nil}, dhash.to_hash(true))
     
-    d.bind(r)
-    assert_equal({:one => nil, :key => nil}, d.to_hash)
-    assert_equal({:one => nil}, d.to_hash(true))
-    
-    r.key = :value
-    assert_equal({:one => nil, :key => :value}, d.to_hash(true))
+    dhash.receiver.key = :value
+    assert_equal({:alt => nil, :key => :value}, dhash.to_hash(true))
   end
   
   def test_to_hash_scrubs_delgates_recursively
-    a = DelegateHash.new({:a => 'value'}).bind(r)
-    b = DelegateHash.new({:b => a}).bind(r)
-    c = DelegateHash.new({:c => b}).bind(r)
+    a = DelegateHash.new(Receiver.new, :a => 'value')
+    b = DelegateHash.new(Receiver.new, :b => a)
+    c = DelegateHash.new(Receiver.new, :c => b)
     
     assert_equal({
       :c => {:b => {:a => 'value'}}
@@ -570,31 +316,18 @@ class DelegateHashTest < Test::Unit::TestCase
   end
   
   #
-  # dup test
+  # == test
   #
   
-  def test_duplicate_store_is_distinct_from_parent
-    duplicate = d.dup
-    assert d.store.object_id != duplicate.store.object_id
-  end
-  
-  def test_duplicate_is_unbound
-    d.bind(r)
-    duplicate = d.dup
-    assert d.bound?
-    assert !duplicate.bound?
-  end
-  
-  def test_duplicate_stores_delegate_values_from_receiver
-    d.bind(r)
-    d[:key] = 'VALUE'
-    d[:another] = 'value'
+  def test_equals_compares_to_hash_values
+    dhash = DelegateHash.new(Receiver.new)
+    assert dhash == {:key => nil}
     
-    assert_equal 'VALUE', r.key
-    assert_equal({:another => 'value'}, d.store)
+    dhash[:key] = 'value'
+    dhash[:alt] = 'VALUE'
+    assert dhash == {:key => 'value', :alt => 'VALUE'}
     
-    duplicate = d.dup
-    
-    assert_equal({:key => 'VALUE', :another => 'value'}, duplicate.store)
+    another = DelegateHash.new(Receiver.new, {:key => 'value', :alt => 'VALUE'})
+    assert dhash == another
   end
 end

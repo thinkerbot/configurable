@@ -10,7 +10,7 @@ module Configurable
   #   end
   #
   #   sample = Sample.new
-  #   dhash = DelegateHash.new.bind(sample)
+  #   dhash = DelegateHash.new(sample)
   #
   #   sample.key = 'value'
   #   dhash[:key]                # => 'value'
@@ -41,60 +41,56 @@ module Configurable
     # The underlying data store
     attr_reader :store
   
-    # Initializes a new DelegateHash.  Note that initialize simply sets the
-    # receiver, it does NOT map stored values the same way bind does.  This
-    # allows quick, implicit binding when the store is set up beforehand.
-    #
-    # For more standard binding use: DelegateHash.new.bind(receiver)
-    def initialize(store={}, receiver=nil)
-      @store = store
+    # Initializes a new DelegateHash.  Initialize normally imports values from
+    # store to ensure it doesn't contain entries that could be stored on the
+    # receiver.  
+    # 
+    # Setting import_store to false allows quick initialization but can result
+    # in inconsistencies where the store and receiver both have values for a
+    # given key.
+    def initialize(receiver, store={}, import_store=true)
       @receiver = receiver
+      @store = store
+      
+      import(store) if import_store
     end
-
+    
     # A hash of (key, Delegate) pairs identifying which keys to delegate to the
     # receiver. 
     #
     # Note that this is an inefficent method to call.
     def delegates
-      receiver ? receiver.class.configurations : {}
+      receiver.class.configurations
     end
-
-    # Binds self to the specified receiver.  Delegate values are removed from
-    # store and sent to their writer on receiver.  If the store has no value
-    # for a delegate key, the delegate default value will be used.
-    def bind(receiver, rebind=false)
-      raise ArgumentError, "receiver cannot be nil" if receiver == nil
+    
+    # Imports stored values that can be mapped to the receiver.  The values
+    # are removed from store in the process.  Returns self.
+    #
+    # Note import is primarily used to ensure a consistent state for self.
+    # This should always work to correct inconsistency:
+    #
+    #   dhash.import(dhash.store)
+    #
+    def import(store)
       
-      if bound? && !rebind
-        if @receiver == receiver
-          return(self)
-        else
-          raise ArgumentError, "already bound to: #{@receiver}"
-        end
+      # ensure delegates are only calculated once, as an optimization
+      delegate = self.delegates
+      
+      store.keys.each do |key|
+        next unless delegate = delegates[key]
+        delegate.set(receiver, store.delete(key))
       end
       
-      @receiver = receiver
-      map(store)
       self
     end
-
-    # Returns true if self is bound to a receiver
-    def bound?
-      receiver != nil
+    
+    # Returns true if the store has entries that could be stored on the
+    # receiver.
+    def inconsistent?
+      store.keys.any? {|key| delegates[key] }
     end
-
-    # Unbinds self from the specified receiver.  Delegate values
-    # are stored in store.  Returns the unbound receiver.
-    def unbind
-      unmap(store)
-      @receiver = nil
-      self
-    end
-
-    # Retrieves the value corresponding to the key.  When bound, delegates pull
-    # values from the receiver using the delegate.reader method; otherwise the
-    # value in store will be returned.  When unbound, if the store has no value
-    # for a delegate, the delgate default value will be returned.
+    
+    # Retrieves the value for the key, either from the receiver or the store.
     def [](key)
       if delegate = delegates[key]
         delegate.get(receiver)
@@ -103,9 +99,7 @@ module Configurable
       end
     end
 
-    # Stores a value for the key.  When bound, delegates set the value in the
-    # receiver using the delegate.writer method; otherwise values are stored in
-    # store.
+    # Stores a value for the key, either on the receiver or in the store.
     def []=(key, value)
       if delegate = delegates[key]
         delegate.set(receiver, value)
@@ -126,17 +120,11 @@ module Configurable
     
     # Merges another with self.
     def merge!(another)
-      if bound?
-        (delegates.keys | another.keys).each do |key|
-          self[key] = another[key] if another.has_key?(key)
-        end
-      else
-        # optimization for the common case of an 
-        # unbound merge of another hash
-        store.merge!(another.to_hash)
+      (delegates.keys | another.keys).each do |key|
+        self[key] = another[key] if another.has_key?(key)
       end
     end
-
+    
     # Calls block once for each key-value pair stored in self.
     def each_pair # :yields: key, value
       keys.each {|key| yield(key, self[key]) }
@@ -173,55 +161,6 @@ module Configurable
     # Overrides default inspect to show the to_hash values.
     def inspect
       "#<#{self.class}:#{object_id} to_hash=#{to_hash.inspect}>"
-    end
-    
-    # Ensures duplicates are unbound and store the same values as the original.
-    def initialize_copy(orig)
-      super
-      
-      @receiver = nil
-      @store = @store.dup
-      orig.unmap(@store) if orig.bound?
-    end
-    
-    protected
-    
-    # helper to map delegate values from source to the receiver
-    def map(source) # :nodoc:
-      
-      # optimization to prevent regeneration of delegates
-      # for the duration of this method
-      delegates = self.delegates
-      
-      source_values = {}
-      source.each_key do |key|
-        if delegate = delegates[key]
-          if source_values.has_key?(delegate)
-            key = delegates.keys.find {|k| delegates[k] == delegate }
-            raise "multiple values mapped to #{key.inspect}"
-          end
-          
-          source_values[delegate] = source.delete(key)
-        end
-      end
-      
-      delegates.each_pair do |key, delegate|
-        # map the override value or the delegate default (if allowed)
-        # this ensures each config is initialized to a value unless
-        # manual initialization is specified
-        if source_values.has_key?(delegate)
-          delegate.set(receiver, source_values[delegate])
-        else
-          delegate.init(receiver)
-        end
-      end
-    end
-    
-    # helper to unmap delegates from the receiver to a target hash
-    def unmap(target) # :nodoc:
-      delegates.each_pair do |key, delegate|
-        target[key] = delegate.get(receiver)
-      end
     end
   end
 end

@@ -8,7 +8,7 @@ class DelegateTest < Test::Unit::TestCase
   attr_reader :c
   
   def setup
-    @c = Delegate.new('key', 'key=', nil)
+    @c = Delegate.new('key')
   end
   
   #
@@ -36,10 +36,11 @@ class DelegateTest < Test::Unit::TestCase
   #
   
   def test_initialize
-    c = Delegate.new('key', 'key=', 'default', :attr => 'value')
+    c = Delegate.new('key', 'key=', 'default', false, :attr => 'value')
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal 'default', c.default
+    assert_equal false, c.init?
     assert_equal({:attr => 'value'}, c.attributes)
   end
   
@@ -48,6 +49,7 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal nil, c.default
+    assert_equal true, c.init?
     assert_equal({}, c.attributes)
   end
   
@@ -99,36 +101,5 @@ class DelegateTest < Test::Unit::TestCase
     c = Delegate.new(:reader, :writer, a)
     
     assert_equal a.object_id, c.default.object_id
-  end
-  
-  #
-  # == test
-  #
-  
-  def test_another_is_equal_to_self_if_key_default_reader_and_writer_are_equal
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('key', 'key=', 'default')
-    assert config == another
-    
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('alt', 'key=', 'default')
-    assert config != another
-    
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('key', 'alt=', 'default')
-    assert config != another
-    
-    config = Delegate.new('key', 'key=', 'default')
-    another = Delegate.new('key', 'key=', 'alt')
-    assert config != another
-  end
-  
-  def test_equal_does_not_consider_attributes
-    config = Delegate.new('key')
-    another = Delegate.new('key')
-    another.attributes[:attr] = 'value'
-    
-    assert config.attributes != another.attributes
-    assert config == another
   end
 end
