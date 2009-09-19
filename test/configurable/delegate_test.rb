@@ -1,6 +1,5 @@
 require File.join(File.dirname(__FILE__), '../tap_test_helper')
 require 'configurable/delegate'
-require 'configurable/delegate_hash'
 
 class DelegateTest < Test::Unit::TestCase
   Delegate = Configurable::Delegate
@@ -20,7 +19,7 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   def test_duplicable_value_is_false_if_default_cannot_be_duplicated
-    [nil, 1, 1.1, true, false, :sym, NonDuplicable.new].each do |non_duplicable_value|
+    [nil, 1, 1.1, true, false, :sym, NonDuplicable, NonDuplicable.new].each do |non_duplicable_value|
       assert !Delegate.duplicable_value?(non_duplicable_value)
     end
   end
@@ -78,6 +77,43 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   #
+  # get test
+  #
+  
+  def test_get_calls_reader_on_receiver
+    receiver = Struct.new(:key).new("value")
+    c = Delegate.new(:key)
+    
+    assert_equal "value", c.get(receiver)
+  end
+  
+  #
+  # set test
+  #
+  
+  def test_set_calls_writer_on_receiver_with_input
+    receiver = Struct.new(:key).new(nil)
+    c = Delegate.new(:key, :key=)
+    
+    assert_equal nil, receiver.key
+    c.set(receiver, "value")
+    assert_equal "value", receiver.key
+  end
+  
+  #
+  # init test
+  #
+  
+  def test_init_sets_default_on_receiver
+    receiver = Struct.new(:key).new(nil)
+    c = Delegate.new(:key, :key=, "default")
+    
+    assert_equal nil, receiver.key
+    c.init(receiver)
+    assert_equal "default", receiver.key
+  end
+  
+  #
   # default test
   #
 
@@ -88,18 +124,22 @@ class DelegateTest < Test::Unit::TestCase
     assert_equal 'default', c.default
   end
   
-  def test_default_returns_duplicate_values
-    a = [1,2,3]
-    c = Delegate.new(:reader, :writer, a)
-  
-    assert_equal a, c.default
-    assert a.object_id != c.default.object_id
+  def test_default_duplicates_default_if_duplicable_and_duplicate_is_set
+    default = 'default'
+    c = Delegate.new(:reader, :writer, default)
+    
+    assert_equal default, c.default
+    assert default.object_id != c.default.object_id
+    
+    assert_equal default, c.default(false)
+    assert default.object_id == c.default(false).object_id
   end
   
   def test_default_does_not_duplicate_if_default_is_not_duplicable
-    a = NonDuplicable.new
-    c = Delegate.new(:reader, :writer, a)
+    default = NonDuplicable.new
+    c = Delegate.new(:reader, :writer, default)
     
-    assert_equal a.object_id, c.default.object_id
+    assert_equal default, c.default
+    assert_equal default.object_id, c.default.object_id
   end
 end
