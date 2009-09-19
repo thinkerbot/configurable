@@ -387,7 +387,7 @@ class ConfigParser
   end
   
   # Adds a hash of delegates (for example the configurations for a Configurable
-  # class) to self.  Delegates are added like:
+  # class) to self.  Configs are added like:
   #
   #   define(key, delegate.default, delegate.attributes)
   #

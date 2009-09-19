@@ -1,5 +1,4 @@
-require 'configurable/nest_delegate'
-require 'configurable/delegate_hash'
+require 'configurable/config_hash'
 require 'configurable/indifferent_access'
 require 'configurable/validation'
 
@@ -12,12 +11,12 @@ module Configurable
   module ClassMethods
     CONFIGURATIONS_CLASS = Hash
     
-    # A hash of (key, Delegate) pairs tracking configuration delegates set to self.
-    attr_reader :delegates
+    # A hash of (key, Config) pairs tracking configs defined on self.
+    attr_reader :config_registry
     
     def self.initialize(child)
-      unless child.instance_variable_defined?(:@delegates)
-        child.instance_variable_set(:@delegates, CONFIGURATIONS_CLASS.new)
+      unless child.instance_variable_defined?(:@config_registry)
+        child.instance_variable_set(:@config_registry, CONFIGURATIONS_CLASS.new)
       end
       
       unless child.instance_variable_defined?(:@use_indifferent_access)
@@ -51,7 +50,7 @@ module Configurable
       
       ancestors.reverse.each do |ancestor|
         next unless ancestor.kind_of?(ClassMethods)
-        configurations.merge!(ancestor.delegates)
+        configurations.merge!(ancestor.config_registry)
       end
       
       configurations
@@ -166,7 +165,7 @@ module Configurable
       
       # define the configuration
       init = attributes.has_key?(:init) ? attributes.delete(:init) : true
-      delegates[key] = Delegate.new(reader, writer, value, init, attributes)
+      config_registry[key] = Config.new(reader, writer, value, init, attributes)
     end
     
     # Adds nested configurations to self.  Nest creates a new configurable
@@ -336,7 +335,7 @@ module Configurable
       
       # define the configuration
       init = attributes.has_key?(:init) ? attributes.delete(:init) : true
-      delegates[key] = NestDelegate.new(configurable_class, reader, writer, init, attributes)
+      config_registry[key] = NestConfig.new(configurable_class, reader, writer, init, attributes)
       check_infinite_nest(configurable_class)
     end  
     
@@ -407,7 +406,7 @@ module Configurable
       raise "infinite nest detected" if klass == self
       
       klass.configurations.each_value do |delegate|
-        if delegate.kind_of?(NestDelegate)
+        if delegate.kind_of?(NestConfig)
           check_infinite_nest(delegate.nest_class)
         end
       end

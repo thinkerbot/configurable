@@ -1,13 +1,12 @@
 module Configurable
   
-  # Utility methods to dump and load configurations, particularly nested
-  # configurations.
+  # Utility methods to dump and load Configurable class configurations.
   module Utils
     module_function
     
-    default_dump_block = lambda do |key, delegate|
+    default_dump_block = lambda do |key, config|
       # note: this causes order to be lost...
-      YAML.dump({key => delegate.default})[5..-1]
+      YAML.dump({key => config.default})[5..-1]
     end
     
     # A block performing the default YAML dump.
@@ -20,9 +19,9 @@ module Configurable
     # A block performing the default load.
     DEFAULT_LOAD = default_load_block
     
-    # Dumps delegates to target as yaml.  Delegates are output in order, and
-    # symbol keys are be stringified if delegates has been extended with
-    # IndifferentAccess (this produces a nicer config file).
+    # Dumps configurations to target as yaml.  Configs are output in order,
+    # and symbol keys are be stringified if configurations has been extended
+    # with IndifferentAccess (this produces a nicer config file).
     #
     #   class DumpExample
     #     include Configurable
@@ -37,7 +36,7 @@ module Configurable
     #   # str: value
     #   # }
     #
-    # Dump may be provided with a block to format each (key, delegate) pair;
+    # Dump may be provided with a block to format each (key, Config) pair;
     # the block results are pushed directly to target, so newlines must be
     # specified manually.
     # 
@@ -54,27 +53,27 @@ module Configurable
     #   #
     #   # }
     #
-    def dump(delegates, target="")
-      return dump(delegates, target, &DEFAULT_DUMP) unless block_given?
+    def dump(configs, target="")
+      return dump(configs, target, &DEFAULT_DUMP) unless block_given?
       
-      stringify = delegates.kind_of?(IndifferentAccess)
-      delegates.each_pair do |key, delegate|
+      stringify = configs.kind_of?(IndifferentAccess)
+      configs.each_pair do |key, config|
         key = key.to_s if stringify && key.kind_of?(Symbol)
-        target << yield(key, delegate)
+        target << yield(key, config)
       end
       
       target
     end
     
-    # Dumps the delegates to the specified file.  If recurse is true, nested
-    # configurations are each dumped to their own file, based on the nesting
+    # Dumps the configurations to the specified file.  If recurse is true,
+    # nested configs are each dumped to their own file, based on the nesting
     # key.  For instance if you nested a in b:
     #
     #   a_configs = {
-    #     'key' => Delegate.new(:r, :w, 'a default')}
+    #     'key' => Config.new(:r, :w, 'a default')}
     #   b_configs = {
-    #     'key' => Delegate.new(:r, :w, 'b default')}
-    #     'a' => Delegate.new(:r, :w, DelegateHash.new(a_configs))}}
+    #     'key' => Config.new(:r, :w, 'b default')}
+    #     'a' => Config.new(:r, :w, ConfigHash.new(a_configs))}}
     #
     #   Utils.dump_file(b_configs, 'b.yml')
     #   File.read('b.yml')         # => "key: b default"
@@ -90,25 +89,25 @@ module Configurable
     # preview dumps are always returned by dump_file.
     #
     # ==== Note
-    # For load_file to correctly load a recursive dump, all delegate hashes
-    # must use String keys.  Symbol keys are allowed if the delegate hashes use
+    # For load_file to correctly load a recursive dump, all config hashes
+    # must use String keys.  Symbol keys are allowed if the config hashes use
     # IndifferentAccess; all other keys will not load properly.  By default 
     # Configurable is set up to satisfy these conditions.
     #
     # 1.8 Bug: Currently dump_file with recurse=false will cause order to be
     # lost in nested configs. See http://bahuvrihi.lighthouseapp.com/projects/21202-configurable/tickets/8
-    def dump_file(delegates, path, recurse=false, preview=false, &block)
-      return dump_file(delegates, path, recurse, preview, &DEFAULT_DUMP) unless block_given?
+    def dump_file(configs, path, recurse=false, preview=false, &block)
+      return dump_file(configs, path, recurse, preview, &DEFAULT_DUMP) unless block_given?
       
       current = ""
       dumps = [[path, current]]
       
-      dump(delegates, current) do |key, delegate|
-        if recurse && delegate.kind_of?(NestDelegate)
-          dumps.concat(dump_file(delegate.nest_class.configurations, recursive_path(key, path), true, true, &block))
+      dump(configs, current) do |key, config|
+        if recurse && config.kind_of?(NestConfig)
+          dumps.concat(dump_file(config.nest_class.configurations, recursive_path(key, path), true, true, &block))
           ""
         else
-          yield(key, delegate)
+          yield(key, config)
         end
       end
       

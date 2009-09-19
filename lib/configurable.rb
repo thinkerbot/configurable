@@ -13,7 +13,7 @@ require 'configurable/module_methods'
 #   end
 #
 #   c = ConfigClass.new
-#   c.config.class         # => Configurable::DelegateHash
+#   c.config.class         # => Configurable::ConfigHash
 #   c.config               # => {:one => 'one', :two => 'two', :three => 'three'}
 #
 # Instances have a <tt>config</tt> object that acts like a forwarding hash; 
@@ -131,7 +131,7 @@ require 'configurable/module_methods'
 #                during bind.  Specify when you manually initialize a config
 #                variable.
 # type::         Specifies the type of option ConfigParser generates for this
-#                Delegate (ex: :switch, :flag, :list, :hidden)
+#                Config (ex: :switch, :flag, :list, :hidden)
 # desc::         The description string used in the ConfigParser help
 # long::         The long option (default: key)
 # short::        The short option.
@@ -154,7 +154,7 @@ require 'configurable/module_methods'
 module Configurable
   autoload(:Utils, 'configurable/utils')
 
-  # A DelegateHash bound to self
+  # A ConfigHash bound to self
   attr_reader :config
   
   # Initializes config, if necessary, and then calls super.  If initialize
@@ -225,34 +225,34 @@ module Configurable
   # Initializes config. Default config values 
   # are overridden as specified by overrides.
   def initialize_config(overrides={}, log=false)
-    @config = DelegateHash.new(self, overrides, false)
-    delegates = @config.delegates
+    @config = ConfigHash.new(self, overrides, false)
+    configs = @config.configs
     
     initial_values = {}
     overrides.each_key do |key|
-      if delegate = delegates[key]
+      if config = configs[key]
 
-        unless delegate.init?
-          key = delegates.keys.find {|k| delegates[k] == delegate }
+        unless config.init?
+          key = configs.keys.find {|k| configs[k] == config }
           raise "initialization values are not allowed for: #{key.inspect}"
         end
 
-        if initial_values.has_key?(delegate)
-          key = delegates.keys.find {|k| delegates[k] == delegate }
+        if initial_values.has_key?(config)
+          key = configs.keys.find {|k| configs[k] == config }
           raise "multiple values map to config: #{key.inspect}"
         end
 
-        initial_values[delegate] = overrides.delete(key)
+        initial_values[config] = overrides.delete(key)
       end
     end
     
-    delegates.each_pair do |key, delegate|
-      next unless delegate.init?
+    configs.each_pair do |key, config|
+      next unless config.init?
 
-      if initial_values.has_key?(delegate)
-        delegate.set(self, initial_values[delegate])
+      if initial_values.has_key?(config)
+        config.set(self, initial_values[config])
       else
-        delegate.init(self)
+        config.init(self)
       end
     end
   end

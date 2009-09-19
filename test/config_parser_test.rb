@@ -4,9 +4,9 @@ require 'configurable'
 
 class ConfigParserTest < Test::Unit::TestCase
   Option = ConfigParser::Option
-  Delegate = Configurable::Delegate
-  NestDelegate = Configurable::NestDelegate
-  DelegateHash = Configurable::DelegateHash
+  Config = Configurable::Config
+  NestConfig = Configurable::NestConfig
+  ConfigHash = Configurable::ConfigHash
   
   attr_reader :c
   
@@ -425,8 +425,8 @@ configurations:
   
   def test_add_nests_delegates_according_to_nest
     delegates = {
-      :one => Delegate.new(:one, :one=, 'one'),
-      :two => Delegate.new(:two, :two=, 'two'),
+      :one => Config.new(:one, :one=, 'one'),
+      :two => Config.new(:two, :two=, 'two'),
     }
     
     c.add(delegates, "nest")
@@ -435,7 +435,7 @@ configurations:
   
   def test_add_nests_switches_properly
     delegates = {
-      :one => Delegate.new(:one, :one=, 'one', :type => :switch)
+      :one => Config.new(:one, :one=, 'one', :type => :switch)
     }
     
     c.add(delegates, "nest")
@@ -450,8 +450,8 @@ configurations:
   
   def test_add_adds_nest_delegates_normally
     delegates = {
-      :one => NestDelegate.new(ConfigurableClass, :one, :one=),
-      :two => Delegate.new(:two, :two=, 'two')
+      :one => NestConfig.new(ConfigurableClass, :one, :one=),
+      :two => Config.new(:two, :two=, 'two')
     }
     
     c.add(delegates)
@@ -460,8 +460,8 @@ configurations:
   
   def test_add_recusively_adds_delegates_from_nest_delegates_with_nest_type
     delegates = {
-      :one => NestDelegate.new(ConfigurableClass, :one, :one=, :type => :nest),
-      :two => Delegate.new(:two, :two=, 'two')
+      :one => NestConfig.new(ConfigurableClass, :one, :one=, :type => :nest),
+      :two => Config.new(:two, :two=, 'two')
     }
     
     c.add(delegates)
@@ -470,8 +470,8 @@ configurations:
   
   def test_add_does_not_add_nested_delegates_if_the_option_if_type_is_hidden
     delegates = {
-      :one => NestDelegate.new(ConfigurableClass, :one, :one=, :type => :hidden),
-      :two => Delegate.new(:two, :two=, 'two')
+      :one => NestConfig.new(ConfigurableClass, :one, :one=, :type => :hidden),
+      :two => Config.new(:two, :two=, 'two')
     }
     
     c.add(delegates)
@@ -480,8 +480,8 @@ configurations:
   
   def test_add_raises_error_for_nesting_conflict
     delegates = {
-      :one => NestDelegate.new(ConfigurableClass, :one, :one=, :type => :nest, :declaration_order => 1),
-      'one:one' => Delegate.new(:two, :two=, 'two', :declaration_order => 0)
+      :one => NestConfig.new(ConfigurableClass, :one, :one=, :type => :nest, :declaration_order => 1),
+      'one:one' => Config.new(:two, :two=, 'two', :declaration_order => 0)
     }
     
     e = assert_raises(ArgumentError) { c.add(delegates) }
@@ -857,7 +857,7 @@ specials:
   
   def test_to_s_format_for_nested_delegates
     delegates = {
-      :opt => Delegate.new(:opt, :opt=, 'value', :desc => 'desc', :short => 'o', :type => :switch),
+      :opt => Config.new(:opt, :opt=, 'value', :desc => 'desc', :short => 'o', :type => :switch),
     }
 
     c.add(delegates, "nest")

@@ -1,10 +1,9 @@
 module Configurable
   
-  # Delegates are used by DelegateHash to determine how to delegate read/write
-  # operations to a receiver.  Delegates are the mechanism through which
-  # configurations are managed and track metadata related to the presentation
-  # of configurations in various contexts.
-  class Delegate
+  # Configs are used by ConfigHash to determine how to delegate read/write
+  # operations to a receiver.  Configs also track metadata related to their
+  # presentation in various contexts.
+  class Config
     class << self
       
       # Determines if the value is duplicable.  Non-duplicable values 
@@ -24,12 +23,12 @@ module Configurable
     # The writer method called on a receiver during set
     attr_reader :writer
     
-    # An hash of metadata for self, often used to indicate how a delegate is
+    # An hash of metadata for self, often used to indicate how a config is
     # presented in different contexts (ex on the command line, in a web form,
     # or a desktop app).
     attr_reader :attributes
 
-    # Initializes a new Delegate.
+    # Initializes a new Config.
     def initialize(reader, writer="#{reader}=", default=nil, init=true, attributes={})
       self.reader = reader
       self.writer = writer
@@ -40,7 +39,7 @@ module Configurable
     end
     
     # Returns the default value.  If duplicate is specified and the default
-    # may be duplicated (see Delegate.duplicable_value?) then a duplicate
+    # may be duplicated (see Config.duplicable_value?) then a duplicate
     # of the default is returned.
     def default(duplicate=true)
       duplicate && @duplicable ? @default.dup : @default
@@ -63,7 +62,7 @@ module Configurable
     end
     
     # Sets the default value on the receiver.  Normally this method is only
-    # called by a Configurable during initialize_config, and only if init?
+    # called during Configurable#initialize_config, and only then when init?
     # returns true.
     def init(receiver)
       receiver.send(writer, default)
@@ -88,7 +87,7 @@ module Configurable
     # reader may also have to be overridden.
     def default=(value) # :nodoc:
       @default = value
-      @duplicable = Delegate.duplicable_value?(value)
+      @duplicable = Config.duplicable_value?(value)
     end
     
     # Sets the reader for self, assuring the reader is not nil.

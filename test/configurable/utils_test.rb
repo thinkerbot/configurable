@@ -37,9 +37,9 @@ class Configurable::UtilsTest < Test::Unit::TestCase
   end
   
   
-  Delegate = Configurable::Delegate
-  NestDelegate = Configurable::NestDelegate
-  DelegateHash = Configurable::DelegateHash
+  Config = Configurable::Config
+  NestConfig = Configurable::NestConfig
+  ConfigHash = Configurable::ConfigHash
   IndifferentAccess = Configurable::IndifferentAccess
   
   DEFAULTS = {
@@ -100,7 +100,7 @@ str: value
   def test_dump_dumps_delegate_defaults_to_target_as_yaml
     delegates = {}
     DEFAULTS.each_pair do |key, value|
-      delegates[key] = Delegate.new(:r, :w, value)
+      delegates[key] = Config.new(:r, :w, value)
     end
     
     assert_equal DEFAULTS, YAML.load(dump(delegates))
@@ -121,7 +121,7 @@ str: value
   def test_dump_dumps_delegates_to_target_in_each_pair_order
     delegates = OrderedHash.new(:sym, 'str', :array, :hash)
     DEFAULTS.each_pair do |key, value|
-      delegates[key] = Delegate.new(:r, :w, value)
+      delegates[key] = Config.new(:r, :w, value)
     end
     
     assert_equal %q{
@@ -140,7 +140,7 @@ str: value
     delegates = OrderedHash.new(:sym, 'str', :array, :hash)
     delegates.extend(IndifferentAccess)
     DEFAULTS.each_pair do |key, value|
-      delegates[key] = Delegate.new(:r, :w, value)
+      delegates[key] = Config.new(:r, :w, value)
     end
 
     assert_equal %q{
@@ -159,7 +159,7 @@ hash:
     delegates = OrderedHash.new(:sym, 'str', :array, :hash)
     delegates.extend(IndifferentAccess)
     DEFAULTS.each_pair do |key, value|
-      delegates[key] = Delegate.new(:r, :w, value)
+      delegates[key] = Config.new(:r, :w, value)
     end
     
     result = dump(delegates) do |key, value|
@@ -180,7 +180,7 @@ hash:
     delegates = OrderedHash.new(:sym, 'str', :array, :hash)
     delegates.extend(IndifferentAccess)
     DEFAULTS.each_pair do |key, value|
-      delegates[key] = Delegate.new(:r, :w, value)
+      delegates[key] = Config.new(:r, :w, value)
     end
     
     assert !File.exists?(path)

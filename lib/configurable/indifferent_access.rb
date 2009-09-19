@@ -7,7 +7,7 @@ module Configurable
   # Note that the indifference produced by this module is very thin indeed.
   # Strings may still be used as keys through store/fetch, and
   # existing string keys are not changed in any way.  Nonetheless,
-  # these methods are sufficient for Configurable and DelegateHash.
+  # these methods are sufficient for Configurable and ConfigHash.
   module IndifferentAccess
     
     # Symbolizes string keys and calls super.

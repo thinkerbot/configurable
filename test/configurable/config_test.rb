@@ -1,17 +1,17 @@
 require File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable/delegate'
+require 'configurable/config'
 
-class DelegateTest < Test::Unit::TestCase
-  Delegate = Configurable::Delegate
+class ConfigTest < Test::Unit::TestCase
+  Config = Configurable::Config
   
   attr_reader :c
   
   def setup
-    @c = Delegate.new('key')
+    @c = Config.new('key')
   end
   
   #
-  # Delegate.duplicable_value?
+  # Config.duplicable_value?
   #
   
   class NonDuplicable
@@ -20,13 +20,13 @@ class DelegateTest < Test::Unit::TestCase
   
   def test_duplicable_value_is_false_if_default_cannot_be_duplicated
     [nil, 1, 1.1, true, false, :sym, NonDuplicable, NonDuplicable.new].each do |non_duplicable_value|
-      assert !Delegate.duplicable_value?(non_duplicable_value)
+      assert !Config.duplicable_value?(non_duplicable_value)
     end
   end
   
   def test_duplicable_value_is_true_if_default_can_be_duplicated
     [{}, [], Object.new].each do |duplicable_value|
-      assert Delegate.duplicable_value?(duplicable_value)
+      assert Config.duplicable_value?(duplicable_value)
     end
   end
   
@@ -35,7 +35,7 @@ class DelegateTest < Test::Unit::TestCase
   #
   
   def test_initialize
-    c = Delegate.new('key', 'key=', 'default', false, :attr => 'value')
+    c = Config.new('key', 'key=', 'default', false, :attr => 'value')
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal 'default', c.default
@@ -44,7 +44,7 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   def test_initialize_using_defaults
-    c = Delegate.new('key')
+    c = Config.new('key')
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal nil, c.default
@@ -53,12 +53,12 @@ class DelegateTest < Test::Unit::TestCase
   end
   
   def test_reader_may_not_be_set_to_nil
-    e = assert_raises(ArgumentError) { Delegate.new(nil) }
+    e = assert_raises(ArgumentError) { Config.new(nil) }
     assert_equal "reader may not be nil", e.message
   end
   
   def test_writer_may_not_be_set_to_nil
-    e = assert_raises(ArgumentError) { Delegate.new('key', nil) }
+    e = assert_raises(ArgumentError) { Config.new('key', nil) }
     assert_equal "writer may not be nil", e.message
   end
   
@@ -82,7 +82,7 @@ class DelegateTest < Test::Unit::TestCase
   
   def test_get_calls_reader_on_receiver
     receiver = Struct.new(:key).new("value")
-    c = Delegate.new(:key)
+    c = Config.new(:key)
     
     assert_equal "value", c.get(receiver)
   end
@@ -93,7 +93,7 @@ class DelegateTest < Test::Unit::TestCase
   
   def test_set_calls_writer_on_receiver_with_input
     receiver = Struct.new(:key).new(nil)
-    c = Delegate.new(:key, :key=)
+    c = Config.new(:key, :key=)
     
     assert_equal nil, receiver.key
     c.set(receiver, "value")
@@ -106,7 +106,7 @@ class DelegateTest < Test::Unit::TestCase
   
   def test_init_sets_default_on_receiver
     receiver = Struct.new(:key).new(nil)
-    c = Delegate.new(:key, :key=, "default")
+    c = Config.new(:key, :key=, "default")
     
     assert_equal nil, receiver.key
     c.init(receiver)
@@ -120,13 +120,13 @@ class DelegateTest < Test::Unit::TestCase
   def test_default_returns_default
     assert_equal nil, c.default
     
-    c = Delegate.new(:reader, :writer, 'default')
+    c = Config.new(:reader, :writer, 'default')
     assert_equal 'default', c.default
   end
   
   def test_default_duplicates_default_if_duplicable_and_duplicate_is_set
     default = 'default'
-    c = Delegate.new(:reader, :writer, default)
+    c = Config.new(:reader, :writer, default)
     
     assert_equal default, c.default
     assert default.object_id != c.default.object_id
@@ -137,7 +137,7 @@ class DelegateTest < Test::Unit::TestCase
   
   def test_default_does_not_duplicate_if_default_is_not_duplicable
     default = NonDuplicable.new
-    c = Delegate.new(:reader, :writer, default)
+    c = Config.new(:reader, :writer, default)
     
     assert_equal default, c.default
     assert_equal default.object_id, c.default.object_id

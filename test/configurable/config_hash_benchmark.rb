@@ -2,9 +2,9 @@ require 'test/unit'
 require 'benchmark'
 require 'configurable'
 
-class DelegateHashBenchmark < Test::Unit::TestCase
-  Delegate = Configurable::Delegate
-  DelegateHash = Configurable::DelegateHash
+class ConfigHashBenchmark < Test::Unit::TestCase
+  Config = Configurable::Config
+  ConfigHash = Configurable::ConfigHash
   
   class Receiver
     include Configurable
@@ -34,7 +34,7 @@ class DelegateHashBenchmark < Test::Unit::TestCase
     puts "test_merge_speed"
     
     r = Receiver.new
-    d = DelegateHash.new
+    d = ConfigHash.new
     hash = {}
     
     Benchmark.bm(25) do |x|
