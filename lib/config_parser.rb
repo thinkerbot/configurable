@@ -406,7 +406,7 @@ class ConfigParser
   #   end
   #  
   #   psr = ConfigParser.new
-  #   psr.add(NestClass.delegates)
+  #   psr.add(NestClass.configurations)
   #   psr.parse('--nest:key value')
   #
   #   psr.config                 # => {'nest:key' => 'value'}
@@ -422,10 +422,10 @@ class ConfigParser
       key = nesting ? "#{nesting}:#{key}" : key
       
       case delegate[:type]
-      when :nest
-        add(delegate.nest_class.configurations, key)
       when :hidden
         next
+      when :nest
+        add(delegate.nest_class.configurations, key)
       else
         define(key, delegate.default, delegate.attributes)
       end

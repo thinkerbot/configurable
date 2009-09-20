@@ -91,7 +91,7 @@ module Configurable
     #
     # Primarily used to create a consistent state for self (see above).
     def import(store)
-      configs = self.configs # only calculated once, as an optimization
+      configs = self.configs # cache as an optimization
       store.keys.each do |key|
         next unless config = configs[key]
         config.set(receiver, store.delete(key))
@@ -103,7 +103,7 @@ module Configurable
     # Returns true if the store has entries that can be stored on the
     # receiver.
     def inconsistent?
-      configs = self.configs # only calculated once, as an optimization
+      configs = self.configs # cache as an optimization
       store.keys.any? {|key| configs[key] }
     end
     
@@ -132,13 +132,22 @@ module Configurable
 
     # True if the key is a key in configs or store.
     def has_key?(key)
-      configs.has_key?(key) || store.has_key?(key) 
+      configs[key] != nil || store.has_key?(key) 
     end
     
     # Merges another with self.
     def merge!(another)
+      # cache configs and inline set as a significant optimization
+      configs = self.configs
       (configs.keys | another.keys).each do |key|
-        self[key] = another[key] if another.has_key?(key)
+        next unless another.has_key?(key)
+        
+        value = another[key]
+        if config = configs[key]
+          config.set(receiver, value)
+        else
+          store[key] = value
+        end
       end
     end
     

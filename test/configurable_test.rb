@@ -23,33 +23,55 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class ConfigClass
     include Configurable
-  
     config :one, 'one'
     config :two, 'two'
     config :three, 'three'
-  
   end
   
-  class SubClass < ConfigClass
+  class ValidationClass
+    include Configurable
     config(:one, 'one') {|v| v.upcase }
     config :two, 2, &c.integer
   end
-  
-  class DocAlternativeClass
+
+  module A
     include Configurable
+    config :a, 'a'
+    config :b, 'b'
+  end
+
+  class B
+    include A
+  end
+
+  class C < B
+    config :b, 'B'
+    config :c, 'C'
+  end
   
+  class NestingClass
+    include Configurable
+    config :one, 'one'
+    nest :two do
+      config :three, 'three'
+    end
+  end
+  
+  class AlternativeClass
+    include Configurable
+
     config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
-    
+
     def get_sym
       @sym
     end
-  
+
     def set_sym(input)
       @sym = input.to_sym
     end
   end
-  
-  class DocAttributesClass 
+
+  class AttributesClass
     include Configurable
     block = c.register(:type => :upcase) {|v| v.upcase }
 
@@ -59,7 +81,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_documentation
     c = ConfigClass.new
-    assert_equal(ConfigHash, c.config.class)
+    assert_equal Configurable::ConfigHash, c.config.class
     assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config)
   
     c.config[:one] = 'ONE'
@@ -67,26 +89,37 @@ class ConfigurableTest < Test::Unit::TestCase
   
     c.one = 1           
     assert_equal({:one => 1, :two => 'two', :three => 'three'}, c.config)
-    
+  
     c.config[:undeclared] = 'value'
     assert_equal({:undeclared => 'value'}, c.config.store)
   
-    s = SubClass.new
-    assert_equal({:one => 'ONE', :two => 2, :three => 'three'}, s.config)
-    s.one = 'aNothER'             
-    assert_equal 'ANOTHER', s.one
+    ###
+    c = ValidationClass.new
+    assert_equal({:one => 'ONE', :two => 2}, c.config)
   
-    s.two = -2
-    assert_equal(-2, s.two)
-    s.two = "3"
-    assert_equal 3, s.two
-    e = assert_raises(Validation::ValidationError) { s.two = nil }
-    assert_equal "expected [Integer] but was: nil", e.message
-    
-    e = assert_raises(Validation::ValidationError) { s.two = 'str' }
-    assert_equal "expected [Integer] but was: \"str\"", e.message
-    
-    alt = DocAlternativeClass.new
+    c.one = 'aNothER'             
+    assert_equal 'ANOTHER', c.one
+  
+    c.two = -2
+    assert_equal -2, c.two
+    c.two = "3"
+    assert_equal 3, c.two
+    assert_raises(Configurable::Validation::ValidationError) { c.two = nil }
+    assert_raises(Configurable::Validation::ValidationError) { c.two = 'str' }
+
+    ###
+    assert_equal({:a => 'a', :b => 'b'}, B.new.config.to_hash)
+    assert_equal({:a => 'a', :b => 'B', :c => 'C'}, C.new.config.to_hash)
+
+    ###
+    c = NestingClass.new
+    assert_equal({:one => 'one', :two => {:three => 'three'}}, c.config.to_hash)
+  
+    c.two.three = 'THREE'
+    assert_equal 'THREE', c.config[:two][:three]
+  
+    ###
+    alt = AlternativeClass.new
     assert_equal false, alt.respond_to?(:sym)
     assert_equal false, alt.respond_to?(:sym=)
     
@@ -95,9 +128,10 @@ class ConfigurableTest < Test::Unit::TestCase
   
     alt.set_sym('two')
     assert_equal :two, alt.config[:sym]
-    
-    assert_equal :upcase, DocAttributesClass.configurations[:a][:type]
-    assert_equal :upcase, DocAttributesClass.configurations[:b][:type]
+  
+    ###
+    assert_equal :upcase, AttributesClass.configurations[:a][:type]
+    assert_equal :upcase, AttributesClass.configurations[:b][:type]
   end
   
   #
@@ -748,7 +782,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'VALUE', s.upcase
     assert_equal 1, s.int
     assert_equal 'value', s.config[:store]
-    assert_equal [:key, :upcase, :int], s.config.delegates.keys
+    assert_equal [:key, :upcase, :int], s.config.configs.keys
     
     deserialized = YAML.load(YAML.dump(s))
     
@@ -757,6 +791,6 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'VALUE', deserialized.upcase
     assert_equal 1, deserialized.int
     assert_equal 'value', deserialized.config[:store]
-    assert_equal [:key, :upcase, :int], deserialized.config.delegates.keys
+    assert_equal [:key, :upcase, :int], deserialized.config.configs.keys
   end
 end

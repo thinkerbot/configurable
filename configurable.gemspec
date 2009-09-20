@@ -31,11 +31,12 @@ Gem::Specification.new do |s|
     lib/config_parser/utils.rb
     lib/configurable.rb
     lib/configurable/class_methods.rb
-    lib/configurable/delegate.rb
-    lib/configurable/delegate_hash.rb
+    lib/configurable/config.rb
+    lib/configurable/config_hash.rb
     lib/configurable/indifferent_access.rb
     lib/configurable/module_methods.rb
-    lib/configurable/validation.rb
+    lib/configurable/nest_config.rb
     lib/configurable/utils.rb
+    lib/configurable/validation.rb
   }
 end

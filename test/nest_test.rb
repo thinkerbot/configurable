@@ -161,8 +161,8 @@ class NestTest < Test::Unit::TestCase
   
   class NestMethodsWithoutAccessors
     include Configurable
-    nest :no_reader, nil, :instance_reader => false
-    nest :no_writer, nil, :instance_writer => false
+    nest :no_reader, nil, :reader => false
+    nest :no_writer, nil, :writer => false
   end
   
   def test_nest_does_not_create_instance_accessors_unless_specified
@@ -176,20 +176,18 @@ class NestTest < Test::Unit::TestCase
   
   class NestInvalidInstanceAccessors
     include Configurable
-    nest :no_reader, nil, :instance_reader => false
-    nest :no_writer, nil, :instance_writer => false
   end
   
-  def test_nest_raises_error_if_no_instance_reader_and_writer_are_specified
+  def test_nest_raises_error_if_no_reader_and_writer_are_specified
     e = assert_raises(RuntimeError) do
-      NestInvalidInstanceAccessors.send(:nest, :a, nil, :instance_reader => nil)
+      NestInvalidInstanceAccessors.send(:nest, :a, nil, :reader => nil)
     end
-    assert_equal ":instance_reader attribute cannot be nil", e.message
+    assert_equal ":reader attribute cannot be nil", e.message
     
     e = assert_raises(RuntimeError) do
-      NestInvalidInstanceAccessors.send(:nest, :b, nil, :instance_writer => nil)
+      NestInvalidInstanceAccessors.send(:nest, :b, nil, :writer => nil)
     end
-    assert_equal ":instance_writer attribute cannot be nil", e.message
+    assert_equal ":writer attribute cannot be nil", e.message
   end
   
   #

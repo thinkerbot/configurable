@@ -12,6 +12,8 @@
 * added scan method to ConfigParser
 * ConfigParser can no longer ignore unknown options
 * added configurable option breaks to ConfigParser
+* refactored Delegate to Config, and simplified
+  implementation for nesting to use NestConfig
 
 == 0.5.0 / 2009-05-25
 

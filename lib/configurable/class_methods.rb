@@ -6,32 +6,33 @@ autoload(:ConfigParser, 'config_parser')
 
 module Configurable
   
-  # ClassMethods extends classes that include Configurable and
-  # provides methods for declaring configurations.
+  # ClassMethods extends classes that include Configurable and provides methods
+  # for declaring configurations.
   module ClassMethods
     CONFIGURATIONS_CLASS = Hash
     
-    # A hash of (key, Config) pairs tracking configs defined on self.
+    # A hash of (key, Config) pairs tracking configs defined on self.  See
+    # configurations for all configs declared across all ancestors.
     attr_reader :config_registry
     
-    def self.initialize(child)
-      unless child.instance_variable_defined?(:@config_registry)
-        child.instance_variable_set(:@config_registry, CONFIGURATIONS_CLASS.new)
+    def self.initialize(base)  # :nodoc:
+      unless base.instance_variable_defined?(:@config_registry)
+        base.instance_variable_set(:@config_registry, CONFIGURATIONS_CLASS.new)
       end
       
-      unless child.instance_variable_defined?(:@use_indifferent_access)
-        child.instance_variable_set(:@use_indifferent_access, true)
+      unless base.instance_variable_defined?(:@use_indifferent_access)
+        base.instance_variable_set(:@use_indifferent_access, true)
       end
       
-      unless child.instance_variable_defined?(:@configurations)
-        child.instance_variable_set(:@configurations, nil)
+      unless base.instance_variable_defined?(:@configurations)
+        base.instance_variable_set(:@configurations, nil)
       end
     end
     
     # Parses configurations from argv in a non-destructive manner by generating
     # a ConfigParser using the configurations for self.  Returns an array like
     # [args, config] where the args are the arguments that remain after parsing,
-    # and config is a hash of the parsed configs. The parser will is yielded to
+    # and config is a hash of the parsed configs. The parser is yielded to
     # the block, if given, to register additonal options.  
     #
     # See ConfigParser#parse for more information.
@@ -48,6 +49,15 @@ module Configurable
       [args, parser.config]
     end
     
+    # A hash of (key, Config) pairs representing all configurations defined
+    # on this class or inherited from ancestors.  The configurations hash is
+    # generated on each call to ensure it accurately reflects any configs
+    # added on ancestors. This slows down initialization and config access
+    # through instance.config.
+    #
+    # Call cache_configurations after all configs have been declared in order
+    # to prevent regeneration of configurations and to significantly improve
+    # performance.
     def configurations
       return @configurations if @configurations
       
@@ -62,15 +72,11 @@ module Configurable
       configurations
     end
     
-    # Sets configurations to symbolize keys for AGET ([]) and ASET([]=)
-    # operations, or not.  By default, configurations will use
-    # indifferent access.
-    def cache_configurations(input=true)
+    # Caches the configurations hash so as to improve peformance.  Call
+    # with on set to false to turn off caching.
+    def cache_configurations(on=true)
       @configurations = nil
-      
-      if input
-        @configurations = self.configurations
-      end
+      @configurations = self.configurations if on
     end
     
     protected
@@ -80,6 +86,13 @@ module Configurable
     # indifferent access.
     def use_indifferent_access(input=true)
       @use_indifferent_access = input
+      return unless @configurations
+      
+      if @use_indifferent_access
+        @configurations.extend(IndifferentAccess)
+      else
+        @configurations = @configurations.dup
+      end
     end
 
     # Declares a class configuration and generates the associated accessors. 
@@ -148,17 +161,20 @@ module Configurable
     # Several attributes may be specified to modify how a config is constructed.
     # Attribute keys should be specified as symbols.
     #
-    # Attribute::             Description            
+    # Attribute::             Description  
+    # init::                  When set to false the config will not initialize
+    #                         during initialize_config. (default: true)
     # reader::                The method used to read the configuration.
     #                         (default: key)
     # writer::                The method used to write the configuration
     #                         (default: "#{key}=")
     #
-    # Neither attribute may be set to nil, but they may be set to non-default
-    # values.  In that case, config_attr will register the method names as
-    # provided, but it will not define the methods themselves. Specifying true
-    # uses and defines the default methods.  Specifying false uses the default
-    # method name, but does not define the method itself.
+    # Neither reader nor writer may be set to nil, but they may be set to
+    # non-default values.  In that case, config_attr will register the method
+    # names as provided, but it will not define the methods themselves.
+    # Specifying true defines the default methods.  Specifying false makes
+    # the config expect the default method name, but does not define the method
+    # itself.
     #
     # Any additional attributes are registered with the configuration.
     def config_attr(key, value=nil, attributes={}, &block)
@@ -258,46 +274,19 @@ module Configurable
     #
     # === Attributes
     #
-    # Nest provides a number of attributes that can modify how a nest is
-    # constructed.  Attribute keys should be specified as symbols.
+    # Nest uses the same attributes as config_attr, with a couple additions:
     #
     # Attribute::             Description            
     # const_name::            Determines the constant name of the configurable
     #                         class within the nesting class.  May be nil.
     #                         (default: key.to_s.capitalize)
-    # instance_reader::       The method accessing the nested instance. (default: key)
-    # instance_writer::       The method to set the nested instance. (default: "#{key}=")
-    # reader::                The method used to read the instance config.
-    #                         (default: "#{key}_config_reader")
-    # writer::                The method used to reconfigure the instance. 
-    #                         (default: "#{key}_config_writer")
+    # type::                  By default set to :nest.
     #
-    # Except for const_name, these attributes are used to define methods
-    # required for nesting to work properly.  None of the method attributes may
-    # be set to nil, but they may be set to non-default values.  In that case,
-    # nest will register the method names as provided, but it will not define
-    # the methods themselves.  The user must define methods with the following
-    # functionality:
-    #
-    # Attribute::             Function          
-    # instance_reader::       Returns the instance of the configurable class 
-    #                         (initializing if necessary, by default nest initializes
-    #                         using configurable_class.new)
-    # instance_writer::       Inputs and sets the instance of the configurable class
-    # reader::                Returns instance.config
-    # writer::                Reconfigures instance using the input overrides, or
-    #                         sets instance if provided.
-    #
-    # Methods can be public or otherwise.  Specifying true uses and defines the
-    # default methods.  Specifying false uses the default method name, but does
-    # not define the method itself.
-    #
-    # Any additional attributes are registered with the configuration.
     def nest(key, configurable_class=nil, attributes={}, &block)
       attributes = merge_attributes(block, attributes)
       attributes = {
-        :instance_reader => true,
-        :instance_writer => true,
+        :reader => true,
+        :writer => true,
         :type => :nest
       }.merge(attributes)
       
@@ -312,7 +301,7 @@ module Configurable
         configurable_class.class_eval(&block) if block_given?
       end
       
-      # set the new constant (todo: make into a separate method so const_name is gc'ed)
+      # set the new constant
       const_name = if attributes.has_key?(:const_name) 
         attributes.delete(:const_name) 
       else
@@ -326,23 +315,18 @@ module Configurable
           const_set(const_name, configurable_class)
         end
       end
+      const_name = nil
       
-      # define the instance reader.
-      instance_variable = "@#{key}".to_sym
-      reader = define_attribute_method(:instance_reader, attributes, key) do |attribute|
-        define_method(attribute) do
-          if instance_variable_defined?(instance_variable)
-            instance_variable_get(instance_variable)
-          else
-            nil
-          end
-        end
+      # define the reader.
+      reader = define_attribute_method(:reader, attributes, key) do |attribute|
+        attr_reader attribute
         public(attribute)
       end
       
-      # define the instance writer.  the default instance writer validates the
-      # nested instance is the correct class then sets the instance variable
-      writer = define_attribute_method(:instance_writer, attributes, "#{key}=") do |attribute|
+      # define the writer.  the default the writer validates the
+      # instance is the correct class then sets the instance variable
+      instance_variable = "@#{key}".to_sym
+      writer = define_attribute_method(:writer, attributes, "#{key}=") do |attribute|
         define_method(attribute) do |value|
           Validation.validate(value, [configurable_class])
           instance_variable_set(instance_variable, value)
@@ -363,12 +347,12 @@ module Configurable
 
     private
     
-    def inherited(base)
+    def inherited(base) # :nodoc:
      ClassMethods.initialize(base)
      super
     end
     
-    def each_ancestor
+    def each_ancestor # :nodoc:
       yield(self)
     
       blank, *ancestors = self.ancestors

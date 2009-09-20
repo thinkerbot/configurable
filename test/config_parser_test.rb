@@ -416,7 +416,7 @@ configurations:
 
   def test_add_documentation
     psr = ConfigParser.new
-    psr.add(NestClass.delegates)
+    psr.add(NestClass.configurations)
     psr.parse('--nest:key value')
     
     assert_equal({'nest:key' => 'value'}, psr.config)
@@ -435,7 +435,7 @@ configurations:
   
   def test_add_nests_switches_properly
     delegates = {
-      :one => Config.new(:one, :one=, 'one', :type => :switch)
+      :one => Config.new(:one, :one=, 'one', true, :type => :switch)
     }
     
     c.add(delegates, "nest")
@@ -460,7 +460,7 @@ configurations:
   
   def test_add_recusively_adds_delegates_from_nest_delegates_with_nest_type
     delegates = {
-      :one => NestConfig.new(ConfigurableClass, :one, :one=, :type => :nest),
+      :one => NestConfig.new(ConfigurableClass, :one, :one=, true, :type => :nest),
       :two => Config.new(:two, :two=, 'two')
     }
     
@@ -470,7 +470,7 @@ configurations:
   
   def test_add_does_not_add_nested_delegates_if_the_option_if_type_is_hidden
     delegates = {
-      :one => NestConfig.new(ConfigurableClass, :one, :one=, :type => :hidden),
+      :one => NestConfig.new(ConfigurableClass, :one, :one=, true, :type => :hidden),
       :two => Config.new(:two, :two=, 'two')
     }
     
@@ -480,8 +480,8 @@ configurations:
   
   def test_add_raises_error_for_nesting_conflict
     delegates = {
-      :one => NestConfig.new(ConfigurableClass, :one, :one=, :type => :nest, :declaration_order => 1),
-      'one:one' => Config.new(:two, :two=, 'two', :declaration_order => 0)
+      :one => NestConfig.new(ConfigurableClass, :one, :one=, true, :type => :nest, :declaration_order => 1),
+      'one:one' => Config.new(:two, :two=, 'two', true, :declaration_order => 0)
     }
     
     e = assert_raises(ArgumentError) { c.add(delegates) }
@@ -857,7 +857,7 @@ specials:
   
   def test_to_s_format_for_nested_delegates
     delegates = {
-      :opt => Config.new(:opt, :opt=, 'value', :desc => 'desc', :short => 'o', :type => :switch),
+      :opt => Config.new(:opt, :opt=, 'value', true, :desc => 'desc', :short => 'o', :type => :switch),
     }
 
     c.add(delegates, "nest")
