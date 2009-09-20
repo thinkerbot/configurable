@@ -36,6 +36,7 @@ Gem::Specification.new do |s|
     lib/configurable/indifferent_access.rb
     lib/configurable/module_methods.rb
     lib/configurable/nest_config.rb
+    lib/configurable/ordered_hash_patch.rb
     lib/configurable/utils.rb
     lib/configurable/validation.rb
   }

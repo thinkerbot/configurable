@@ -207,7 +207,7 @@ module Configurable
     
     # default attributes {:type => :string, :example => "string"}
     STRING = string_validation_block
-    #register :type => :string, :example => "string", &STRING
+    register :type => :string, :example => "string", &STRING
     
     # Same as string but allows nil.  Note the special
     # behavior of the nil string '~' -- rather than

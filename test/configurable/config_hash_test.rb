@@ -5,47 +5,13 @@ class ConfigHashTest < Test::Unit::TestCase
   Config = Configurable::Config
   ConfigHash = Configurable::ConfigHash
   
-  # a dummy receiver implementing only the API used by ConfigHash
   class Receiver
-    class << self
-      attr_accessor :configurations
-    end
+    include Configurable
+    config :key
     
-    attr_accessor :key
-    
-    def initialize
-      @key = nil
-    end
-  end
-
-  # a receiver to log the order in which values are sent to key
-  class OrderedReceiver
-    class << self
-      attr_accessor :configurations
-    end
-
-    attr_reader :order
-
-    def initialize
-      @order = []
-    end
-
-    def key=(value)
-      order << value
-    end
-  end
-
-  # a hash that iterates each_pair in a predefined order
-  class OrderedHash < Hash
-    attr_reader :keys
-
-    def initialize(*keys)
-      @keys = keys
-    end
-
-    def each_pair
-      @keys.each {|key| yield(key, self[key])}
-    end
+    # initialize without initializing configs
+    # so that receiver acts as a stub
+    def initialize; end
   end
   
   #
@@ -55,7 +21,6 @@ class ConfigHashTest < Test::Unit::TestCase
   attr_reader :config_hash
   
   def setup
-    Receiver.configurations = {:key => Config.new(:key)}
     @config_hash = ConfigHash.new(Receiver.new)
   end
   
@@ -240,14 +205,26 @@ class ConfigHashTest < Test::Unit::TestCase
     assert_equal({:a => 'a', :b => 'B'}, config_hash.store)
   end
   
-  def test_merge_sets_delegates_in_order
-    letters = [:a, :b, :c, :d, :e, :f, :g, :h]
-    delegates = OrderedHash.new(*letters)
-    letters.each {|letter| delegates[letter] = Config.new(:key, :key=, letter.to_s) }
+  class OrderedReceiver
+    include Configurable
     
-    OrderedReceiver.configurations = delegates
-    config_hash = ConfigHash.new(OrderedReceiver.new)
+    [:a, :b, :c, :d, :e, :f, :g, :h].each do |letter| 
+      config(letter, nil, :writer => :key=)
+    end
+    
+    attr_reader :order
+    
+    def initialize
+      @order = []
+    end
+    
+    def key=(value)
+      @order << value
+    end
+  end
   
+  def test_merge_merges_configs_in_order
+    config_hash = ConfigHash.new(OrderedReceiver.new)
     config_hash.merge!({:a => 'A', :g => 'G', :c => 'C', :h => 'H', :b => 'B'})
     assert_equal ['A', 'B', 'C', 'G', 'H'], config_hash.receiver.order
   end

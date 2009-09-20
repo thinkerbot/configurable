@@ -1,9 +1,17 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
 require 'configurable/class_methods'
-
-# These are tests for the OrderedHashPatch, which is only
-# going to be defined in ruby 1.8.*
+  
+# These are tests for the OrderedHashPatch, which is only used in ruby 1.8.* 
 class OrderedHashPatchTest < Test::Unit::TestCase
+  if RUBY_VERSION >= '1.9'
+
+    def test_ordered_hash_patch_is_not_loaded_or_defined
+      assert_equal nil, $".find {|path| path =~ /configurable\/ordered_hash_patch.rb/}
+      assert !Configurable.const_defined?(:OrderedHashPatch)
+    end
+    
+  else
+    
   OrderedHashPatch = Configurable::OrderedHashPatch
   
   #
@@ -112,4 +120,5 @@ h: :h
     assert_equal %w{a b c d e f g h}, order.sort
   end
   
-end if Configurable.const_defined?(:OrderedHashPatch)
+  end
+end

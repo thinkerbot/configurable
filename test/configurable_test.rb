@@ -8,9 +8,9 @@ class ConfigurableTest < Test::Unit::TestCase
   Validation = Configurable::Validation
   
   # helper
-  def assert_configurations_equal(expected, delegate)
-    actual = delegate.inject({}) do |hash, (key, delegate)|
-      hash[key] = [delegate.reader, delegate.writer, delegate.default]
+  def assert_configurations_equal(expected, configurations)
+    actual = configurations.inject({}) do |hash, (key, config)|
+      hash[key] = [config.reader, config.writer, config.default]
       hash
     end
     
@@ -101,7 +101,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'ANOTHER', c.one
   
     c.two = -2
-    assert_equal -2, c.two
+    assert_equal(-2, c.two)
     c.two = "3"
     assert_equal 3, c.two
     assert_raises(Configurable::Validation::ValidationError) { c.two = nil }
@@ -715,7 +715,7 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_open_io_makes_parent_directories_if_needed
-    path = __FILE__.chomp('.rb') + "/test_open_io_makes_parent_directories_if_needed/file.txt"
+    path = File.dirname(__FILE__) + "/test_open_io_makes_parent_directories_if_needed/file.txt"
     assert !File.exists?(File.dirname(path))
     
     begin

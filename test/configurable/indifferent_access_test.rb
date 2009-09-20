@@ -1,5 +1,5 @@
 require  File.join(File.dirname(__FILE__), '../tap_test_helper')
-require 'configurable'
+require 'configurable/indifferent_access'
 
 class IndifferentAccessTest < Test::Unit::TestCase
 
