@@ -1,7 +1,7 @@
 require  File.join(File.dirname(__FILE__), 'tap_test_helper')
 require 'configurable'
 
-class NestTest < Test::Unit::TestCase
+class ConfigurableNestTest < Test::Unit::TestCase
   ConfigHash = Configurable::ConfigHash
   ValidationError = Configurable::Validation::ValidationError
   
