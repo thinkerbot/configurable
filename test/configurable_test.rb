@@ -748,7 +748,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'VALUE', s.upcase
     assert_equal 1, s.int
     assert_equal 'value', s.config[:store]
-    assert_equal [:key, :upcase, :int], s.config.config_registry.keys
+    assert_equal [:key, :upcase, :int], s.config.delegates.keys
     
     deserialized = YAML.load(YAML.dump(s))
     
@@ -757,6 +757,6 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'VALUE', deserialized.upcase
     assert_equal 1, deserialized.int
     assert_equal 'value', deserialized.config[:store]
-    assert_equal [:key, :upcase, :int], deserialized.config.config_registry.keys
+    assert_equal [:key, :upcase, :int], deserialized.config.delegates.keys
   end
 end

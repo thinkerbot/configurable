@@ -22,6 +22,10 @@ module Configurable
       unless child.instance_variable_defined?(:@use_indifferent_access)
         child.instance_variable_set(:@use_indifferent_access, true)
       end
+      
+      unless child.instance_variable_defined?(:@configurations)
+        child.instance_variable_set(:@configurations, nil)
+      end
     end
     
     # Parses configurations from argv in a non-destructive manner by generating
@@ -45,6 +49,8 @@ module Configurable
     end
     
     def configurations
+      return @configurations if @configurations
+      
       configurations = CONFIGURATIONS_CLASS.new
       configurations.extend(IndifferentAccess) if @use_indifferent_access
       
@@ -54,6 +60,17 @@ module Configurable
       end
       
       configurations
+    end
+    
+    # Sets configurations to symbolize keys for AGET ([]) and ASET([]=)
+    # operations, or not.  By default, configurations will use
+    # indifferent access.
+    def cache_configurations(input=true)
+      @configurations = nil
+      
+      if input
+        @configurations = self.configurations
+      end
     end
     
     protected

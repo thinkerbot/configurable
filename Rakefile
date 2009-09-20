@@ -112,7 +112,7 @@ Rake::TestTask.new(:benchmark) do |t|
   unless ENV['gems']
     t.libs << 'submodule/lazydoc/lib'
   end
-  t.test_files = Dir.glob( File.join('test', ENV['pattern'] || '**/*_benchmark.rb') )
+  t.test_files = Dir.glob( File.join('benchmark', ENV['pattern'] || '**/*_benchmark.rb') )
   t.verbose = true
   t.warning = true
 end
