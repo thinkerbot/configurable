@@ -30,12 +30,12 @@ module Configurable
 
     # Initializes a new Config.
     def initialize(reader, writer="#{reader}=", default=nil, init=true, attributes={})
+      @init = init
+      @attributes = attributes
+      
       self.reader = reader
       self.writer = writer
       self.default = default
-      
-      @init = init
-      @attributes = attributes
     end
     
     # Returns the default value.  If duplicate is specified and the default
@@ -87,7 +87,7 @@ module Configurable
     # reader may also have to be overridden.
     def default=(value) # :nodoc:
       @default = value
-      @duplicable = Config.duplicable_value?(value)
+      @duplicable = Config.duplicable_value?(value) && self[:duplicate_default, true]
     end
     
     # Sets the reader for self, assuring the reader is not nil.

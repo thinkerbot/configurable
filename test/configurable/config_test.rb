@@ -142,4 +142,12 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal default, c.default
     assert_equal default.object_id, c.default.object_id
   end
+  
+  def test_default_does_not_duplicate_if_duplicate_default_attribute_is_set_to_false
+    default = "default"
+    c = Config.new(:reader, :writer, default, true, :duplicate_default => false)
+    
+    assert_equal default, c.default
+    assert_equal default.object_id, c.default.object_id
+  end
 end
