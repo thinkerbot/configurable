@@ -35,12 +35,11 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_initialize
-    c = Config.new('key', 'key=', 'default', {:attr => 'value'}, false, false)
+    c = Config.new('key', 'key=', 'default', {:attr => 'value'}, false)
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
     assert_equal 'default', c.default
     assert_equal false, c.init?
-    assert_equal false, c.dup?
     assert_equal({:attr => 'value'}, c.attributes)
   end
   
@@ -50,16 +49,7 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal :key=, c.writer
     assert_equal nil, c.default
     assert_equal true, c.init?
-    assert_equal false, c.dup?
     assert_equal({}, c.attributes)
-  end
-  
-  def test_dup_is_initialized_as_true_if_default_is_duplicable
-    c = Config.new(:reader, :writer, 'duplicable')
-    assert_equal true, c.dup?
-    
-    c = Config.new(:reader, :writer, :non_duplicable)
-    assert_equal false, c.dup?
   end
   
   def test_reader_may_not_be_set_to_nil
@@ -134,7 +124,33 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal 'default', c.default
   end
   
-  def test_default_duplicates_default_if_duplicable_and_duplicate_is_set
+  def test_default_duplicates_default_if_duplicable
+    default = 'default'
+    assert_equal true, Config.duplicable_value?(default)
+    
+    c = Config.new(:reader, :writer, default)
+    
+    assert_equal default, c.default
+    assert default.object_id != c.default.object_id
+  end
+  
+  def test_default_does_not_duplicate_default_if_non_duplicable
+    default = Object
+    assert_equal false, Config.duplicable_value?(default)
+    
+    c = Config.new(:reader, :writer, default)
+    assert default.object_id == c.default.object_id
+  end
+  
+  def test_default_duplicates_non_duplicable_values_if_dup_is_true
+    default = Object
+    assert_equal false, Config.duplicable_value?(default)
+    
+    c = Config.new(:reader, :writer, default, {}, true, true)
+    assert default.object_id != c.default.object_id
+  end
+  
+  def test_default_does_not_duplicate_unless_specified
     default = 'default'
     c = Config.new(:reader, :writer, default)
     
@@ -143,17 +159,5 @@ class ConfigTest < Test::Unit::TestCase
     
     assert_equal default, c.default(false)
     assert default.object_id == c.default(false).object_id
-  end
-  
-  def test_default_does_not_duplicate_if_dup_is_false
-    default = 'default'
-    c = Config.new(:reader, :writer, default, {}, true, false)
-    
-    assert_equal false, c.dup?
-    assert_equal default, c.default
-    assert_equal default.object_id, c.default.object_id
-    
-    assert_equal default, c.default(false)
-    assert_equal default.object_id, c.default(false).object_id
   end
 end

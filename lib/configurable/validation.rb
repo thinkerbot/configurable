@@ -731,9 +731,9 @@ module Configurable
       end
     end
     
-    # default attributes {:type => :io, :duplicate_default => false, :example => "/path/to/file"}
+    # default attributes {:type => :io, :dup => false, :example => "/path/to/file"}
     IO_OR_STRING = check(IO, String, Integer)
-    register :type => :io, :duplicate_default => false, :example => "/path/to/file", &IO_OR_STRING
+    register :type => :io, :dup => false, :example => "/path/to/file", &IO_OR_STRING
     
     # Same as io but allows nil:
     #

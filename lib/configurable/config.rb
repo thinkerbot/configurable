@@ -42,7 +42,7 @@ module Configurable
     # may be duplicated (see Config.duplicable_value?) then a duplicate
     # of the default is returned.
     def default(duplicate=true)
-      duplicate && dup? ? @default.dup : @default
+      duplicate && @dup ? @default.dup : @default
     end
     
     # Returns the value for the specified attribute, or default if the
@@ -73,10 +73,6 @@ module Configurable
     # Configurable#initialize_config.
     def init?
       @init
-    end
-    
-    def dup?
-      @dup
     end
     
     # Returns an inspection string.
