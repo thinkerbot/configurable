@@ -9,13 +9,12 @@ module Configurable
     attr_reader :nest_class
     
     # Initializes a new NestConfig
-    def initialize(nest_class, reader, writer="#{reader}=", init=true, attributes={})
+    def initialize(nest_class, reader, writer="#{reader}=", attributes={}, init=true)
       self.nest_class = nest_class
       self.reader = reader
       self.writer = writer
-      
-      @init = init
       @attributes = attributes
+      @init = init
     end
     
     # Returns a hash of the default configuration values for nest_class.

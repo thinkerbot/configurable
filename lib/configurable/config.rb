@@ -29,20 +29,20 @@ module Configurable
     attr_reader :attributes
 
     # Initializes a new Config.
-    def initialize(reader, writer="#{reader}=", default=nil, init=true, attributes={})
-      @init = init
-      @attributes = attributes
-      
+    def initialize(reader, writer="#{reader}=", default=nil, attributes={}, init=true, dup=nil)
       self.reader = reader
       self.writer = writer
-      self.default = default
+      @default = default
+      @attributes = attributes
+      @init = init
+      @dup = dup.nil? ? Config.duplicable_value?(default) : dup
     end
     
     # Returns the default value.  If duplicate is specified and the default
     # may be duplicated (see Config.duplicable_value?) then a duplicate
     # of the default is returned.
     def default(duplicate=true)
-      duplicate && @duplicable ? @default.dup : @default
+      duplicate && dup? ? @default.dup : @default
     end
     
     # Returns the value for the specified attribute, or default if the
@@ -75,20 +75,16 @@ module Configurable
       @init
     end
     
+    def dup?
+      @dup
+    end
+    
     # Returns an inspection string.
     def inspect
       "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} default=#{default.inspect} >"
     end
     
     protected
-    
-    # Sets the default and updates the @duplicable flag.  If this method is
-    # overridden or never called, @duplicable is not set and the default
-    # reader may also have to be overridden.
-    def default=(value) # :nodoc:
-      @default = value
-      @duplicable = Config.duplicable_value?(value) && self[:duplicate_default, true]
-    end
     
     # Sets the reader for self, assuring the reader is not nil.
     def reader=(value) # :nodoc:

@@ -198,7 +198,8 @@ module Configurable
       
       # define the configuration
       init = attributes.has_key?(:init) ? attributes.delete(:init) : true
-      config_registry[key] = Config.new(reader, writer, value, init, attributes)
+      dup = attributes.has_key?(:dup) ? attributes.delete(:dup) : nil
+      config_registry[key] = Config.new(reader, writer, value, attributes, init, dup)
     end
     
     # Adds nested configurations to self.  Nest creates a new configurable
@@ -336,7 +337,7 @@ module Configurable
       
       # define the configuration
       init = attributes.has_key?(:init) ? attributes.delete(:init) : true
-      config_registry[key] = NestConfig.new(configurable_class, reader, writer, init, attributes)
+      config_registry[key] = NestConfig.new(configurable_class, reader, writer, attributes, init)
       check_infinite_nest(configurable_class)
     end  
     

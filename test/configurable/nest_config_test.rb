@@ -42,7 +42,7 @@ class NestConfigTest < Test::Unit::TestCase
   #
   
   def test_initialize
-    c = NestConfig.new(NestClass, 'key', 'key=', false, :attr => 'value')
+    c = NestConfig.new(NestClass, 'key', 'key=', {:attr => 'value'}, false)
     assert_equal NestClass, c.nest_class
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
