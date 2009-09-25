@@ -66,7 +66,13 @@ module Configurable
       
       ancestors.reverse.each do |ancestor|
         next unless ancestor.kind_of?(ClassMethods)
-        configurations.merge!(ancestor.config_registry)
+        ancestor.config_registry.each_pair do |key, value|
+          if value.nil?
+            configurations.delete(key)
+          else
+            configurations[key] = value
+          end
+        end
       end
       
       configurations
@@ -341,6 +347,66 @@ module Configurable
       check_infinite_nest(configurable_class)
     end  
     
+    # Removes a configuration much like remove_method removes a method.  The
+    # reader and writer for the config are likewise removed.  Nested configs
+    # can be removed using this method.
+    #
+    # Setting :reader or :writer to false in the options prevents those methods
+    # from being removed.
+    #
+    def remove_config(key, options={})
+      unless config_registry.has_key?(key)
+        raise NameError.new("#{key.inspect} is not a config on #{self}")
+      end
+      
+      options = {
+        :reader => true,
+        :writer => true
+      }.merge(options)
+      
+      config = config_registry.delete(key)
+      cache_configurations(@configurations != nil)
+      
+      undef_method(config.reader) if options[:reader]
+      undef_method(config.writer) if options[:writer]
+    end
+    
+    # Undefines a configuration much like undef_method undefines a method.  The
+    # reader and writer for the config are likewise undefined.  Nested configs
+    # can be undefined using this method.
+    #
+    # Setting :reader or :writer to false in the options prevents those methods
+    # from being undefined.
+    #
+    # ==== Implementation Note
+    #
+    # Configurations are undefined by setting the key to nil in the registry.
+    # Deleting the config is not sufficient because the registry needs to
+    # convey to self and subclasses to not inherit the config from ancestors.
+    #
+    # This is unlike remove_config where the config is simply deleted from
+    # the config_registry.
+    #
+    def undef_config(key, options={})
+      # temporarily cache as an optimization
+      configs = configurations
+      unless configs.has_key?(key)
+        raise NameError.new("#{key.inspect} is not a config on #{self}")
+      end
+      
+      options = {
+        :reader => true,
+        :writer => true
+      }.merge(options)
+      
+      config = configs[key]
+      config_registry[key] = nil
+      cache_configurations(@configurations != nil)
+      
+      undef_method(config.reader) if options[:reader]
+      undef_method(config.writer) if options[:writer]
+    end
+    
     # Alias for Validation
     def c
       Validation
@@ -351,17 +417,6 @@ module Configurable
     def inherited(base) # :nodoc:
      ClassMethods.initialize(base)
      super
-    end
-    
-    def each_ancestor # :nodoc:
-      yield(self)
-    
-      blank, *ancestors = self.ancestors
-      ancestors.each do |ancestor|
-        yield(ancestor) if ancestor.kind_of?(ClassMethods)
-      end
-    
-      nil
     end
     
     # a helper to define methods that may be overridden in attributes.

@@ -419,6 +419,108 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
+  # remove_config test
+  #
+  
+  class RemoveConfig
+    include Configurable
+    config :a, 'a'
+    config :b, 'b'
+  end
+  
+  def test_remove_config_removes_reader_and_writer_methods_if_specified
+    c = RemoveConfig.new
+    assert_equal 'a', c.a
+    assert_equal 'b', c.b
+    
+    RemoveConfig.send(:remove_config, :a)
+    assert_equal([:b], RemoveConfig.configurations.keys)
+    assert !c.respond_to?(:a)
+    assert !c.respond_to?(:a=)
+    
+    RemoveConfig.send(:remove_config, :b, :reader => false, :writer => false)
+    assert_equal([], RemoveConfig.configurations.keys)
+    assert c.respond_to?(:b)
+    assert c.respond_to?(:b=)
+  end
+  
+  class CachedRemoveConfig
+    include Configurable
+    config :a, 'a'
+    config :b, 'b'
+    
+    cache_configurations
+  end
+  
+  def test_remove_config_recaches_cached_configurations
+    assert_equal([:a, :b], CachedRemoveConfig.configurations.keys)
+    CachedRemoveConfig.send(:remove_config, :a)
+    assert_equal([:b], CachedRemoveConfig.configurations.keys)
+  end
+  
+  class NoCacheRemoveConfig
+    include Configurable
+    config :a, 'a'
+    config :b, 'b'
+  end
+  
+  def test_remove_config_does_not_accidentally_cache_uncached_configurations
+    NoCacheRemoveConfig.send(:remove_config, :a)
+    assert NoCacheRemoveConfig.configurations.object_id != NoCacheRemoveConfig.configurations.object_id
+  end
+  
+  #
+  # undef_config test
+  #
+  
+  class UndefConfig
+    include Configurable
+    config :a, 'a'
+    config :b, 'b'
+  end
+  
+  def test_undef_config_removes_reader_and_writer_methods_if_specified
+    c = UndefConfig.new
+    assert_equal 'a', c.a
+    assert_equal 'b', c.b
+    
+    UndefConfig.send(:undef_config, :a)
+    assert_equal([:b], UndefConfig.configurations.keys)
+    assert !c.respond_to?(:a)
+    assert !c.respond_to?(:a=)
+    
+    UndefConfig.send(:undef_config, :b, :reader => false, :writer => false)
+    assert_equal([], UndefConfig.configurations.keys)
+    assert c.respond_to?(:b)
+    assert c.respond_to?(:b=)
+  end
+  
+  class CachedUndefConfig
+    include Configurable
+    config :a, 'a'
+    config :b, 'b'
+    
+    cache_configurations
+  end
+  
+  def test_undef_config_recaches_cached_configurations
+    assert_equal([:a, :b], CachedUndefConfig.configurations.keys)
+    CachedUndefConfig.send(:undef_config, :a)
+    assert_equal([:b], CachedUndefConfig.configurations.keys)
+  end
+  
+  class NoCacheUndefConfig
+    include Configurable
+    config :a, 'a'
+    config :b, 'b'
+  end
+  
+  def test_undef_config_does_not_accidentally_cache_uncached_configurations
+    NoCacheUndefConfig.send(:remove_config, :a)
+    assert NoCacheUndefConfig.configurations.object_id != NoCacheUndefConfig.configurations.object_id
+  end
+  
+  #
   # parse test
   #
   

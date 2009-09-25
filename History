@@ -15,6 +15,7 @@
 * refactored Delegate to Config, and simplified
   implementation for nesting to use NestConfig
 * refactored :duplicate_default attribute to :dup
+* added undef_config and remove_config methods
 
 == 0.5.0 / 2009-05-25
 
