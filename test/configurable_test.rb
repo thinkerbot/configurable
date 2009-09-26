@@ -723,7 +723,7 @@ class ConfigurableTest < Test::Unit::TestCase
     include Configurable
     
     def initialize(overrides={})
-      initialize_config(overrides, true)
+      initialize_config(overrides)
     end
     
     config(:one, 'one') {|v| v.upcase }
@@ -749,6 +749,11 @@ class ConfigurableTest < Test::Unit::TestCase
     t2.two = 'two'
     assert_equal 2, t1.two
     assert_equal 'two', t2.two
+    
+    t1.config[:three] = 3
+    t2.config[:three] = 'three'
+    assert_equal 3, t1.config[:three]
+    assert_equal 'three', t2.config[:three]
   end
   
   def test_dup_passes_along_current_config_values
@@ -759,6 +764,20 @@ class ConfigurableTest < Test::Unit::TestCase
     
     t2 = t1.dup
     assert_equal({:one => 'ONE', :two => 2, :three => 3}, t2.config)
+  end
+  
+  class NonInitSample
+    include Configurable
+    config :key, 'default', :init => false
+  end
+  
+  def test_dup_passes_along_non_init_configs
+    t1 = NonInitSample.new
+    t1.key = "value"
+    assert_equal({:key => "value"}, t1.config)
+    
+    t2 = t1.dup
+    assert_equal({:key => "value"}, t2.config)
   end
   
   #

@@ -216,7 +216,7 @@ module Configurable
   # it's own set of configurations, separate from the original object.
   def initialize_copy(orig)
     super
-    initialize_config(orig.config.to_hash)
+    @config = ConfigHash.new(self, orig.config.store.dup, false)
   end
 
   protected
@@ -260,7 +260,7 @@ module Configurable
   end
 
   # Initializes config. Default config values are overridden as specified.
-  def initialize_config(overrides={}, log=false)
+  def initialize_config(overrides={})
     @config = ConfigHash.new(self, overrides, false)
     
     # cache as configs (equivalent to self.class.configurations)
