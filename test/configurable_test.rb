@@ -608,6 +608,11 @@ class ConfigurableTest < Test::Unit::TestCase
     
     nest :five, LazydocNestClass                            # five with documentation
     nest :six, LazydocNestClass, :desc => "six description" # six ignored documentation
+    
+    config :seven, 'value',                                 # seven with offset documentation
+      :a => 'a',
+      :b => 'b' do
+    end
   end
   
   def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
@@ -620,6 +625,9 @@ class ConfigurableTest < Test::Unit::TestCase
       desc = LazydocClass.configurations[nodoc_config].attributes[:desc]
       assert_equal "#{nodoc_config} description", desc.to_s
     end
+    
+    desc = LazydocClass.configurations[:seven].attributes[:desc]
+    assert_equal "seven with offset documentation", desc.to_s
   end
   
   module LazydocConfigModule
