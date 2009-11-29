@@ -1,3 +1,4 @@
+require 'configurable/version'
 require 'configurable/module_methods'
 
 # Configurable enables the specification of configurations within a class 
