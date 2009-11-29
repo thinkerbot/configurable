@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "configurable"
-  s.version = "0.5.1"
+  s.version = "0.6.0"
   s.author = "Simon Chiang"
   s.email = "simon.a.chiang@gmail.com"
   s.homepage = "http://tap.rubyforge.org/configurable"
@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.rubyforge_project = "tap"
   s.has_rdoc = true
   s.rdoc_options.concat %w{--title Configurable --main README --line-numbers --inline-source}
-  s.add_dependency("lazydoc", ">= 0.9.0")
+  s.add_dependency("lazydoc", ">= 1.0.0")
 
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{
@@ -39,5 +39,6 @@ Gem::Specification.new do |s|
     lib/configurable/ordered_hash_patch.rb
     lib/configurable/utils.rb
     lib/configurable/validation.rb
+    lib/configurable/version.rb
   }
 end
