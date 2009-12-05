@@ -196,14 +196,12 @@ See the Configurable module for more details.
 
 == Installation
 
-Configurable is available as a gem on
-RubyForge[http://rubyforge.org/projects/tap]. Use:
+Configurable is available as a gem on Gemcutter[http://gemcutter.org/gems/configurable].
 
   % gem install configurable
 
 == Info 
 
-Copyright (c) 2009, Simon Chiang.
 Developer:: {Simon Chiang}[http://bahuvrihi.wordpress.com]
 License:: {MIT-Style}[link:files/MIT-LICENSE.html]
 
