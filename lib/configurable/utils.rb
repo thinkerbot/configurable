@@ -132,7 +132,7 @@ module Configurable
     # values in the hash loaded from the path.
     def load_file(path, recurse=false, &block)
       return load_file(path, recurse, &DEFAULT_LOAD) if recurse && !block_given?
-      base = File.file?(path) ? (YAML.load_file(path) || {}) : {}
+      base = File.directory?(path) ? {} : (YAML.load_file(path) || {})
       
       if recurse
         # determine the files/dirs to load recursively

@@ -280,10 +280,10 @@ one: value
     path
   end
   
-  def test_load_file_raises_for_non_existant_file
+  def test_load_file_raises_error_for_non_existant_file
     path = File.join(method_root, "non_existant.yml")
     assert !File.exists?(path)
-    assert_equal({}, load_file(path))
+    assert_raises(Errno::ENOENT) { load_file(path) }
   end
   
   def test_load_file_returns_empty_hash_for_empty_file
