@@ -226,19 +226,19 @@ class ConfigurableNestTest < Test::Unit::TestCase
     assert_equal({:key => 'two'}, p.nest.config.to_hash)
       
     p.nest.key = "two"
-    assert_equal({:key => 'two'}, p.config[:nest])
+    assert_equal({:key => 'two'}, p.config[:nest].to_hash)
     
     p.nest.reconfigure(:key => 'one')
-    assert_equal({:key => 'one'}, p.config[:nest])
+    assert_equal({:key => 'one'}, p.config[:nest].to_hash)
     
     p.nest.config[:key] = 'zero'
-    assert_equal({:key => 'zero'}, p.config[:nest])
+    assert_equal({:key => 'zero'}, p.config[:nest].to_hash)
   end
   
   def test_modification_of_configs_uses_validation_block
     p = NestParent.new
     p.nest.key = "TWO"
-    assert_equal({:key => 'two'}, p.config[:nest])
+    assert_equal({:key => 'two'}, p.config[:nest].to_hash)
   end
   
   def test_instance_is_initialized_with_defaults

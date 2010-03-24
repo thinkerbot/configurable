@@ -82,20 +82,20 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_documentation
     c = ConfigClass.new
     assert_equal Configurable::ConfigHash, c.config.class
-    assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config)
+    assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config.to_hash)
   
     c.config[:one] = 'ONE'
     assert_equal 'ONE', c.one
   
     c.one = 1           
-    assert_equal({:one => 1, :two => 'two', :three => 'three'}, c.config)
+    assert_equal({:one => 1, :two => 'two', :three => 'three'}, c.config.to_hash)
   
     c.config[:undeclared] = 'value'
     assert_equal({:undeclared => 'value'}, c.config.store)
   
     ###
     c = ValidationClass.new
-    assert_equal({:one => 'ONE', :two => 2}, c.config)
+    assert_equal({:one => 'ONE', :two => 2}, c.config.to_hash)
   
     c.one = 'aNothER'             
     assert_equal 'ANOTHER', c.one
@@ -359,7 +359,7 @@ class ConfigurableTest < Test::Unit::TestCase
       :a => 'one',
       :b => 'two',
       :c => 'three'
-    }, obj.config)
+    }, obj.config.to_hash)
   end
   
   class IncludingConfigModuleInExistingConfigurable
@@ -704,7 +704,7 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_initialize_initializes_config_if_necessary
     i = InitializeClass.new
     assert_equal(Configurable::ConfigHash, i.config.class)
-    assert_equal({:key => 'value'}, i.config)
+    assert_equal({:key => 'value'}, i.config.to_hash)
   end
   
   class NoInitializeClass
@@ -740,7 +740,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_initialize_config_merges_class_defaults_with_overrides
     t = Sample.new(:two => 2)
-    assert_equal({:one => 'ONE', :two => 2}, t.config)
+    assert_equal({:one => 'ONE', :two => 2}, t.config.to_hash)
   end
   
   #
@@ -768,10 +768,10 @@ class ConfigurableTest < Test::Unit::TestCase
     t1 = Sample.new
     t1.two = 2
     t1.config[:three] = 3
-    assert_equal({:one => 'ONE', :two => 2, :three => 3}, t1.config)
+    assert_equal({:one => 'ONE', :two => 2, :three => 3}, t1.config.to_hash)
     
     t2 = t1.dup
-    assert_equal({:one => 'ONE', :two => 2, :three => 3}, t2.config)
+    assert_equal({:one => 'ONE', :two => 2, :three => 3}, t2.config.to_hash)
   end
   
   class NonInitSample
@@ -782,10 +782,10 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_dup_passes_along_non_init_configs
     t1 = NonInitSample.new
     t1.key = "value"
-    assert_equal({:key => "value"}, t1.config)
+    assert_equal({:key => "value"}, t1.config.to_hash)
     
     t2 = t1.dup
-    assert_equal({:key => "value"}, t2.config)
+    assert_equal({:key => "value"}, t2.config.to_hash)
   end
   
   #

@@ -49,6 +49,13 @@ class Configurable::UtilsTest < Test::Unit::TestCase
     :hash => {:key => 'value'}
   }
   
+  STRING_DEFAULTS = {
+    'sym' => :value,
+    'str' => 'value',
+    'array' => [1,2,3],
+    'hash' => {:key => 'value'}
+  }
+  
   TEST_ROOT = __FILE__.chomp('_test.rb')
   
   attr_reader :method_root
@@ -124,16 +131,7 @@ str: value
       delegates[key] = Config.new(:r, :w, value)
     end
     
-    assert_equal %q{
-:sym: :value
-str: value
-:array: 
-- 1
-- 2
-- 3
-:hash: 
-  :key: value
-}, dump(delegates, "\n")
+    assert_equal DEFAULTS, YAML.load(dump(delegates, "\n"))
   end
   
   def test_dump_stringifies_symbol_keys_for_delegates_with_indifferent_access
@@ -143,16 +141,7 @@ str: value
       delegates[key] = Config.new(:r, :w, value)
     end
 
-    assert_equal %q{
-sym: :value
-str: value
-array: 
-- 1
-- 2
-- 3
-hash: 
-  :key: value
-}, dump(delegates, "\n")
+    assert_equal STRING_DEFAULTS, YAML.load(dump(delegates, "\n"))
   end
   
   def test_dump_uses_block_to_format_each_line_in_the_dump
@@ -186,16 +175,7 @@ hash:
     assert !File.exists?(path)
     dump_file(delegates, path)
     
-    assert_equal %q{
-sym: :value
-str: value
-array: 
-- 1
-- 2
-- 3
-hash: 
-  :key: value
-}, "\n" + File.read(path)
+    assert_equal STRING_DEFAULTS, YAML.load_file(path)
   end
   
   def test_dump_file_recursively_creates_dump_files_for_nested_delegates_when_recurse_is_true

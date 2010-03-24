@@ -98,7 +98,7 @@ class OrderedHashPatchTest < Test::Unit::TestCase
     assert_equal %w{e f g a b c d h}, order
   end
   
-  def test_ordered_hash_can_be_unfaithfully_loaded_from_hash_yaml
+  def test_ordered_hash_can_be_loaded_from_hash_yaml
     yaml = %Q{--- !map:Configurable::OrderedHashPatch 
 e: :e
 f: :f
@@ -116,7 +116,6 @@ h: :h
     d.each_pair do |key, value|
       order << key
     end
-    assert %w{e f g a b c d h} != order
     assert_equal %w{a b c d e f g h}, order.sort
   end
   
