@@ -202,7 +202,7 @@ module Configurable
     def string(); STRING; end
     string_validation_block = lambda do |input|
       input = validate(input, [String])
-      eval %Q{"#{input}"}
+      eval %Q{str="#{input}"}
     end
     
     # default attributes {:type => :string, :example => "string"}
@@ -222,7 +222,7 @@ module Configurable
       input = validate(input, [String, nil])
       case input
       when nil, '~' then nil 
-      else eval %Q{"#{input}"}
+      else eval %Q{str="#{input}"}
       end
     end
     
