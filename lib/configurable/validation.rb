@@ -188,21 +188,15 @@ module Configurable
     end
 
     # Returns a block that checks the input is a string.
-    # Moreover, strings are re-evaluated as string 
-    # literals using %Q. 
     #
     #   string.class              # => Proc
     #   string.call('str')        # => 'str'
-    #   string.call('\n')         # => "\n"
-    #   string.call("\n")         # => "\n"
-    #   string.call("%s")         # => "%s"
     #   string.call(nil)          # => ValidationError
     #   string.call(:sym)         # => ValidationError
     #
     def string(); STRING; end
     string_validation_block = lambda do |input|
-      input = validate(input, [String])
-      eval %Q{str="#{input}"}
+      validate(input, [String])
     end
     
     # default attributes {:type => :string, :example => "string"}
@@ -222,7 +216,7 @@ module Configurable
       input = validate(input, [String, nil])
       case input
       when nil, '~' then nil 
-      else eval %Q{str="#{input}"}
+      else input
       end
     end
     
