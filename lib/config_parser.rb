@@ -501,6 +501,12 @@ class ConfigParser
     argv
   end
   
+  def warn_ignored_args(args)
+    if args && !args.empty?
+      warn "ignoring args: #{args.inspect}"
+    end
+  end
+  
   # Converts the options and separators in self into a help string suitable for
   # display on the command line.
   def to_s
