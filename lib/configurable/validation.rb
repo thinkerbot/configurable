@@ -158,6 +158,21 @@ module Configurable
       lambda {|input| validate(input, validations) }
     end
     
+    # Guesses and returns a block for the example value.
+    def guess(value)
+      case value
+      when true    then switch
+      when false   then flag
+      when Numeric then numeric
+      when Array   then list
+      when String  then string
+      when Time    then time
+      when Range   then range
+      when Regexp  then regexp
+      else yaml
+      end
+    end
+    
     # Returns a block that calls validate_api using the block input
     # and methods.
     def api(*methods)
