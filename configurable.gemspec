@@ -1,16 +1,22 @@
+$:.unshift File.expand_path('../submodule/lazydoc/lib', __FILE__)
+$:.unshift File.expand_path('../lib', __FILE__)
+
+require 'lazydoc/version'
+require 'configurable/version'
+
 Gem::Specification.new do |s|
-  s.name = "configurable"
-  s.version = "0.6.0"
-  s.author = "Simon Chiang"
-  s.email = "simon.a.chiang@gmail.com"
-  s.homepage = "http://tap.rubyforge.org/configurable"
+  s.name = 'configurable'
+  s.version = Configurable::VERSION
+  s.author = 'Simon Chiang'
+  s.email = 'simon.a.chiang@gmail.com'
+  s.homepage = 'http://tap.rubyforge.org/configurable'
   s.platform = Gem::Platform::RUBY
-  s.summary = "configurable"
-  s.require_path = "lib"
-  s.rubyforge_project = "tap"
+  s.summary = 'configurable'
+  s.require_path = 'lib'
+  s.rubyforge_project = 'tap'
   s.has_rdoc = true
-  s.rdoc_options.concat %w{--title Configurable --main README --line-numbers --inline-source}
-  s.add_dependency("lazydoc", ">= 1.0.0")
+  s.rdoc_options.concat %w{--main README -S -N --title Configurable}
+  s.add_dependency('lazydoc', ">= #{Lazydoc::VERSION}")
 
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{

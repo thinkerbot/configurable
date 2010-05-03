@@ -1,6 +1,10 @@
-== 
+== 0.7.0 / 2010-05-02
 
 * Utils#load_file now properly raises error for non-existant files
+* Improved/added support for JRuby, Rubinius, MRI 1.9.1
+* Added guess method to Validations
+* Added warn_ignored_args to ConfigParser
+* Patched security hole via string evals
 
 == 0.6.0 / 2009-12-05
 
