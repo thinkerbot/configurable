@@ -4,6 +4,9 @@ $:.unshift File.expand_path('../lib', __FILE__)
 require 'lazydoc/version'
 require 'configurable/version'
 
+$:.shift
+$:.shift
+
 Gem::Specification.new do |s|
   s.name = 'configurable'
   s.version = Configurable::VERSION
