@@ -34,86 +34,6 @@ class ValidationTest < Test::Unit::TestCase
     assert_raises(ValidationError) { validate("str", [/non/]) }
   end
   
-  def test_validate_validates_with_block_if_no_validations_match
-    result = validate("str", [/non/]) {|obj| true }
-    assert_equal "str", result
-    
-    assert_raises(ValidationError) do
-      validate("str", [/non/]) {|obj| false }
-    end
-  end
-  
-  def test_all_inputs_are_valid_if_validations_is_nil
-    assert_equal "str", validate("str", nil)
-    assert_equal 1, validate(1, nil)
-    assert_equal nil, validate(nil, nil)
-  end
-  
-  def test_validate_raises_error_for_non_array_or_nil_inputs
-    e = assert_raises(ArgumentError) { validate("str", "str") }
-    assert_equal "validations must be an array of valid inputs or nil", e.message
-    
-    e = assert_raises(ArgumentError) { validate("str", 1) }
-    assert_equal "validations must be an array of valid inputs or nil", e.message
-  end
-  
-  #
-  # validate_api test
-  #
-  
-  def test_validate_api_documentation
-    assert_equal 10, validate_api(10, [:to_s, :to_f])
-    assert_raises(ApiError) { validate_api(Object.new, [:to_s, :to_f]) }
-  end
-  
-  def test_validate_api
-    assert_equal 1, validate_api(1, [:to_f])
-    assert_equal 1, validate_api(1, [:to_f, :to_s])
-    assert_raises(ApiError) { validate_api(1, [:not_an_int_method]) }
-    assert_raises(ApiError) { validate_api(1, [:not_an_int_method, :to_s]) }
-    assert_raises(ApiError) { validate_api(1, [:to_s, :not_an_int_method]) }
-  end
-  
-  def test_validate_api_validates_with_block_if_api_does_not_match
-    result = validate_api("str", [:not_a_str_method]) {|obj| true }
-    assert_equal "str", result
-    
-    assert_raises(ApiError) do
-      validate_api("str", [:not_a_str_method]) {|obj| false }
-    end
-  end
-  
-  def test_all_inputs_are_valid_if_methods_is_nil
-    assert_equal "str", validate_api("str", nil)
-    assert_equal 1, validate_api(1, nil)
-    assert_equal nil, validate_api(nil, nil)
-  end
-  
-  def test_validate_api_raises_error_for_non_array_or_nil_inputs
-    e = assert_raises(ArgumentError) { validate_api("str", "str") }
-    assert_equal "methods must be an array or nil", e.message
-    
-    e = assert_raises(ArgumentError) { validate_api("str", 1) }
-    assert_equal "methods must be an array or nil", e.message
-  end
-  
-  #
-  # load_if_yaml test
-  #
-  
-  def test_load_if_yaml_loads_input_as_yaml_and_returns_object_if_valid
-    assert_equal 2, load_if_yaml("2", Integer, nil)
-    assert_equal nil, load_if_yaml("~", Integer, nil)
-  end
-  
-  def test_load_if_yaml_returns_input_if_loaded_object_causes_error
-    assert_equal " : value", load_if_yaml(" : value", nil)
-  end
-  
-  def test_load_if_yaml_returns_input_if_loaded_object_is_invald
-    assert_equal "string", load_if_yaml("string", Integer, nil)
-  end
-  
   #
   # check test
   #
@@ -124,35 +44,6 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal 1, m.call(1)
     e = assert_raises(ValidationError) { m.call(nil) }
     assert_equal "expected [Integer] but was: nil", e.message
-  end
-  
-  #
-  # yaml test
-  #
-  
-  def test_yaml_doc
-    b = yaml(Integer, nil)
-    assert_equal Proc, b.class
-    assert_equal 1, b.call(1)
-    assert_equal 1, b.call("1")
-    assert_equal nil, b.call(nil)
-    assert_raises(ValidationError) { b.call("str") }
-  end
-  
-  def test_yaml_block_loads_strings_as_yaml_and_checks_result
-    m = yaml(Integer)
-    assert_equal Proc, m.class
-    assert_equal 1, m.call(1)
-    assert_equal 1, m.call("1")
-    assert_raises(ValidationError) { m.call(nil) }
-    assert_raises(ValidationError) { m.call("str") }
-  end
-  
-  def test_yaml_simply_returns_loaded_input_when_validations_are_not_specified
-    m = yaml
-    assert_equal nil, m.call(nil)
-    assert_equal "str", m.call("str")
-    assert_equal [1,2,3], m.call("[1, 2, 3]")
   end
   
   #
@@ -171,149 +62,26 @@ class ValidationTest < Test::Unit::TestCase
   #
   
   def test_string_or_nil_documentation
-    assert_equal nil, string_or_nil.call("~") 
+    assert_equal nil, string_or_nil.call("") 
     assert_equal nil, string_or_nil.call(nil) 
   end
-
-  #
-  # symbol test
-  #
-
-  def test_symbol_documentation
-    assert_equal Proc, symbol.class
-    assert_equal :sym, symbol.call(:sym)
-    assert_equal :sym, symbol.call(':sym')
-    assert_raises(ValidationError) { symbol.call(nil) }
-    assert_raises(ValidationError) { symbol.call('str') }
-  end
-
-  #
-  # symbol_or_nil test
-  #
-  
-  def test_symbol_or_nil_documentation
-    assert_equal nil, symbol_or_nil.call("~") 
-    assert_equal nil, symbol_or_nil.call(nil) 
-  end
-
-  #
-  # strbol test
-  #
-
-  def test_strbol_documentation
-    assert_equal Proc, strbol.class
-    assert_equal :sym, strbol.call(:sym)
-    assert_equal :":sym", strbol.call(':sym')
-    assert_equal :sym, strbol.call('sym')
-    assert_raises(ValidationError) { strbol.call(nil) }
-  end
-
-  #
-  # strbol_or_nil test
-  #
-  
-  def test_strbol_or_nil_documentation
-    assert_equal nil, strbol_or_nil.call("~") 
-    assert_equal nil, strbol_or_nil.call(nil) 
-  end
   
   #
-  # boolean test
+  # switch test
   #
 
-  def test_boolean_documentation
-    assert_equal Proc, boolean.class
-    assert_equal true, boolean.call(true)
-    assert_equal false, boolean.call(false)
+  def test_switch_documentation
+    assert_equal Proc, switch.class
+    assert_equal true, switch.call(true)
+    assert_equal false, switch.call(false)
 
-    assert_equal true, boolean.call('true')
-    assert_equal true, boolean.call('yes')
-    assert_equal nil, boolean.call(nil) 
-    assert_equal false,boolean.call('FALSE')
+    assert_equal true, switch.call('true')
+    assert_equal false, switch.call('false')
 
-    assert_raises(ValidationError) { boolean.call(1) }
-    assert_raises(ValidationError) { boolean.call("str") }
+    assert_raises(ValidationError) { switch.call(1) }
+    assert_raises(ValidationError) { switch.call("str") }
   end
 
-  def test_boolean_block_converts_input_to_boolean_using_yaml_and_checks_result
-    assert_equal Proc, boolean.class
-
-    assert_equal true, boolean.call(true)
-    assert_equal true, boolean.call('true')
-    assert_equal true, boolean.call('TRUE')
-    assert_equal true, boolean.call('yes')
-
-    assert_equal nil, boolean.call(nil)
-    assert_equal false, boolean.call(false)
-    assert_equal false, boolean.call('false')
-    assert_equal false, boolean.call('FALSE')
-    assert_equal false, boolean.call('no')
-
-    assert_raises(ValidationError) { boolean.call(10) }
-    assert_raises(ValidationError) { boolean.call("str") }
-  end
-
-  #
-  # array test
-  #
-
-  def test_array_documentation
-    assert_equal Proc, array.class
-    assert_equal [1,2,3], array.call([1,2,3])
-    assert_equal [1,2,3], array.call('[1, 2, 3]')
-    assert_raises(ValidationError) { array.call(nil) }
-    assert_raises(ValidationError) { array.call('str') }
-  end
-
-  #
-  # array_or_nil test
-  #
-  
-  def test_array_or_nil_documentation
-    assert_equal nil, array_or_nil.call("~") 
-    assert_equal nil, array_or_nil.call(nil) 
-  end
-
-  #
-  # list test
-  #
-  
-  def test_list_documentation
-    assert_equal Proc, list.class
-    assert_equal [1,2,3], list.call([1,2,3])
-    assert_equal [1,'str'], list.call(['1', 'str'])
-    assert_raises(ValidationError) { list.call('str') }
-    assert_raises(ValidationError) { list.call(nil) }
-  end
-  
-  def test_list_accepts_block_for_validation
-    block = list(&integer)
-    assert_equal Proc, block.class
-    assert_equal [1,2,3], block.call([1,"2",3])
-    assert_raises(ValidationError) { block.call(['1', 'str']) }
-  end
-  
-  #
-  # hash test
-  #
-
-  def test_hash_documentation
-    assert_equal Proc, hash.class
-    assert_equal({'key' => 'value'}, hash.call({'key' => 'value'}))
-    assert_equal({'key' => 'value'}, hash.call('key: value'))
-    assert_raises(ValidationError) { hash.call(nil) }
-    assert_raises(ValidationError) { hash.call('str') }
-  end
-
-  #
-  # hash_or_nil test
-  #
-  
-  def test_hash_or_nil_documentation
-    assert_equal nil, hash_or_nil.call("~") 
-    assert_equal nil, hash_or_nil.call(nil) 
-  end
-  
   #
   # integer test
   #
@@ -332,7 +100,7 @@ class ValidationTest < Test::Unit::TestCase
   #
   
   def test_integer_or_nil_documentation
-    assert_equal nil, integer_or_nil.call("~") 
+    assert_equal nil, integer_or_nil.call("") 
     assert_equal nil, integer_or_nil.call(nil) 
   end
   
@@ -355,163 +123,26 @@ class ValidationTest < Test::Unit::TestCase
   #
   
   def test_float_or_nil_documentation
-    assert_equal nil, float_or_nil.call("~") 
+    assert_equal nil, float_or_nil.call("") 
     assert_equal nil, float_or_nil.call(nil) 
   end
   
   #
-  # numeric test
+  # list test
   #
-
-  def test_numeric_documentation
-    assert_equal Proc, numeric.class
-    assert_equal 1.1, numeric.call(1.1)
-    assert_equal 1, numeric.call(1)
-    assert_equal 1e6, numeric.call(1e6)
-    assert_equal 1.1, numeric.call('1.1')
-    assert_equal 1e6, numeric.call('1.0e+6')
-    assert_raises(ValidationError) { numeric.call(nil) }
-    assert_raises(ValidationError) { numeric.call('str') }
+  
+  def test_list_documentation
+    assert_equal Proc, list.class
+    assert_equal [1,2,3], list.call([1,2,3])
+    assert_raises(ValidationError) { list.call('str') }
+    assert_raises(ValidationError) { list.call(nil) }
   end
   
-  #
-  # numeric_or_nil test
-  #
-  
-  def test_numeric_or_nil_documentation
-    assert_equal nil, numeric_or_nil.call("~") 
-    assert_equal nil, numeric_or_nil.call(nil) 
-  end
-  
-  #
-  # regexp test
-  #
-  
-  def test_regexp_documentation
-    assert_equal Proc, regexp.class
-    assert_equal(/regexp/, regexp.call(/regexp/))
-    
-    yaml_str = '!ruby/regexp /regexp/'
-    assert_equal(/regexp/, regexp.call(yaml_str))
-    
-    assert_equal(/(?i)regexp/, regexp.call('(?i)regexp'))
-  end
-  
-  def test_regexp_converts_strings_that_do_not_load_to_regexps_into_regexps
-    assert_equal(/1/, regexp.call("1"))
-    assert_equal(//, regexp.call(""))
-    assert_equal(/false/, regexp.call("false"))
-  end
-  
-  def test_regexp_does_not_fail_for_bad_yaml
-    assert_equal(/: a/, regexp.call(": a"))
-  end
-
-  #
-  # regexp_or_nil test
-  #
-  
-  def test_regexp_or_nil_documentation
-    assert_equal nil, regexp_or_nil.call("~") 
-    assert_equal nil, regexp_or_nil.call(nil) 
-  end
-  
-  def test_regexp_or_nil_with_regexp_documentation
-    assert_equal Proc, regexp_or_nil.class
-    assert_equal(/regexp/, regexp_or_nil.call(/regexp/))
-    
-    yaml_str = '!ruby/regexp /regexp/'
-    assert_equal(/regexp/, regexp_or_nil.call(yaml_str))
-    
-    assert_equal(/(?i)regexp/, regexp_or_nil.call('(?i)regexp'))
-  end
-  
-  #
-  # range test
-  #
-  
-  def test_range_documentation
-    assert_equal Proc, range.class
-    assert_equal 1..10, range.call(1..10)
-    assert_equal 1..10, range.call('1..10')
-    assert_equal 'a'..'z', range.call('a..z')
-    assert_equal(-10...10, range.call('-10...10'))
-    assert_raises(ValidationError) { range.call(nil) }
-    assert_raises(ValidationError) { range.call('1.10') }
-    assert_raises(ValidationError) { range.call('a....z') }
-    
-    yaml_str = "!ruby/range \nbegin: 1\nend: 10\nexcl: false\n"
-    assert_equal 1..10, range.call(yaml_str)
-  end
-  
-  def test_range
-    assert_equal 1..10, range.call('1..10')
-    assert_equal 1e-3..1000, range.call('0.001..1000')
-  end
-  
-  #
-  # range_or_nil test
-  #
-  
-  def test_range_or_nil_documentation
-    assert_equal nil, range_or_nil.call("~") 
-    assert_equal nil, range_or_nil.call(nil) 
-  end
-  
-  def test_range_or_nil_with_range_documentation
-    assert_equal Proc, range_or_nil.class
-    assert_equal 1..10, range_or_nil.call(1..10)
-    assert_equal 1..10, range_or_nil.call('1..10')
-    assert_equal 'a'..'z', range_or_nil.call('a..z')
-    assert_equal(-10...10, range_or_nil.call('-10...10'))
-    # assert_raises(ValidationError) { range.call(nil) }
-    assert_raises(ValidationError) { range_or_nil.call('1.10') }
-    assert_raises(ValidationError) { range_or_nil.call('a....z') }
-    
-    yaml_str = "!ruby/range \nbegin: 1\nend: 10\nexcl: false\n"
-    assert_equal 1..10, range_or_nil.call(yaml_str)
-  end
-  #
-  # time test
-  #
-  
-  def test_time_documentation
-    assert_equal Proc, time.class
-    
-    now = Time.now
-    assert_equal now, time.call(now)
-  
-    assert_equal '2008/08/08 12:00:00', time.call('2008-08-08 20:00:00.00 +08:00').getutc.strftime('%Y/%m/%d %H:%M:%S')
-    assert_equal '2008/08/08 00:00:00', time.call('2008-08-08').strftime('%Y/%m/%d %H:%M:%S')
-
-    assert_raises(ValidationError) { time.call(1) }
-    assert_raises(ValidationError) { time.call(nil) }
-    
-    assert_equal Time.now.strftime('%Y/%m/%d %H:%M:%S'), time.call('str').strftime('%Y/%m/%d %H:%M:%S')
-  end
-
-  #
-  # time_or_nil test
-  #
-  
-  def test_time_or_nil_documentation
-    assert_equal nil, time_or_nil.call("~") 
-    assert_equal nil, time_or_nil.call(nil) 
-  end
-  
-  def test_time_or_nil_with_time_documentation
-    assert_equal Proc, time_or_nil.class
-    
-    now = Time.now
-    assert_equal now, time_or_nil.call(now)
-  
-    assert_equal '2008/08/08 12:00:00', time_or_nil.call('2008-08-08 20:00:00.00 +08:00').getutc.strftime('%Y/%m/%d %H:%M:%S')
-    assert_equal '2008/08/08 00:00:00', time_or_nil.call('2008-08-08').strftime('%Y/%m/%d %H:%M:%S')
-
-    assert_raises(ValidationError) { time_or_nil.call(1) }
-    # assert_raises(ValidationError) { time_or_nil.call(nil) }
-    
-    assert_equal Time.now.strftime('%Y/%m/%d %H:%M:%S'), time_or_nil.call('str').strftime('%Y/%m/%d %H:%M:%S')
+  def test_list_accepts_block_for_validation
+    block = list(&integer)
+    assert_equal Proc, block.class
+    assert_equal [1,2,3], block.call([1,"2",3])
+    assert_raises(ValidationError) { block.call(['1', 'str']) }
   end
   
   #
@@ -550,35 +181,5 @@ class ValidationTest < Test::Unit::TestCase
     assert_raises(ValidationError) { s.call([nil]) }
     assert_raises(ValidationError) { s.call([0]) }
     assert_raises(ValidationError) { s.call(['4']) }
-  end
-  
-  #
-  # io test
-  #
-  
-  def test_io_documentation
-    assert_equal Proc, io.class
-    assert_equal $stdout, io.call($stdout)
-    assert_equal '/path/to/file', io.call('/path/to/file')
-    assert_equal 1, io.call(1)
-    assert_raises(ValidationError) { io.call(nil) }
-    
-    array_io = io(:<<)
-    assert_equal $stdout, array_io.call($stdout)
-    assert_equal [], array_io.call([])
-    assert_raises(ApiError) { array_io.call(nil) }
-  end
-  
-  #
-  # io_or_nil test
-  #
-  
-  def test_io_or_nil_documentation
-    assert_equal nil, io_or_nil.call(nil)
-  end
-  
-  def test_io_or_nil_with_api
-    assert_equal [], io_or_nil(:<<).call([])
-    assert_equal nil, io_or_nil(:<<).call(nil)
   end
 end

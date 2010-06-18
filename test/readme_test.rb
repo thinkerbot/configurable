@@ -54,7 +54,6 @@ class ReadmeTest < Test::Unit::TestCase
 
     # fancy #
 
-    config :range, 1..10, &c.range            # specifies a range
     config :select, 'a', &c.select('a','b')   # value must be 'a' or 'b'
     config :list, [], &c.list                 # allows a list of entries
 
@@ -87,7 +86,6 @@ class ReadmeTest < Test::Unit::TestCase
     :flag => true,
     :switch => false,
     :num => '8',
-    :range => 1..10,
     :select => 'a',
     :list => [],
     :upcase => 'default',
@@ -100,7 +98,6 @@ class ReadmeTest < Test::Unit::TestCase
         --flag                       a flag config
         --[no-]switch                a --[no-]switch config
         --num NUM                    integer only
-        --range RANGE                specifies a range
         --select SELECT              value must be 'a' or 'b'
         --list LIST                  allows a list of entries
         --upcase UPCASE              custom transformation
@@ -115,7 +112,6 @@ class ReadmeTest < Test::Unit::TestCase
     :flag => true,
     :switch => false,
     :num => 8,                    # no longer a string
-    :range => 1..10,
     :select => 'a',
     :list => [],
     :upcase => 'DEFAULT',         # no longer downcase
@@ -138,7 +134,6 @@ class ReadmeTest < Test::Unit::TestCase
     yaml_str = %Q{
     key: a new value
     flag: false
-    range: 1..100
     }
 
     c.reconfigure(YAML.load(yaml_str))
@@ -148,7 +143,6 @@ class ReadmeTest < Test::Unit::TestCase
     :flag => false,
     :switch => false,
     :num => 8,
-    :range => 1..100,
     :select => 'b',
     :list => [],
     :upcase => 'FINAL VALUE',

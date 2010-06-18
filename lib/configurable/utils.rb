@@ -1,3 +1,5 @@
+autoload(:YAML, 'yaml')
+
 module Configurable
   
   # Utility methods to dump and load Configurable class configurations.
