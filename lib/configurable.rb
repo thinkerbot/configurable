@@ -189,8 +189,7 @@ require 'configurable/module_methods'
 #   AttributesClass.configurations[:b][:type]   # => :upcase
 #
 module Configurable
-  autoload(:Utils, 'configurable/utils')
-
+  
   # A ConfigHash bound to self.  Accessing configurations through config
   # is much slower (although sometimes more convenient) than through the
   # config accessors.

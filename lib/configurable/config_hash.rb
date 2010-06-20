@@ -27,21 +27,13 @@ module Configurable
   #   sample.config.store               # => {:not_delegated => 'value'}
   #   sample.config.to_hash             # => {:key => 'another', :not_delegated => 'value'}
   #
-  # ==== IndifferentAccess
-  #
-  # A ConfigHash uses the receiver class configurations to determine when and
-  # how to map get/set operations. In cases where multiple keys need to map
-  # in the same way (for example when you want indifferent access for strings
-  # and symbols), simply extend the class configurations so that the AGET ([])
-  # method returns the correct Config in all cases.
-  #
   # ==== Inconsistency
   #
   # ConfigHashes can fall into an inconsistent state if you manually add values
   # to store that would normally be mapped to the receiver.  This is both easy
   # to avoid and easy to repair.
   #
-  # To avoid inconsistency, don't manually add values to the store and set
+  # To avoid inconsistency, don't manually add values to the store, and set
   # import_store to true during initialization.  To repair inconsistency,
   # import the current store to self.
   #

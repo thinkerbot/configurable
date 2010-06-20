@@ -8,7 +8,6 @@ module Configurable
   # ClassMethods extends classes that include Configurable and provides methods
   # for declaring configurations.
   module ClassMethods
-    CONFIGURATIONS_CLASS = Hash
     
     # A hash of (key, Config) pairs tracking configs defined on self.  See
     # configurations for all configs declared across all ancestors.
@@ -16,7 +15,7 @@ module Configurable
     
     def self.initialize(base)  # :nodoc:
       unless base.instance_variable_defined?(:@config_registry)
-        base.instance_variable_set(:@config_registry, CONFIGURATIONS_CLASS.new)
+        base.instance_variable_set(:@config_registry, {})
       end
       
       unless base.instance_variable_defined?(:@configurations)
@@ -56,7 +55,7 @@ module Configurable
     def configurations
       return @configurations if @configurations
       
-      configurations = CONFIGURATIONS_CLASS.new
+      configurations = {}
       
       ancestors.reverse.each do |ancestor|
         next unless ancestor.kind_of?(ClassMethods)

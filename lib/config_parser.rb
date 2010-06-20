@@ -418,7 +418,10 @@ class ConfigParser
   # keys as necessary.
   #
   def add(delegates, nesting=nil)
-    delegates.each_pair do |key, delegate|
+    delegates.keys.sort_by do |key|
+      (delegates[key][:long] || key).to_s
+    end.each do |key|
+      delegate = delegates[key]
       key = nesting ? "#{nesting}:#{key}" : key
       
       case delegate[:type]

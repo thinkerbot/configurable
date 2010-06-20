@@ -23,9 +23,7 @@ module Configurable
     # The writer method called on a receiver during set
     attr_reader :writer
     
-    # An hash of metadata for self, often used to indicate how a config is
-    # presented in different contexts (ex on the command line, in a web form,
-    # or a desktop app).
+    # An hash of metadata for self
     attr_reader :attributes
 
     # Initializes a new Config.

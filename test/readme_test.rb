@@ -94,14 +94,14 @@ class ReadmeTest < Test::Unit::TestCase
     assert_equal expected, parser.config
 
     expected = %Q{
-        --key KEY                    a simple config
         --flag                       a flag config
-        --[no-]switch                a --[no-]switch config
+        --key KEY                    a simple config
+        --list LIST                  allows a list of entries
+    -s, --long CUSTOM                alternative flags
         --num NUM                    integer only
         --select SELECT              value must be 'a' or 'b'
-        --list LIST                  allows a list of entries
+        --[no-]switch                a --[no-]switch config
         --upcase UPCASE              custom transformation
-    -s, --long CUSTOM                alternative flags
 }
     assert_equal expected, "\n" + parser.to_s
 
@@ -131,23 +131,23 @@ class ReadmeTest < Test::Unit::TestCase
     assert_raises(Configurable::Validation::ValidationError) { c.select = 'c' }
     assert_raises(Configurable::Validation::ValidationError) { c.config[:select] = 'c' }
 
-    yaml_str = %Q{
-    key: a new value
-    flag: false
-    }
-
-    c.reconfigure(YAML.load(yaml_str))
+    # yaml_str = %Q{
+    # key: a new value
+    # flag: false
+    # }
+    # 
+    # c.reconfigure(YAML.load(yaml_str))
     
-    expected = {
-    :key => 'a new value',
-    :flag => false,
-    :switch => false,
-    :num => 8,
-    :select => 'b',
-    :list => [],
-    :upcase => 'FINAL VALUE',
-    :alt => 'default'
-    }
-    assert_equal expected, c.config.to_hash
+    # expected = {
+    # :key => 'a new value',
+    # :flag => false,
+    # :switch => false,
+    # :num => 8,
+    # :select => 'b',
+    # :list => [],
+    # :upcase => 'FINAL VALUE',
+    # :alt => 'default'
+    # }
+    # assert_equal expected, c.config.to_hash
   end
 end

@@ -87,9 +87,9 @@ class ConfigParserTest < Test::Unit::TestCase
   
     expected = %q{
 configurations:
+        --flag                       a flag
     -s, --long LONG                  a standard option
         --[no-]switch                a switch
-        --flag                       a flag
 }
     assert_equal expected, "\nconfigurations:\n#{psr.to_s}"
     

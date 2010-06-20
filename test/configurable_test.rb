@@ -453,7 +453,7 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_remove_config_recaches_cached_configurations
-    assert_equal([:a, :b], CachedRemoveConfig.configurations.keys)
+    assert_equal([:a, :b], CachedRemoveConfig.configurations.keys.sort_by {|key| key.to_s })
     CachedRemoveConfig.send(:remove_config, :a)
     assert_equal([:b], CachedRemoveConfig.configurations.keys)
   end
@@ -504,7 +504,7 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_undef_config_recaches_cached_configurations
-    assert_equal([:a, :b], CachedUndefConfig.configurations.keys)
+    assert_equal([:a, :b], CachedUndefConfig.configurations.keys.sort_by {|key| key.to_s })
     CachedUndefConfig.send(:undef_config, :a)
     assert_equal([:b], CachedUndefConfig.configurations.keys)
   end
@@ -786,38 +786,5 @@ class ConfigurableTest < Test::Unit::TestCase
     
     t2 = t1.dup
     assert_equal({:key => "value"}, t2.config.to_hash)
-  end
-  
-  #
-  # to_yaml test
-  #
-  
-  class SerializeTest
-    include Configurable
-    config :key, 'value'
-    config :upcase, 'value' do |obj|
-      obj.upcase
-    end
-    config :int, 1, &c.integer
-  end
-  
-  def test_configurable_serializes_and_deserializes_cleanly_as_YAML
-    s = SerializeTest.new
-    s.reconfigure :store => 'value'
-    
-    assert_equal 'value', s.key
-    assert_equal 'VALUE', s.upcase
-    assert_equal 1, s.int
-    assert_equal 'value', s.config[:store]
-    assert_equal [:key, :upcase, :int], s.config.configs.keys
-    
-    deserialized = YAML.load(YAML.dump(s))
-    
-    assert deserialized.object_id != s.object_id
-    assert_equal 'value', deserialized.key
-    assert_equal 'VALUE', deserialized.upcase
-    assert_equal 1, deserialized.int
-    assert_equal 'value', deserialized.config[:store]
-    assert_equal [:key, :upcase, :int], deserialized.config.configs.keys
   end
 end

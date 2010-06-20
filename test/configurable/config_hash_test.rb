@@ -205,30 +205,6 @@ class ConfigHashTest < Test::Unit::TestCase
     assert_equal({:a => 'a', :b => 'B'}, config_hash.store)
   end
   
-  class OrderedReceiver
-    include Configurable
-    
-    [:a, :b, :c, :d, :e, :f, :g, :h].each do |letter| 
-      config(letter, nil, :writer => :key=)
-    end
-    
-    attr_reader :order
-    
-    def initialize
-      @order = []
-    end
-    
-    def key=(value)
-      @order << value
-    end
-  end
-  
-  def test_merge_merges_configs_in_order
-    config_hash = ConfigHash.new(OrderedReceiver.new)
-    config_hash.merge!({:a => 'A', :g => 'G', :c => 'C', :h => 'H', :b => 'B'})
-    assert_equal ['A', 'B', 'C', 'G', 'H'], config_hash.receiver.order
-  end
-  
   #
   # each_pair test
   #
