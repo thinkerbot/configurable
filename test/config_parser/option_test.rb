@@ -1,4 +1,4 @@
-require  File.join(File.dirname(__FILE__), '../tap_test_helper')
+require File.expand_path('../../test_helper', __FILE__)
 require 'config_parser/option'
 
 class OptionTest < Test::Unit::TestCase
