@@ -40,7 +40,6 @@ class Configurable::UtilsTest < Test::Unit::TestCase
   Config = Configurable::Config
   NestConfig = Configurable::NestConfig
   ConfigHash = Configurable::ConfigHash
-  IndifferentAccess = Configurable::IndifferentAccess
   
   DEFAULTS = {
     :sym => :value,
@@ -134,19 +133,8 @@ str: value
     assert_equal DEFAULTS, YAML.load(dump(delegates, "\n"))
   end
   
-  def test_dump_stringifies_symbol_keys_for_delegates_with_indifferent_access
-    delegates = OrderedHash.new(:sym, 'str', :array, :hash)
-    delegates.extend(IndifferentAccess)
-    DEFAULTS.each_pair do |key, value|
-      delegates[key] = Config.new(:r, :w, value)
-    end
-
-    assert_equal STRING_DEFAULTS, YAML.load(dump(delegates, "\n"))
-  end
-  
   def test_dump_uses_block_to_format_each_line_in_the_dump
     delegates = OrderedHash.new(:sym, 'str', :array, :hash)
-    delegates.extend(IndifferentAccess)
     DEFAULTS.each_pair do |key, value|
       delegates[key] = Config.new(:r, :w, value)
     end

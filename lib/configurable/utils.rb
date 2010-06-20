@@ -58,10 +58,8 @@ module Configurable
     def dump(configs, target="")
       return dump(configs, target, &DEFAULT_DUMP) unless block_given?
       
-      stringify = configs.kind_of?(IndifferentAccess)
       configs.each_pair do |key, config|
-        key = key.to_s if stringify && key.kind_of?(Symbol)
-        target << yield(key, config)
+        target << yield(key.to_s, config)
       end
       
       target

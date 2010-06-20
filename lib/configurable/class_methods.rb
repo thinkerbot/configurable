@@ -1,5 +1,4 @@
 require 'configurable/config_hash'
-require 'configurable/indifferent_access'
 require 'configurable/validation'
 
 autoload(:ConfigParser, 'config_parser')
@@ -18,10 +17,6 @@ module Configurable
     def self.initialize(base)  # :nodoc:
       unless base.instance_variable_defined?(:@config_registry)
         base.instance_variable_set(:@config_registry, CONFIGURATIONS_CLASS.new)
-      end
-      
-      unless base.instance_variable_defined?(:@use_indifferent_access)
-        base.instance_variable_set(:@use_indifferent_access, true)
       end
       
       unless base.instance_variable_defined?(:@configurations)
@@ -62,7 +57,6 @@ module Configurable
       return @configurations if @configurations
       
       configurations = CONFIGURATIONS_CLASS.new
-      configurations.extend(IndifferentAccess) if @use_indifferent_access
       
       ancestors.reverse.each do |ancestor|
         next unless ancestor.kind_of?(ClassMethods)
@@ -86,20 +80,6 @@ module Configurable
     end
     
     protected
-
-    # Sets configurations to symbolize keys for AGET ([]) and ASET([]=)
-    # operations, or not.  By default, configurations will use
-    # indifferent access.
-    def use_indifferent_access(input=true)
-      @use_indifferent_access = input
-      return unless @configurations
-      
-      if @use_indifferent_access
-        @configurations.extend(IndifferentAccess)
-      else
-        @configurations = @configurations.dup
-      end
-    end
 
     # Declares a class configuration and generates the associated accessors. 
     # If a block is given, the <tt>key=</tt> method will set <tt>@key</tt> 
