@@ -450,8 +450,3 @@ module Configurable
     end
   end
 end
-
-# Apply the ordered hash patch if necessary
-if RUBY_VERSION < '1.9'
-  require 'configurable/ordered_hash_patch'
-end
