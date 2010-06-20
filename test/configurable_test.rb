@@ -224,6 +224,16 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal "initialization values are not allowed for: :two", err.message
   end
   
+  def test_config_raises_error_for_non_symbol_keys
+    err = assert_raises(RuntimeError) { DeclarationClass.send(:config, 'key') }
+    assert_equal 'invalid key: "key" (not a Symbol)', err.message
+  end
+  
+  def test_config_raises_error_for_non_word_characters_in_key
+    err = assert_raises(NameError) { DeclarationClass.send(:config, :'k,ey') }
+    assert_equal 'invalid characters in key: :"k,ey"', err.message
+  end
+  
   #
   # config_attr test
   #

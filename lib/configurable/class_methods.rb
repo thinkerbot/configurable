@@ -163,6 +163,7 @@ module Configurable
     #
     # Any additional attributes are registered with the configuration.
     def config_attr(key, value=nil, attributes={}, &block)
+      check_key(key)
       attributes = merge_attributes(block, attributes)
       
       # define the reader
@@ -269,6 +270,8 @@ module Configurable
     # type::                  By default set to :nest.
     #
     def nest(key, configurable_class=nil, attributes={}, &block)
+      check_key(key)
+      
       attributes = merge_attributes(block, attributes)
       attributes = {
         :reader => true,
@@ -396,6 +399,16 @@ module Configurable
     def inherited(base) # :nodoc:
      ClassMethods.initialize(base)
      super
+    end
+    
+    def check_key(key) # :nodoc:
+      unless key.kind_of?(Symbol)
+        raise "invalid key: #{key.inspect} (not a Symbol)"
+      end
+      
+      unless key.to_s =~ /\A\w+\z/
+        raise NameError.new("invalid characters in key: #{key.inspect}")
+      end
     end
     
     # a helper to define methods that may be overridden in attributes.
