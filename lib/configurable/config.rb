@@ -21,13 +21,14 @@ module Configurable
       @attributes = attributes
       @init = init
       @duplicate = duplicate
+      @duplicate = :dup if @duplicate == true
     end
     
     # Returns the default value.  If duplicate is specified and the default
     # may be duplicated (see Config.duplicable_value?) then a duplicate
     # of the default is returned.
     def default(duplicate=true)
-      duplicate? && duplicate ? @default.dup : @default
+      @duplicate && duplicate ? @default.send(@duplicate) : @default
     end
     
     # Returns the value for the specified attribute, or default if the
@@ -63,7 +64,7 @@ module Configurable
     # Returns true or false as specified in new.  True indicates that the
     # default value is duplicatd for each configurable instance.
     def duplicate?
-      @duplicate
+      @duplicate ? true : false
     end
     
     # Returns an inspection string.

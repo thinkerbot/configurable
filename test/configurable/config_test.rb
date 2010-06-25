@@ -119,4 +119,10 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal default, c.default(false)
     assert default.object_id == c.default(false).object_id
   end
+  
+  def test_default_duplicates_default_using_the_dup_method
+    default = 'default'
+    c = Config.new(:reader, :writer, default, {}, true, :object_id)
+    assert_equal default.object_id, c.default
+  end
 end
