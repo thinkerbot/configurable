@@ -1,3 +1,9 @@
+
+* removed numerous validations
+* removed indifferent access -- all configs are stored and accessed
+  by symbol keys
+* configs now order alphabetically, and have no guaranteed set order
+
 == 0.7.0 / 2010-05-02
 
 * Utils#load_file now properly raises error for non-existant files
