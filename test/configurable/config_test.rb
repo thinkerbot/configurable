@@ -83,19 +83,6 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   #
-  # init test
-  #
-  
-  def test_init_sets_default_on_receiver
-    receiver = Struct.new(:key).new(nil)
-    c = Config.new(:key, :key=, "default")
-    
-    assert_equal nil, receiver.key
-    c.init(receiver)
-    assert_equal "default", receiver.key
-  end
-  
-  #
   # default test
   #
 

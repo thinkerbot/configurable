@@ -139,14 +139,4 @@ class NestConfigTest < Test::Unit::TestCase
     c.set(receiver, instance)
     assert_equal instance, receiver.key
   end
-  
-  #
-  # init test
-  #
-  
-  def test_init_creates_new_instance_of_nest_class_and_sets_on_receiver 
-    assert_equal nil, receiver.key
-    c.init(receiver) 
-    assert_equal NestClass, receiver.key.class
-  end
 end

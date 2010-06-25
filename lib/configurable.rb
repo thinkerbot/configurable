@@ -258,12 +258,9 @@ module Configurable
     # now initialize configs in order
     configs.each_pair do |key, config|
       next unless config.init?
-
-      if initial_values.has_key?(config)
-        config.set(self, initial_values[config])
-      else
-        config.init(self)
-      end
+      
+      initial_value = initial_values.has_key?(config) ? initial_values[config] : config.default
+      config.set(self, initial_value)
     end
   end
 end

@@ -47,15 +47,9 @@ module Configurable
       if value.kind_of?(nest_class)
         receiver.send(writer, value)
       else
-        configurable = receiver.send(reader) || init(receiver)
+        configurable = receiver.send(reader) || receiver.send(writer, nest_class.new)
         configurable.reconfigure(value)
       end
-    end
-    
-    # Initializes an instance of nest_class and sets it on the receiver.  The
-    # instance is initialized by calling nest_class.new with no arguments.
-    def init(receiver)
-      receiver.send(writer, nest_class.new)
     end
     
     # Returns an inspection string.

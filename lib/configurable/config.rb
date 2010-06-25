@@ -47,13 +47,6 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    # Sets the default value on the receiver.  Normally this method is only
-    # called during Configurable#initialize_config, and only then when init?
-    # returns true.
-    def init(receiver)
-      receiver.send(writer, default)
-    end
-    
     # Returns true or false as specified in new.  True indicates that this
     # delegate is allowed to initialize values on the receiver during
     # Configurable#initialize_config.
