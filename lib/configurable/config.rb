@@ -4,19 +4,6 @@ module Configurable
   # operations to a receiver.  Configs also track metadata related to their
   # presentation in various contexts.
   class Config
-    class << self
-      
-      # Determines if the value is duplicable.  Non-duplicable values 
-      # include nil, true, false, Symbol, Numeric, Method, Module, and 
-      # any object that does not respond to dup.
-      def duplicable_value?(value)
-        case value
-        when nil, true, false, Symbol, Numeric, Method, Module then false
-        else value.respond_to?(:dup)
-        end
-      end
-    end
-      
     # The reader method called on a receiver during get
     attr_reader :reader
 
@@ -27,20 +14,20 @@ module Configurable
     attr_reader :attributes
 
     # Initializes a new Config.
-    def initialize(reader, writer="#{reader}=", default=nil, attributes={}, init=true, dup=nil)
+    def initialize(reader, writer="#{reader}=", default=nil, attributes={}, init=true, duplicate=false)
       self.reader = reader
       self.writer = writer
       @default = default
       @attributes = attributes
       @init = init
-      @dup = dup.nil? ? Config.duplicable_value?(default) : dup
+      @duplicate = duplicate
     end
     
     # Returns the default value.  If duplicate is specified and the default
     # may be duplicated (see Config.duplicable_value?) then a duplicate
     # of the default is returned.
     def default(duplicate=true)
-      duplicate && @dup ? @default.dup : @default
+      duplicate? && duplicate ? @default.dup : @default
     end
     
     # Returns the value for the specified attribute, or default if the
@@ -71,6 +58,12 @@ module Configurable
     # Configurable#initialize_config.
     def init?
       @init
+    end
+    
+    # Returns true or false as specified in new.  True indicates that the
+    # default value is duplicatd for each configurable instance.
+    def duplicate?
+      @duplicate
     end
     
     # Returns an inspection string.
