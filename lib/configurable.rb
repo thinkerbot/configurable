@@ -224,43 +224,13 @@ module Configurable
   # Initializes config. Default config values are overridden as specified.
   def initialize_config(overrides={})
     @config = ConfigHash.new(self, overrides, false)
-    
-    # cache as configs (equivalent to self.class.configurations)
-    # as an optimization
-    configs = @config.configs
-    
-    # hash overrides by delegate so they may be set
-    # in the correct order below
-    initial_values = {}
-    overrides.each_key do |key|
-      if config = configs[key]
-        
-        # check that the config may be initialized
-        unless config.init?
-          key = configs.keys.find {|k| configs[k] == config }
-          raise "initialization values are not allowed for: #{key.inspect}"
-        end
-        
-        # check that multiple overrides are not specified for a
-        # single config, as may happen with indifferent access
-        # (ex 'key' and :key)
-        if initial_values.has_key?(config)
-          key = configs.keys.find {|k| configs[k] == config }
-          raise "multiple values map to config: #{key.inspect}"
-        end
-        
-        # since overrides are used as the ConfigHash store,
-        # the overriding values must be removed, not read
-        initial_values[config] = overrides.delete(key)
+    @config.configs.each_pair do |key, config|
+      if config.init?
+        value = overrides.has_key?(key) ? overrides.delete(key) : config.default
+        config.set(self, value)
+      elsif overrides.has_key?(key)
+        raise "initialization values are not allowed for: #{key.inspect}"
       end
-    end
-    
-    # now initialize configs in order
-    configs.each_pair do |key, config|
-      next unless config.init?
-      
-      initial_value = initial_values.has_key?(config) ? initial_values[config] : config.default
-      config.set(self, initial_value)
     end
   end
 end
