@@ -1,5 +1,4 @@
 require 'rake'
-require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/gempackagetask'
 
@@ -73,41 +72,41 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
 end
 
 #
+# Dependency tasks
+#
+
+desc 'Checkout submodules'
+task :submodules do
+  output = `git submodule status 2>&1`
+  
+  if output =~ /^-/m
+    puts "Missing submodules:\n#{output}"
+    sh "git submodule init"
+    sh "git submodule update"
+    puts
+  end
+end
+
+desc 'Bundle dependencies'
+task :bundle do
+  output = `bundle check 2>&1`
+  
+  unless $?.to_i == 0
+    puts output
+    sh "bundle install"
+    puts
+  end
+end
+
+#
 # Test tasks
 #
 
 desc 'Default: Run tests.'
 task :default => :test
 
-desc 'Run tests.'
-Rake::TestTask.new(:test) do |t|
-  t.libs = ['lib']
-  unless ENV['gems']
-    t.libs << 'submodule/lazydoc/lib'
-  end
-  t.test_files = Dir.glob( File.join('test', ENV['pattern'] || '**/*_test.rb') )
-  t.verbose = true
-  t.warning = true
-end
-
-desc 'run checks'
-Rake::TestTask.new(:check) do |t|
-  t.libs = ['lib']
-  unless ENV['gems']
-    t.libs << 'submodule/lazydoc/lib'
-  end
-  t.test_files = Dir.glob( File.join('test', ENV['pattern'] || '**/*_check.rb') )
-  t.verbose = true
-  t.warning = true
-end
-
-desc 'run benchmarks.'
-Rake::TestTask.new(:benchmark) do |t|
-  t.libs = ['lib']
-  unless ENV['gems']
-    t.libs << 'submodule/lazydoc/lib'
-  end
-  t.test_files = Dir.glob( File.join('benchmark', ENV['pattern'] || '**/*_benchmark.rb') )
-  t.verbose = true
-  t.warning = true
+desc 'Run the tests'
+task :test => :bundle do
+  tests = Dir.glob('test/**/*_test.rb')
+  sh('ruby', '-w', '-e', 'ARGV.dup.each {|test| load test}', *tests)
 end
