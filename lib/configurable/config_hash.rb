@@ -1,71 +1,23 @@
-require 'configurable/nest_config'
+require 'configurable/config'
 
 module Configurable
   
   # ConfigHash acts like a hash that maps get and set operations as specified
-  # in a Configurable's class configurations.
-  #
-  #   class Sample
-  #     include Configurable
-  #     config :key
-  #   end
-  #
-  #   sample = Sample.new
-  #   sample.config.class               # => ConfigHash
-  #
-  #   sample.key = 'value'
-  #   sample.config[:key]               # => 'value'
-  #
-  #   sample.config[:key] = 'another'
-  #   sample.key                        # => 'another'
-  #
-  # Non-configuration keys are sent to an underlying data store:
-  #
-  #   sample.config[:not_delegated] = 'value'
-  #   sample.config[:not_delegated]     # => 'value'
-  #
-  #   sample.config.store               # => {:not_delegated => 'value'}
-  #   sample.config.to_hash             # => {:key => 'another', :not_delegated => 'value'}
-  #
-  # ==== Inconsistency
-  #
-  # ConfigHashes can fall into an inconsistent state if you manually add values
-  # to store that would normally be mapped to the receiver.  This is both easy
-  # to avoid and easy to repair.
-  #
-  # To avoid inconsistency, don't manually add values to the store, and set
-  # import_store to true during initialization.  To repair inconsistency,
-  # import the current store to self.
-  #
-  #   config_hash = Sample.new.config
-  #   config_hash[:key] = 'a'
-  #   config_hash.store[:key] = 'b'
-  #
-  #   config_hash[:key]          # => 'a'
-  #   config_hash.to_hash        # => {:key => 'b'}
-  #   config_hash.inconsistent?  # => true
-  #
-  #   config_hash.import(config_hash.store)
-  #
-  #   config_hash[:key]          # => 'b'
-  #   config_hash.to_hash        # => {:key => 'b'}
-  #   config_hash.inconsistent?  # => false
-  #
+  # in by a receiver's class configurations. Non-configuration keys are sent
+  # to an underlying data store.
   class ConfigHash
-
+    
     # The bound receiver
     attr_reader :receiver
-
+    
     # The underlying data store; setting values in store directly
     # can result in an inconsistent state.  Use []= instead.
     attr_reader :store
-  
+    
     # Initializes a new ConfigHash.  Initialize normally imports values from
     # store to ensure it doesn't contain entries that could be stored on the
-    # receiver.  
-    # 
-    # Setting import_store to false allows quick initialization but can result
-    # in an inconsistent state.
+    # receiver.  Set import_store to false for quicker initialization when
+    # you know the store is already in a consistent state.
     def initialize(receiver, store={}, import_store=true)
       @receiver = receiver
       @store = store
@@ -83,19 +35,24 @@ module Configurable
     #
     # Primarily used to create a consistent state for self (see above).
     def import(store)
-      configs = self.configs # cache as an optimization
+      configs = self.configs
       store.keys.each do |key|
-        next unless config = configs[key]
-        config.set(receiver, store.delete(key))
+        if config = configs[key]
+          config.set(receiver, store.delete(key))
+        end
       end
       
       self
     end
     
     # Returns true if the store has entries that can be stored on the
-    # receiver.
+    # receiver. To avoid inconsistency, don't manually add values to the
+    # store. To repair inconsistency, import the current store to self.
+    #
+    #   config_hash.import(config_hash.store)
+    #
     def inconsistent?
-      configs = self.configs # cache as an optimization
+      configs = self.configs
       store.keys.any? {|key| configs[key] }
     end
     
@@ -119,9 +76,11 @@ module Configurable
     
     # Returns the union of configs and store keys.
     def keys
-      configs.keys | store.keys
+      config_keys = []
+      configs.each_pair {|key, config| config_keys << key if config }
+      config_keys | store.keys
     end
-
+    
     # True if the key is a key in configs or store.
     def has_key?(key)
       configs[key] != nil || store.has_key?(key) 
@@ -129,12 +88,8 @@ module Configurable
     
     # Merges another with self.
     def merge!(another)
-      # cache configs and inline set as a significant optimization
       configs = self.configs
-      (configs.keys | another.keys).each do |key|
-        next unless another.has_key?(key)
-        
-        value = another[key]
+      another.each_pair do |key, value|
         if config = configs[key]
           config.set(receiver, value)
         else

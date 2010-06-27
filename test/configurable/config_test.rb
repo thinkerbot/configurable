@@ -1,4 +1,4 @@
-require File.expand_path('../../test_helper.rb', __FILE__) 
+require File.expand_path('../../test_helper', __FILE__) 
 require 'configurable/config'
 
 class ConfigTest < Test::Unit::TestCase
