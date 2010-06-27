@@ -29,6 +29,26 @@ module Configurable
       options[:class]
     end
     
+    def guess(value)
+      guesses = []
+      
+      registry.each_pair do |type, options|
+        if matcher = options[:matches]
+          if matcher === value
+            guesses << type
+          end
+        end
+      end
+      
+      case guesses.length
+      when 1  then guesses.first
+      when 0  then raise "could not guess config type: #{value.inspect}"
+      else 
+        guesses = guesses.sort_by {|guess| guess.to_s }
+        raise "multiple guesses for config type: #{value.inspect} #{guesses.inspect}"
+      end
+    end
+    
     protected
     
     def method_missing(method_name, *args, &block)

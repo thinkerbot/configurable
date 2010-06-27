@@ -5,10 +5,10 @@ class OptionsTest < Test::Unit::TestCase
   Config = Configurable::Config
   Options = Configurable::Options
   
-  attr_reader :ops
+  attr_reader :opts
   
   def setup
-    @ops = Options.new
+    @opts = Options.new
   end
   
   #
@@ -16,19 +16,19 @@ class OptionsTest < Test::Unit::TestCase
   #
   
   def test_register_stores_options_by_type
-    assert_equal({}, ops.registry)
-    ops.register(:type, :class => Config)
-    assert_equal({:class => Config}, ops.registry[:type])
+    assert_equal({}, opts.registry)
+    opts.register(:type, :class => Config)
+    assert_equal({:class => Config}, opts.registry[:type])
   end
   
   def test_register_sets_class_to_Config_if_unspecified
-    ops.register(:type)
-    assert_equal({:class => Config}, ops.registry[:type])
+    opts.register(:type)
+    assert_equal({:class => Config}, opts.registry[:type])
   end
   
   def test_register_returns_class_option
-    assert_equal Config, ops.register(:type)
-    assert_equal String, ops.register(:type, :class => String)
+    assert_equal Config, opts.register(:type)
+    assert_equal String, opts.register(:type, :class => String)
   end
   
   class DefineTarget
@@ -36,7 +36,7 @@ class OptionsTest < Test::Unit::TestCase
   
   def test_register_uses_block_to_define_a_Config_subclass_if_provided
     line = __LINE__ + 4
-    clas = ops.register(:type) do |name|
+    clas = opts.register(:type) do |name|
       %Q{
         def #{name}_success; :success; end
         def #{name}_failure; raise 'fail'; end
@@ -58,17 +58,40 @@ class OptionsTest < Test::Unit::TestCase
   end
   
   def test_register_subclasses_class_if_provided
-    clas = ops.register(:type, :class => RegisterSuperclass) { }
+    clas = opts.register(:type, :class => RegisterSuperclass) { }
     assert_equal RegisterSuperclass, clas.superclass
   end
   
+  #
+  # guess test
+  #
+  
+  def test_options_guesses_type_based_on_matches_option
+    opts.register(:one, :matches => String)
+    opts.register(:two, :matches => Numeric)
+    
+    assert_equal :one, opts.guess('')
+    assert_equal :two, opts.guess(8)
+  end
+  
+  def test_guess_raises_error_for_no_matching_type
+    err = assert_raises(RuntimeError) { opts.guess 'abc' }
+    assert_equal 'could not guess config type: "abc"', err.message
+  end
+  
+  def test_guess_raises_error_for_multiple_matching_types
+    opts.register(:one, :matches => String)
+    opts.register(:two, :matches => Object)
+    
+    err = assert_raises(RuntimeError) { opts.guess 'abc' }
+    assert_equal 'multiple guesses for config type: "abc" [:one, :two]', err.message
+  end
   #
   # method_missing test
   #
   
   def test_missing_methods_return_options_if_a_registered_type
-    ops.register(:example, :class => Config)
-    assert_equal({:class => Config}, ops.example)
+    opts.register(:example, :class => Config)
+    assert_equal({:class => Config}, opts.example)
   end
-  
 end
