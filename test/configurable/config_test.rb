@@ -26,8 +26,8 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_get_calls_reader_on_receiver
-    receiver = Struct.new(:key).new("value")
-    assert_equal "value", c.get(receiver)
+    receiver = Struct.new(:key).new('value')
+    assert_equal 'value', c.get(receiver)
   end
   
   #
@@ -38,8 +38,8 @@ class ConfigTest < Test::Unit::TestCase
     receiver = Struct.new(:key).new(nil)
     
     assert_equal nil, receiver.key
-    c.set(receiver, "value")
-    assert_equal "value", receiver.key
+    c.set(receiver, 'value')
+    assert_equal 'value', receiver.key
   end
   
   #
