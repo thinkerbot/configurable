@@ -28,13 +28,8 @@ module Configurable
 
     # Raised when a Validation block fails.
     class ValidationError < ArgumentError
-      def initialize(input, validations)
-        super case 
-        when validations.empty?
-          "no validations specified"
-        else
-          "expected #{validations.inspect} but was: #{input.inspect}"
-        end
+      def initialize(input, *validations)
+        super "expected #{validations.inspect} but was: #{input.inspect}"
       end
     end
 

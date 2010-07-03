@@ -26,7 +26,7 @@ module Configurable
       end
       
       registry[type.to_sym] = options
-      options[:class]
+      options
     end
     
     def guess(value)
@@ -41,8 +41,8 @@ module Configurable
       end
       
       case guesses.length
-      when 1  then guesses.first
-      when 0  then raise "could not guess config type: #{value.inspect}"
+      when 0 then {}
+      when 1 then registry[guesses.first]
       else 
         guesses = guesses.sort_by {|guess| guess.to_s }
         raise "multiple guesses for config type: #{value.inspect} #{guesses.inspect}"

@@ -26,9 +26,9 @@ class OptionsTest < Test::Unit::TestCase
     assert_equal({:class => Config}, opts.registry[:type])
   end
   
-  def test_register_returns_class_option
-    assert_equal Config, opts.register(:type)
-    assert_equal String, opts.register(:type, :class => String)
+  def test_register_returns_options
+    assert_equal({:class => Config}, opts.register(:type))
+    assert_equal({:class => String}, opts.register(:type, :class => String))
   end
   
   class DefineTarget
@@ -36,13 +36,14 @@ class OptionsTest < Test::Unit::TestCase
   
   def test_register_uses_block_to_define_a_Config_subclass_if_provided
     line = __LINE__ + 4
-    clas = opts.register(:type) do |name|
+    options = opts.register(:type) do |name|
       %Q{
         def #{name}_success; :success; end
         def #{name}_failure; raise 'fail'; end
       }
     end
     
+    clas = options[:class]
     assert_equal Config, clas.superclass
     clas.new(:key).define_on(DefineTarget)
     
@@ -58,8 +59,8 @@ class OptionsTest < Test::Unit::TestCase
   end
   
   def test_register_subclasses_class_if_provided
-    clas = opts.register(:type, :class => RegisterSuperclass) { }
-    assert_equal RegisterSuperclass, clas.superclass
+    options = opts.register(:type, :class => RegisterSuperclass) { }
+    assert_equal RegisterSuperclass, options[:class].superclass
   end
   
   #
@@ -67,16 +68,15 @@ class OptionsTest < Test::Unit::TestCase
   #
   
   def test_options_guesses_type_based_on_matches_option
-    opts.register(:one, :matches => String)
-    opts.register(:two, :matches => Numeric)
+    a = opts.register(:one, :matches => String)
+    b = opts.register(:two, :matches => Numeric)
     
-    assert_equal :one, opts.guess('')
-    assert_equal :two, opts.guess(8)
+    assert_equal a, opts.guess('')
+    assert_equal b, opts.guess(8)
   end
   
-  def test_guess_raises_error_for_no_matching_type
-    err = assert_raises(RuntimeError) { opts.guess 'abc' }
-    assert_equal 'could not guess config type: "abc"', err.message
+  def test_guess_returns_empty_hash_for_no_matches
+    assert_equal({}, opts.guess('abc'))
   end
   
   def test_guess_raises_error_for_multiple_matching_types

@@ -20,7 +20,7 @@ class ConfigHashTest < Test::Unit::TestCase
   attr_reader :config_hash
   
   def setup
-    @config_hash = ConfigHash.new(Receiver.new)
+    @config_hash = ConfigHash.new.bind(Receiver.new)
   end
   
   #
@@ -29,40 +29,51 @@ class ConfigHashTest < Test::Unit::TestCase
   
   def test_initialize_sets_store_directly
     store = {}
-    config_hash = ConfigHash.new(Receiver.new, store)
+    config_hash = ConfigHash.new(store)
     assert_equal store.object_id, config_hash.store.object_id
   end
   
-  def test_initialize_imports_store_to_receiver
+  def test_initialize_does_not_import_store_to_receiver
     receiver = Receiver.new
-    receiver.key = "existing value"
+    receiver.key = 'current'
     
-    config_hash = ConfigHash.new(receiver, {:key => 'new value'})
-    assert_equal({}, config_hash.store)
-    assert_equal "new value", receiver.key
-  end
-  
-  def test_initialize_does_not_import_store_unless_specified
-    receiver = Receiver.new
-    receiver.key = "existing value"
-    
-    config_hash = ConfigHash.new(receiver, {:key => 'new value'}, false)
-    assert_equal({:key => 'new value'}, config_hash.store)
-    assert_equal "existing value", receiver.key
+    config_hash = ConfigHash.new({:key => 'new'}, receiver)
+    assert_equal({:key => 'new'}, config_hash.store)
+    assert_equal 'current', receiver.key
   end
   
   #
-  # inconsistent? test
+  # bind test
   #
   
-  def test_inconsistent_returns_true_if_the_store_has_values_that_could_be_stored_on_receiver
-    assert_equal false, config_hash.inconsistent?
+  #
+  # unbind test
+  #
+  
+  #
+  # bound? test
+  #
+  
+  def test_bound_returns_true_if_a_receiver_is_set
+    config_hash = ConfigHash.new
+    assert_equal nil, config_hash.receiver
+    assert_equal false, config_hash.bound?
+    
+    receiver = Receiver.new
+    config_hash.bind(receiver)
+    assert_equal receiver, config_hash.receiver
+    assert_equal true, config_hash.bound?
+  end
+  
+  #
+  # consistent? test
+  #
+  
+  def test_consistent_returns_true_if_the_store_has_no_entries_that_could_be_stored_on_receiver
+    assert_equal true, config_hash.consistent?
     
     config_hash.store[:key] = 'value'
-    assert_equal true, config_hash.inconsistent?
-    
-    config_hash.store.delete(:key)
-    assert_equal false, config_hash.inconsistent?
+    assert_equal false, config_hash.consistent?
   end
   
   #
@@ -110,9 +121,6 @@ class ConfigHashTest < Test::Unit::TestCase
   
   def test_keys_returns_union_of_configs_keys_and_store_keys
     config_hash.store[:alt] = nil
-    
-    assert_equal [:key], config_hash.configs.keys
-    assert_equal [:alt], config_hash.store.keys
     assert_equal [:key, :alt], config_hash.keys
   end
   
@@ -150,7 +158,7 @@ class ConfigHashTest < Test::Unit::TestCase
     assert_equal 'value', config_hash.receiver.key
     assert_equal({:a => 'a'}, config_hash.store)
     
-    another = ConfigHash.new(Receiver.new, :key => 'VALUE', :b => 'B')
+    another = ConfigHash.new(:key => 'VALUE', :b => 'B').bind(Receiver.new)
     assert_equal 'VALUE', another.receiver.key
     assert_equal({:b => 'B'}, another.store)
     
@@ -184,9 +192,9 @@ class ConfigHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_recursively_hashifies_ConfigHash_values
-    a = ConfigHash.new(Receiver.new, :a => 'value')
-    b = ConfigHash.new(Receiver.new, :b => a)
-    c = ConfigHash.new(Receiver.new, :c => b)
+    a = ConfigHash.new(:a => 'value').bind(Receiver.new)
+    b = ConfigHash.new(:b => a).bind(Receiver.new)
+    c = ConfigHash.new(:c => b).bind(Receiver.new)
     
     assert_equal({
       :key => nil,
@@ -201,9 +209,9 @@ class ConfigHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_accepts_a_block_to_transform_keys_and_values
-    a = ConfigHash.new(Receiver.new, :a => 'value')
-    b = ConfigHash.new(Receiver.new, :b => a)
-    c = ConfigHash.new(Receiver.new, :c => b)
+    a = ConfigHash.new(:a => 'value').bind(Receiver.new)
+    b = ConfigHash.new(:b => a).bind(Receiver.new)
+    c = ConfigHash.new(:c => b).bind(Receiver.new)
     
     result = c.to_hash do |hash, key, value|
       hash[key.to_s] = value.kind_of?(String) ? value.upcase : value
@@ -233,9 +241,9 @@ class ConfigHashTest < Test::Unit::TestCase
   end
   
   def test_to_hash_scrubs_configs_recursively
-    a = ConfigHash.new(Receiver.new, :a => 'value')
-    b = ConfigHash.new(Receiver.new, :b => a)
-    c = ConfigHash.new(Receiver.new, :c => b)
+    a = ConfigHash.new(:a => 'value').bind(Receiver.new)
+    b = ConfigHash.new(:b => a).bind(Receiver.new)
+    c = ConfigHash.new(:c => b).bind(Receiver.new)
     
     assert_equal({
       :c => {:b => {:a => 'value'}}
@@ -247,14 +255,14 @@ class ConfigHashTest < Test::Unit::TestCase
   #
   
   def test_equals_compares_to_hash_values
-    config_hash = ConfigHash.new(Receiver.new)
+    config_hash = ConfigHash.new.bind(Receiver.new)
     assert config_hash == {:key => nil}
     
     config_hash[:key] = 'value'
     config_hash[:alt] = 'VALUE'
     assert config_hash == {:key => 'value', :alt => 'VALUE'}
     
-    another = ConfigHash.new(Receiver.new, {:key => 'value', :alt => 'VALUE'})
+    another = ConfigHash.new(:key => 'value', :alt => 'VALUE').bind(Receiver.new)
     assert config_hash == another
   end
 end

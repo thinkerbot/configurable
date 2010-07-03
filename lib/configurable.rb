@@ -202,35 +202,18 @@ module Configurable
     initialize_config unless instance_variable_defined?(:@config)
     super
   end
-
-  # Reconfigures self with the given overrides. Only the specified configs
-  # are modified.
-  #
-  # Returns self.
-  def reconfigure(overrides={})
-    config.merge!(overrides)
-    self
-  end
-
+  
   # Reinitializes configurations in the copy such that the new object has
   # it's own set of configurations, separate from the original object.
   def initialize_copy(orig)
     super
-    @config = ConfigHash.new(self, orig.config.store.dup, false)
+    @config = ConfigHash.new(orig.config.store.dup, self)
   end
 
   protected
 
   # Initializes config. Default config values are overridden as specified.
   def initialize_config(overrides={})
-    @config = ConfigHash.new(self, overrides, false)
-    @config.configs.each_pair do |key, config|
-      if config.init?
-        value = overrides.has_key?(key) ? overrides.delete(key) : config.default
-        config.set(self, value)
-      elsif overrides.has_key?(key)
-        raise "initialization values are not allowed for: #{key.inspect}"
-      end
-    end
+    @config = ConfigHash.new(overrides).bind(self)
   end
 end

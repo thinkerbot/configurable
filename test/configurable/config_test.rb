@@ -41,27 +41,4 @@ class ConfigTest < Test::Unit::TestCase
     c.set(receiver, 'value')
     assert_equal 'value', receiver.key
   end
-  
-  #
-  # define_on test
-  #
-  
-  class DefineOnClass
-  end
-  
-  def test_define_on_defines_a_public_attr_accessor_based_on_name
-    assert_equal false, DefineOnClass.instance_methods.include?('name')
-    assert_equal false, DefineOnClass.instance_methods.include?('name=')
-    
-    c = Config.new(:name, :reader => :alt, :writer => :alt=)
-    c.define_on(DefineOnClass)
-    
-    assert_equal true, DefineOnClass.instance_methods.include?('name')
-    assert_equal true, DefineOnClass.instance_methods.include?('name=')
-    
-    obj = DefineOnClass.new
-    assert_equal nil, obj.name
-    obj.name = 'NAME'
-    assert_equal 'NAME', obj.name
-  end
 end

@@ -16,6 +16,9 @@ module Configurable
     # The default config value
     attr_reader :default
     
+    # A description of the config
+    attr_reader :desc
+    
     # Initializes a new Config.
     def initialize(name, default=nil, options={})
       check_name(name)
@@ -23,6 +26,7 @@ module Configurable
       @name    = name
       @reader  = (options[:reader] || name).to_sym
       @writer  = (options[:writer] || "#{name}=").to_sym
+      @desc    = options[:desc]
       @default = default
     end
     
@@ -36,15 +40,22 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    # Defines the default reader/writer methods on the receiver class.
-    def define_on(receiver_class)
-      file = __FILE__
+    def define_reader(receiver_class)
       line = __LINE__ + 1
-      
       receiver_class.class_eval %Q{
-        attr_accessor :#{name}
-        public :#{name}, :#{name}=
-      }, file, line
+        public
+        attr_reader :#{name}
+      }, __FILE__, line
+      
+      self
+    end
+    
+    def define_writer(receiver_class)
+      line = __LINE__ + 1
+      receiver_class.class_eval %Q{
+        public
+        attr_writer :#{name}
+      }, __FILE__, line
       
       self
     end

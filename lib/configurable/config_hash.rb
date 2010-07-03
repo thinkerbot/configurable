@@ -10,50 +10,42 @@ module Configurable
     # The bound receiver
     attr_reader :receiver
     
-    # The underlying data store; setting values in store directly
-    # can result in an inconsistent state.  Use []= instead.
+    # The underlying data store; setting values in store directly can result
+    # in an inconsistent state.  Use []= instead.
     attr_reader :store
-    
-    # Initializes a new ConfigHash.  Initialize normally imports values from
-    # store to ensure it doesn't contain entries that could be stored on the
-    # receiver.  Set import_store to false for quicker initialization when
-    # you know the store is already in a consistent state.
-    def initialize(receiver, store={}, import_store=true)
-      @receiver = receiver
+   
+    # Initializes a new ConfigHash.
+    def initialize(store={}, receiver=nil)
       @store = store
+      @receiver = receiver
+    end
+    
+    def bind(receiver)
+      unbind if @receiver
       
-      import(store) if import_store
-    end
-    
-    # Returns receiver.class.configurations.
-    def configs
-      receiver.class.configurations
-    end
-    
-    # Imports stored values that can be mapped to the receiver.  The values
-    # are removed from store in the process.  Returns self.
-    #
-    # Primarily used to create a consistent state for self (see above).
-    def import(store)
-      configs = self.configs
-      store.keys.each do |key|
-        if config = configs[key]
-          config.set(receiver, store.delete(key))
-        end
+      @receiver = receiver
+      configs.each_pair do |name, config|
+        value = @store.has_key?(name) ? @store.delete(name) : config.default
+        config.set(receiver, value)
       end
       
       self
     end
     
-    # Returns true if the store has entries that can be stored on the
-    # receiver. To avoid inconsistency, don't manually add values to the
-    # store. To repair inconsistency, import the current store to self.
-    #
-    #   config_hash.import(config_hash.store)
-    #
-    def inconsistent?
-      configs = self.configs
-      store.keys.any? {|key| configs[key] }
+    def unbind
+      configs.each_pair do |name, config|
+        @store[name] = config.get(receiver)
+      end
+      @receiver = nil
+      self
+    end
+    
+    def bound?
+      @receiver ? true : false
+    end
+    
+    def consistent?
+      bound? && (store.keys & configs.keys).empty?
     end
     
     # Retrieves the value for the key, either from the receiver or the store.
@@ -61,7 +53,7 @@ module Configurable
       if config = configs[key]
         config.get(receiver)
       else
-        store[key]
+        @store[key]
       end
     end
 
@@ -70,20 +62,18 @@ module Configurable
       if config = configs[key]
         config.set(receiver, value)
       else
-        store[key] = value
+        @store[key] = value
       end
     end
     
     # Returns the union of configs and store keys.
     def keys
-      config_keys = []
-      configs.each_pair {|key, config| config_keys << key if config }
-      config_keys | store.keys
+      configs.keys | @store.keys
     end
     
     # True if the key is a key in configs or store.
     def has_key?(key)
-      configs[key] != nil || store.has_key?(key) 
+      configs.has_key?(key) || @store.has_key?(key) 
     end
     
     # Merges another with self.
@@ -93,7 +83,7 @@ module Configurable
         if config = configs[key]
           config.set(receiver, value)
         else
-          store[key] = value
+          @store[key] = value
         end
       end
     end
@@ -104,7 +94,7 @@ module Configurable
         yield(key, config.get(receiver))
       end
       
-      store.each_pair do |key, value|
+      @store.each_pair do |key, value|
         yield(key, value)
       end
     end
@@ -113,7 +103,7 @@ module Configurable
     def ==(another)
       another.respond_to?(:to_hash) && to_hash == another.to_hash
     end
-
+    
     # Returns self as a hash.  Any ConfigHash values are recursively
     # hashified, to account for nesting.
     def to_hash(scrub=false, &block)
@@ -136,10 +126,17 @@ module Configurable
       end
       hash
     end
-
+    
     # Returns an inspection string.
     def inspect
       "#<#{self.class}:#{object_id} to_hash=#{to_hash.inspect}>"
+    end
+    
+    protected
+    
+    # Returns receiver.class.configurations.
+    def configs
+      receiver ? receiver.class.configurations : {}
     end
   end
 end

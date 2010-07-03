@@ -1,4 +1,3 @@
-require 'lazydoc'
 require 'configurable/class_methods'
 
 module Configurable
