@@ -1,6 +1,5 @@
+require 'lazydoc'
 require 'configurable/config_hash'
-require 'configurable/options'
-
 autoload(:ConfigParser, 'config_parser')
 
 module Configurable
@@ -12,7 +11,7 @@ module Configurable
     # configurations for all configs declared across all ancestors.
     attr_reader :config_registry
     
-    attr_reader :opts
+    attr_reader :config_types
     
     def self.initialize(base)  # :nodoc:
       unless base.instance_variable_defined?(:@config_registry)
@@ -23,8 +22,8 @@ module Configurable
         base.instance_variable_set(:@configurations, nil)
       end
       
-      unless base.instance_variable_defined?(:@opts)
-        base.instance_variable_set(:@opts, Options.new)
+      unless base.instance_variable_defined?(:@config_types)
+        base.instance_variable_set(:@config_types, {nil => Config})
       end
     end
     
@@ -85,19 +84,32 @@ module Configurable
     
     protected
     
-    def config(name, default=nil, options=opts.guess(default))
-      options = {
-        :class => Config,
-        :desc  => Lazydoc.register_caller(Lazydoc::Trailer)
-      }.merge(options)
+    def config(name, default=nil, options={})
+      type = options[:type] || guess_type(default)
+      config_class = config_types[type] or raise("unknown config type: #{type.inspect}")
       
-      config_class = options[:class] or raise("no config class specified: #{options.inspect}")
+      options = config_class.options.merge(options)
+      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       config = config_class.new(name, default, options)
       config_registry[name] = config
       
-      config.define_reader(self) unless options[:reader]
-      config.define_writer(self) unless options[:writer]
+      unless options[:reader]
+        attr_reader name
+        public name
+      end
+        
+      unless options[:writer]
+        line = __LINE__ + 1
+        class_eval %Q{
+          def #{name}=(input)
+            @#{name} = #{config.define_on(self)}(input)
+          end
+          public :#{name}=
+        }, __FILE__, line
+      end
+      
+      config
     end
     
     # Removes a configuration much like remove_method removes a method.  The
@@ -163,8 +175,27 @@ module Configurable
     private
     
     def inherited(base) # :nodoc:
-     ClassMethods.initialize(base)
-     super
+      base.instance_variable_set(:@config_types, config_types.dup)
+      ClassMethods.initialize(base)
+      super
+    end
+    
+    def guess_type(value)
+      guesses = []
+      
+      config_types.each_pair do |type, config_class|
+        pattern = config_class.pattern
+        if pattern && pattern === value
+          guesses << type
+        end
+      end
+      
+      if guesses.length > 1
+        guesses = guesses.sort_by {|guess| guess.to_s }
+        raise "multiple guesses for config type: #{value.inspect} #{guesses.inspect}"
+      end
+      
+      guesses[0]
     end
     
     # helper to recursively check for an infinite nest

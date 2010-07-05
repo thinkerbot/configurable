@@ -4,6 +4,13 @@ module Configurable
   # operations to a receiver, and track metadata for presentation of configs
   # in various user contexts.
   class Config
+    class << self
+      attr_accessor :options
+      attr_accessor :pattern
+    end
+    @options = {}
+    @pattern = nil
+    
     # The config name
     attr_reader :name
     
@@ -19,6 +26,8 @@ module Configurable
     # A description of the config
     attr_reader :desc
     
+    attr_reader :cast_method_name
+    
     # Initializes a new Config.
     def initialize(name, default=nil, options={})
       check_name(name)
@@ -28,6 +37,7 @@ module Configurable
       @writer  = (options[:writer] || "#{name}=").to_sym
       @desc    = options[:desc]
       @default = default
+      @cast_method_name = (options[:cast_method_name] || "cast_#{name}")
     end
     
     # Calls reader on the receiver and returns the result.
@@ -40,24 +50,16 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    def define_reader(receiver_class)
+    def define_on(receiver_class, method_name=cast_method_name)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
-        public
-        attr_reader :#{name}
+        def #{method_name}(input)
+          input
+        end
+        private :#{method_name}
       }, __FILE__, line
       
-      self
-    end
-    
-    def define_writer(receiver_class)
-      line = __LINE__ + 1
-      receiver_class.class_eval %Q{
-        public
-        attr_writer :#{name}
-      }, __FILE__, line
-      
-      self
+      method_name
     end
     
     # Returns an inspect string.
