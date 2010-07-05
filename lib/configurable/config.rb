@@ -4,13 +4,6 @@ module Configurable
   # operations to a receiver, and track metadata for presentation of configs
   # in various user contexts.
   class Config
-    class << self
-      attr_accessor :options
-      attr_accessor :pattern
-    end
-    @options = {}
-    @pattern = nil
-    
     # The config name
     attr_reader :name
     
@@ -29,9 +22,6 @@ module Configurable
     # A description of the config
     attr_reader :desc
     
-    # The constant name of an an optional array of select options.
-    attr_reader :options_const_name
-    
     # Initializes a new Config.
     def initialize(name, default=nil, options={})
       check_name(name)
@@ -42,7 +32,6 @@ module Configurable
       @caster  = (options[:caster] || "cast_#{name}")
       @desc    = options[:desc]
       @default = default
-      @options_const_name = options[:options_const_name]
     end
     
     # Calls reader on the receiver and returns the result.
@@ -55,17 +44,6 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    # Returns true if an options constant is specified
-    def select?
-      !options_const_name.nil?
-    end
-    
-    # Returns true if the default is an array (and by inference the config
-    # accepts a list of values).
-    def list?
-      Array === default
-    end
-    
     def define_reader(receiver_class)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
@@ -75,27 +53,20 @@ module Configurable
     end
     
     def define_writer(receiver_class)
-      if list?
-        if select?
-          define_list_select_writer(receiver_class)
-        else
-          define_list_writer(receiver_class)
+      line = __LINE__ + 1
+      receiver_class.class_eval %Q{
+        def #{name}=(value)
+          @#{name} = #{caster}(value)
         end
-      else
-        if select?
-          define_select_writer(receiver_class)
-        else
-          define_basic_writer(receiver_class)
-        end
-      end
-      define_caster(receiver_class)
+        public :#{name}=
+      }, __FILE__, line
     end
     
     def define_caster(receiver_class)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
-        def #{caster}(input)
-          input
+        def #{caster}(value)
+          value
         end
         private :#{caster}
       }, __FILE__, line
@@ -117,64 +88,5 @@ module Configurable
         raise NameError.new("invalid characters in name: #{name.inspect}")
       end
     end
-
-    def define_basic_writer(receiver_class) # :nodoc:
-      line = __LINE__ + 1
-      receiver_class.class_eval %Q{
-        def #{name}=(input)
-          @#{name} = #{caster}(input)
-        end
-        public :#{name}=
-      }, __FILE__, line
-    end
-    
-    def define_list_writer(receiver_class) # :nodoc:
-       line = __LINE__ + 1
-       receiver_class.class_eval %Q{
-         def #{name}=(values)
-           unless values.kind_of?(Array)
-             raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
-           end
-
-           values.collect! {|value| #{caster}(value) }
-           @#{name} = values
-         end
-         public :#{name}=
-       }, __FILE__, line
-     end
-
-     def define_select_writer(receiver_class) # :nodoc:
-       line = __LINE__ + 1
-       receiver_class.class_eval %Q{
-         def #{name}=(value)
-           value = #{caster}(value)
-           unless #{options_const_name}.include?(value)
-             raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
-           end
-           @#{name} = value
-         end
-         public :#{name}=
-       }, __FILE__, line
-     end
-
-     def define_list_select_writer(receiver_class) # :nodoc:
-       line = __LINE__ + 1
-       receiver_class.class_eval %Q{
-         def #{name}=(values)
-           unless values.kind_of?(Array)
-             raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
-           end
-
-           values.collect! {|value| #{caster}(value) }
-
-           unless values.all? {|value| #{options_const_name}.include?(value) }
-             raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
-           end
-
-           @#{name} = values
-         end
-         public :#{name}=
-       }, __FILE__, line
-     end
   end
 end

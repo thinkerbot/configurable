@@ -241,6 +241,246 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
+  # nest test
+  #
+  
+  # class A
+  #   include Configurable
+  # 
+  #   config :key, 'one'
+  #   nest :nest do
+  #     config :key, 'two'
+  #   end
+  # end
+  # 
+  # class B
+  #   include Configurable
+  # 
+  #   config :key, 1
+  #   nest :nest do 
+  #     config :key, 2
+  #     nest :nest do
+  #       config :key, 3
+  #     end
+  #   end
+  # end
+  # 
+  # class C
+  #   include Configurable
+  #   nest :a, A
+  #   nest :b, B
+  # end
+  # 
+  # def test_documentation
+  #   a = A.new
+  #   assert_equal 'one', a.key
+  #   assert_equal 'one', a.config[:key]
+  # 
+  #   assert_equal 'two', a.nest.key
+  #   assert_equal 'two', a.config[:nest][:key]
+  # 
+  #   a.nest.key = 'TWO'
+  #   assert_equal 'TWO', a.config[:nest][:key]
+  # 
+  #   a.config[:nest][:key] = 2
+  #   assert_equal 2, a.nest.key
+  # 
+  #   assert_equal({:key => 'one', :nest => {:key => 2}}, a.config.to_hash)
+  #   assert_equal({:key => 2}, a.nest.config.to_hash)
+  #   assert_equal A::Nest, a.nest.class
+  # 
+  #   c = C.new
+  #   c.b.key = 7
+  #   c.b.nest.key = "8"
+  #   c.config[:b][:nest][:nest][:key] = "9"
+  # 
+  #   expected = {
+  #   :a => {
+  #     :key => 'one',
+  #     :nest => {:key => 'two'}
+  #   },
+  #   :b => {
+  #     :key => 7,
+  #     :nest => {
+  #       :key => 8,
+  #       :nest => {:key => 9}
+  #     }
+  #   }}
+  #   assert_equal expected, c.config.to_hash
+  # end
+  
+  #
+  # nest config
+  #
+  
+  class NestChild
+    include Configurable
+    config :key, 'value'
+  end
+  
+  class NestParent
+    include Configurable
+    
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+    
+    nest :nest, NestChild
+  end
+  
+  def test_nest_initializes_instance_of_nested_configurable_class
+    p = NestParent.new
+    assert_equal NestChild, p.nest.class
+  end
+  
+  def test_nest_creates_accessor_for_nest_config
+    methods = NestParent.public_instance_methods.collect {|m| m.to_sym }
+    assert methods.include?(:nest)
+    assert methods.include?(:nest=)
+  end
+  
+  class NestWithoutAccessors
+    include Configurable
+    nest :no_reader, nil, :reader => :alt
+    nest :no_writer, nil, :writer => :alt
+  end
+  
+  def test_nest_does_not_create_accessors_if_alternates_are_specified
+    methods = NestWithoutAccessors.public_instance_methods.collect {|m| m.to_sym }
+    assert !methods.include?(:no_reader)
+    assert methods.include?(:no_reader=)
+    
+    assert methods.include?(:no_writer)
+    assert !methods.include?(:no_writer=)
+  end
+  
+  def test_modification_of_configs_adjusts_instance_configs_and_vice_versa
+    p = NestParent.new
+    assert_equal({:key => 'value'}, p.nest.config.to_hash)
+    
+    p.config[:nest][:key] = 'zero'
+    assert_equal({:key => 'zero'}, p.nest.config.to_hash)
+    
+    p.config[:nest] = {:key => 'two'}
+    assert_equal({:key => 'two'}, p.nest.config.to_hash)
+      
+    p.nest.key = "two"
+    assert_equal({:key => 'two'}, p.config[:nest].to_hash)
+    
+    p.nest.config.merge!(:key => 'one')
+    assert_equal({:key => 'one'}, p.config[:nest].to_hash)
+    
+    p.nest.config[:key] = 'zero'
+    assert_equal({:key => 'zero'}, p.config[:nest].to_hash)
+  end
+  
+  def test_parent_is_initialized_with_defaults
+    p = NestParent.new 
+    assert_equal({:nest => {:key => 'value'}}, p.config.to_hash)
+    assert_equal({:key => 'value'}, p.nest.config.to_hash)
+  end
+  
+  def test_parent_is_initialized_with_overrides
+    p = NestParent.new :nest => {:key => 'one'}
+    assert_equal({:nest => {:key => 'one'}}, p.config.to_hash)
+    assert_equal({:key => 'one'}, p.nest.config.to_hash)
+  end
+  
+  def test_parent_instance_may_be_specified_as_config_value
+    c = NestChild.new
+    p = NestParent.new :nest => c
+    assert_equal c.object_id, p.nest.object_id
+  end
+  
+  def test_parent_writer_is_validated
+    p = NestParent.new
+    obj = Object.new 
+    err = assert_raises(ArgumentError) { p.nest = obj }
+    assert_equal "invalid value for nest: #{obj.inspect}", err.message
+  end
+  
+  #
+  # recursive nest test
+  #
+  
+  class RecursiveNest
+    include Configurable
+    
+    def initialize(overrides={})
+      initialize_config(overrides)
+    end
+    
+    config :key, 'a'
+    nest :nest do
+      config :key, 'b'
+      nest :nest do
+        config :key, 'c'
+      end
+    end
+  end
+  
+  def test_recursive_nesting_is_allowed
+    r = RecursiveNest.new
+    assert_equal({
+      :key => 'a', 
+      :nest => {
+        :key => 'b', 
+        :nest => {
+          :key => 'c'
+        }
+      }
+    }, r.config.to_hash)
+  end
+  
+  def test_recursive_nests_initializes_overrides_correctly
+    r = RecursiveNest.new(
+      :key => 'one', 
+      :nest => {
+        :key => 'two', 
+        :nest => {
+          :key => 'three'
+        }
+      }
+    )
+    
+    assert_equal({
+      :key => 'one', 
+      :nest => {
+        :key => 'two', 
+        :nest => {
+          :key => 'three'
+        }
+      }
+    }, r.config.to_hash)
+  end
+  
+  #
+  # infinite nest test
+  #
+  
+  class InfiniteA
+    include Configurable
+  end
+  
+  class InfiniteB
+    include Configurable
+    nest :a, InfiniteA
+  end
+  
+  class InfiniteC
+    include Configurable
+    nest :b, InfiniteB
+  end
+  
+  def test_nest_raises_error_for_infinite_nest
+    e = assert_raises(RuntimeError) { InfiniteA.send(:nest, :a, InfiniteA) }
+    assert_equal "infinite nest detected", e.message
+    
+    e = assert_raises(RuntimeError) { InfiniteA.send(:nest, :c, InfiniteC) }
+    assert_equal "infinite nest detected", e.message
+  end
+  
+  #
   # modules test
   #
   

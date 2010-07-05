@@ -85,10 +85,6 @@ module Configurable
     protected
     
     def config(name, default=nil, options={})
-      type = options[:type] || guess_type(default)
-      config_class = config_types[type] or raise("unknown config type: #{type.inspect}")
-      
-      options = config_class.options.merge(options)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       if options[:options]
@@ -96,17 +92,49 @@ module Configurable
         const_set(options_const, options[:options])
       end
       
+      config_class = Configs.config_class(default, options)
       config = config_class.new(name, default, options)
       config_registry[name] = config
       
-      unless options[:reader]
-        config.define_reader(self)
-      end
+      config.define_reader(self) unless options[:reader]
+      config.define_caster(self) unless options[:caster]
+      config.define_writer(self) unless options[:writer]
+      
+      config
+    end
+    
+    def nest(name, configurable_class=nil, options={}, &block)
+      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      
+      # define the nested configurable
+      configurable_class = 
+       case
+       when configurable_class && block_given? 
+         Class.new(configurable_class)
+       when configurable_class
+         configurable_class
+       else
+         Class.new { include Configurable }
+       end
         
-      unless options[:writer]
-        config.define_writer(self)
+      # set the new constant
+      const_name = options[:const_name] || name.to_s.capitalize
+      
+      # this prevents a warning in cases where the nesting
+      # class defines the configurable_class
+      unless const_defined?(const_name) && const_get(const_name) == configurable_class
+        const_set(const_name, configurable_class)
       end
       
+      configurable_class.class_eval(&block) if block_given?
+      
+      config = Configs::Nest.new(name, configurable_class, options)
+      config_registry[name] = config
+      
+      config.define_reader(self) unless options[:reader]
+      config.define_writer(self) unless options[:writer]
+      
+      check_infinite_nest(configurable_class)
       config
     end
     
@@ -201,8 +229,8 @@ module Configurable
       raise "infinite nest detected" if klass == self
       
       klass.configurations.each_value do |config|
-        if config.kind_of?(NestConfig)
-          check_infinite_nest(config.nest_class)
+        if config.kind_of?(Configs::Nest)
+          check_infinite_nest(config.configurable_class)
         end
       end
     end
