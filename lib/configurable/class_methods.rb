@@ -91,22 +91,20 @@ module Configurable
       options = config_class.options.merge(options)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
+      if options[:options]
+        options_const = options[:options_const_name] ||= "#{name.upcase}_OPTIONS"
+        const_set(options_const, options[:options])
+      end
+      
       config = config_class.new(name, default, options)
       config_registry[name] = config
       
       unless options[:reader]
-        attr_reader name
-        public name
+        config.define_reader(self)
       end
         
       unless options[:writer]
-        line = __LINE__ + 1
-        class_eval %Q{
-          def #{name}=(input)
-            @#{name} = #{config.define_on(self)}(input)
-          end
-          public :#{name}=
-        }, __FILE__, line
+        config.define_writer(self)
       end
       
       config
