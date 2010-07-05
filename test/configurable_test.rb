@@ -162,14 +162,73 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'VALUE', obj.key
   end
   
-#   def test_config_with_block_uses_block_return_to_set_instance_variable
-#     t = DeclarationClass.new(:one => "one")
-#     assert_equal "ONE", t.one
-#     
-#     t.one = 'one'
-#     assert_equal 'ONE', t.one
-#     assert_equal 'ONE', t.instance_variable_get(:@one)
-#   end
+  class SelectClass
+    include Configurable
+    config :key, 'a', :options => %w{a b c}
+  end
+  
+  def test_select_allows_any_of_the_values_in_options
+    obj = SelectClass.new
+    obj.key = 'a'
+    assert_equal 'a', obj.key
+    
+    obj.key = 'c'
+    assert_equal 'c', obj.key
+  end
+  
+  def test_select_config_raises_error_if_value_is_not_in_options
+    obj = SelectClass.new
+    err = assert_raises(ArgumentError) { obj.key = 'z' }
+    assert_equal 'invalid value for key: "z"', err.message
+  end
+  
+  class ListClass
+    include Configurable
+    config :key, []
+  end
+  
+  def test_list_an_array_of_values
+    obj = ListClass.new
+    
+    obj.key = [1, 2, 3]
+    assert_equal [1, 2, 3], obj.key
+    
+    obj.key = []
+    assert_equal [], obj.key
+  end
+  
+  def test_list_config_raises_error_for_non_array_values
+    obj = ListClass.new
+    err = assert_raises(ArgumentError) { obj.key = 'str'}
+    assert_equal 'invalid value for key: "str"', err.message
+  end
+  
+  class ListSelectClass
+    include Configurable
+    config :key, [], :options => %w{a b c}
+  end
+  
+  def test_list_select_allows_an_array_composed_of_values_in_options
+    obj = ListSelectClass.new
+    
+    obj.key = ['a', 'c', 'a']
+    assert_equal ['a', 'c', 'a'], obj.key
+    
+    obj.key = []
+    assert_equal [], obj.key
+  end
+  
+  def test_list_select_config_raises_error_for_non_array_values
+    obj = ListSelectClass.new
+    err = assert_raises(ArgumentError) { obj.key = 'str'}
+    assert_equal 'invalid value for key: "str"', err.message
+  end
+  
+  def test_list_select_config_raises_error_for_array_values_not_in_options
+    obj = ListSelectClass.new
+    err = assert_raises(ArgumentError) { obj.key = ['z']}
+    assert_equal 'invalid value for key: ["z"]', err.message
+  end
 
   def test_config_raises_error_for_non_symbol_keys
     err = assert_raises(RuntimeError) { DeclarationClass.send(:config, 'key') }

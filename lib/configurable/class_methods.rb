@@ -92,7 +92,7 @@ module Configurable
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       if options[:options]
-        options_const = options[:options_const_name] ||= "#{name.upcase}_OPTIONS"
+        options_const = options[:options_const_name] ||= "#{name.to_s.upcase}_OPTIONS"
         const_set(options_const, options[:options])
       end
       

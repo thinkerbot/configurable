@@ -20,15 +20,17 @@ module Configurable
     # The writer method called on a receiver during set
     attr_reader :writer
     
+    # The cast method name
+    attr_reader :caster
+    
     # The default config value
     attr_reader :default
     
     # A description of the config
     attr_reader :desc
     
+    # The constant name of an an optional array of select options.
     attr_reader :options_const_name
-    
-    attr_reader :caster
     
     # Initializes a new Config.
     def initialize(name, default=nil, options={})
@@ -53,22 +55,15 @@ module Configurable
       receiver.send(writer, value)
     end
     
+    # Returns true if an options constant is specified
     def select?
       !options_const_name.nil?
     end
     
+    # Returns true if the default is an array (and by inference the config
+    # accepts a list of values).
     def list?
       Array === default
-    end
-    
-    def define_caster(receiver_class)
-      line = __LINE__ + 1
-      receiver_class.class_eval %Q{
-        def #{caster}(input)
-          input
-        end
-        private :#{caster}
-      }, __FILE__, line
     end
     
     def define_reader(receiver_class)
@@ -96,6 +91,16 @@ module Configurable
       define_caster(receiver_class)
     end
     
+    def define_caster(receiver_class)
+      line = __LINE__ + 1
+      receiver_class.class_eval %Q{
+        def #{caster}(input)
+          input
+        end
+        private :#{caster}
+      }, __FILE__, line
+    end
+    
     # Returns an inspect string.
     def inspect
       "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} default=#{default.inspect} >"
@@ -113,7 +118,7 @@ module Configurable
       end
     end
 
-    def define_basic_writer(receiver_class)
+    def define_basic_writer(receiver_class) # :nodoc:
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
         def #{name}=(input)
@@ -123,7 +128,7 @@ module Configurable
       }, __FILE__, line
     end
     
-    def define_list_writer(receiver_class)
+    def define_list_writer(receiver_class) # :nodoc:
        line = __LINE__ + 1
        receiver_class.class_eval %Q{
          def #{name}=(values)
@@ -138,7 +143,7 @@ module Configurable
        }, __FILE__, line
      end
 
-     def define_select_writer(receiver_class)
+     def define_select_writer(receiver_class) # :nodoc:
        line = __LINE__ + 1
        receiver_class.class_eval %Q{
          def #{name}=(value)
@@ -152,7 +157,7 @@ module Configurable
        }, __FILE__, line
      end
 
-     def define_list_select_writer(receiver_class)
+     def define_list_select_writer(receiver_class) # :nodoc:
        line = __LINE__ + 1
        receiver_class.class_eval %Q{
          def #{name}=(values)
@@ -163,7 +168,7 @@ module Configurable
            values.collect! {|value| #{caster}(value) }
 
            unless values.all? {|value| #{options_const_name}.include?(value) }
-             raise ArgumentError, "invalid values for #{name}: \#{values.inspect}"
+             raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
            end
 
            @#{name} = values
