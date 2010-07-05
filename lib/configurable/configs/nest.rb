@@ -57,6 +57,8 @@ module Configurable
         line = __LINE__ + 1
         receiver_class.class_eval %Q{
           def #{name}=(value)
+            value = #{caster}(value)
+            
             unless value.kind_of?(#{configurable_class})
               raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
             end

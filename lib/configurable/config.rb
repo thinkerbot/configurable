@@ -44,6 +44,10 @@ module Configurable
       receiver.send(writer, value)
     end
     
+    def cast(receiver, value)
+      receiver.send(caster, value)
+    end
+    
     def define_reader(receiver_class)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{

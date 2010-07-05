@@ -94,11 +94,11 @@ module Configurable
       
       config_class = Configs.config_class(default, options)
       config = config_class.new(name, default, options)
-      config_registry[name] = config
+      config_registry[config.name] = config
       
       config.define_reader(self) unless options[:reader]
-      config.define_caster(self) unless options[:caster]
       config.define_writer(self) unless options[:writer]
+      config.define_caster(self) unless options[:caster]
       
       config
     end
@@ -107,34 +107,28 @@ module Configurable
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       # define the nested configurable
-      configurable_class = 
-       case
-       when configurable_class && block_given? 
-         Class.new(configurable_class)
-       when configurable_class
-         configurable_class
-       else
-         Class.new { include Configurable }
-       end
+      if configurable_class
+        configurable_class = Class.new(configurable_class) if block_given? 
+      else
+        configurable_class = Class.new { include Configurable }
+      end
         
-      # set the new constant
       const_name = options[:const_name] || name.to_s.capitalize
-      
-      # this prevents a warning in cases where the nesting
-      # class defines the configurable_class
       unless const_defined?(const_name) && const_get(const_name) == configurable_class
         const_set(const_name, configurable_class)
       end
       
       configurable_class.class_eval(&block) if block_given?
+      check_infinite_nest(configurable_class)
       
+      # setup the nest config
       config = Configs::Nest.new(name, configurable_class, options)
-      config_registry[name] = config
+      config_registry[config.name] = config
       
       config.define_reader(self) unless options[:reader]
       config.define_writer(self) unless options[:writer]
+      config.define_caster(self) unless options[:caster]
       
-      check_infinite_nest(configurable_class)
       config
     end
     
