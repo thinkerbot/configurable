@@ -141,7 +141,7 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # config declaration tests
+  # config tests
   #
 
   class DeclarationClass
@@ -229,7 +229,7 @@ class ConfigurableTest < Test::Unit::TestCase
     err = assert_raises(ArgumentError) { obj.key = ['z']}
     assert_equal 'invalid value for key: ["z"]', err.message
   end
-
+  
   def test_config_raises_error_for_non_symbol_keys
     err = assert_raises(RuntimeError) { DeclarationClass.send(:config, 'key') }
     assert_equal 'invalid name: "key" (not a Symbol)', err.message
@@ -238,6 +238,49 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_config_raises_error_for_non_word_characters_in_key
     err = assert_raises(NameError) { DeclarationClass.send(:config, :'k,ey') }
     assert_equal 'invalid characters in name: :"k,ey"', err.message
+  end
+  
+  #
+  # config cast test
+  #
+  
+  class StringCastClass
+    include Configurable
+    config :key, 'abc'
+  end
+  
+  def test_config_does_not_cast_strings
+    obj = StringCastClass.new
+    obj.key = 'xyz'
+    assert_equal 'xyz', obj.key
+  end
+  
+  class IntegerCastClass
+    include Configurable
+    config :key, 1
+  end
+  
+  def test_config_casts_integers
+    obj = IntegerCastClass.new
+    obj.key = '2'
+    assert_equal 2, obj.key
+    
+    err = assert_raises(ArgumentError) { obj.key = 'abc' }
+    assert_equal 'invalid value for Integer: "abc"', err.message
+  end
+  
+  class FloatCastClass
+    include Configurable
+    config :key, 1.2
+  end
+  
+  def test_config_casts_floats
+    obj = FloatCastClass.new
+    obj.key = '2.1'
+    assert_equal 2.1, obj.key
+    
+    err = assert_raises(ArgumentError) { obj.key = 'abc' }
+    assert_equal 'invalid value for Float(): "abc"', err.message
   end
   
   #
@@ -548,6 +591,33 @@ class ConfigurableTest < Test::Unit::TestCase
       :c => 'three',
       :d => 'four'
     }, obj.config.to_hash)
+  end
+  
+  #
+  # config_cast test
+  #
+  
+  class CastClass
+    attr_reader :str
+    def initialize(str)
+      @str = str
+    end
+  end
+  
+  class CastConfigClass
+    include Configurable
+    config_cast(CastClass) {|input| CastClass === input ? input : CastClass.new(input) }
+    config :key, CastClass.new('abc')
+  end
+  
+  def test_config_cast_registers_a_casting_method_for_class_of_object
+    obj = CastConfigClass.new
+    assert_equal CastClass, obj.key.class
+    assert_equal 'abc', obj.key.str
+    
+    obj.key = 'xyz'
+    assert_equal CastClass, obj.key.class
+    assert_equal 'xyz', obj.key.str
   end
   
   #

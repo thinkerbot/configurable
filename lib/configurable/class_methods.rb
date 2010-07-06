@@ -1,4 +1,5 @@
 require 'lazydoc'
+require 'configurable/caster'
 require 'configurable/config_hash'
 autoload(:ConfigParser, 'config_parser')
 
@@ -11,7 +12,7 @@ module Configurable
     # configurations for all configs declared across all ancestors.
     attr_reader :config_registry
     
-    attr_reader :config_types
+    attr_reader :config_casters
     
     def self.initialize(base)  # :nodoc:
       unless base.instance_variable_defined?(:@config_registry)
@@ -22,8 +23,8 @@ module Configurable
         base.instance_variable_set(:@configurations, nil)
       end
       
-      unless base.instance_variable_defined?(:@config_types)
-        base.instance_variable_set(:@config_types, {nil => Config})
+      unless base.instance_variable_defined?(:@config_casters)
+        base.instance_variable_set(:@config_casters, Caster::DEFAULTS)
       end
     end
     
@@ -94,13 +95,14 @@ module Configurable
       
       list = (Array === default)
       select = options.has_key?(:options_const_name)
+      caster = options[:caster] || guess_caster(default)
       
       config_class = Configs.config_class(list, select)
       config = config_class.new(name, default, options)
       config_registry[config.name] = config
       
       config.define_reader(self) unless options[:reader]
-      config.define_writer(self) unless options[:writer]
+      config.define_writer(self, caster) unless options[:writer]
       
       config
     end
@@ -110,7 +112,7 @@ module Configurable
       
       # define the nested configurable
       if configurable_class
-        configurable_class = Class.new(configurable_class) if block_given? 
+        configurable_class = Class.new(configurable_class) if block_given?
       else
         configurable_class = Class.new { include Configurable }
       end
@@ -129,6 +131,12 @@ module Configurable
       config.define_writer(self) unless options[:writer]
       
       config
+    end
+    
+    def config_cast(clas, options={}, &block)
+      method_name = options[:method_name] || "config_cast_#{clas.to_s.gsub('::', '_').downcase}"
+      define_method(method_name, &block) if block
+      config_casters[clas] = method_name
     end
     
     # Removes a configuration much like remove_method removes a method.  The
@@ -194,30 +202,24 @@ module Configurable
     private
     
     def inherited(base) # :nodoc:
-      base.instance_variable_set(:@config_types, config_types.dup)
+      base.instance_variable_set(:@config_casters, config_casters.dup)
       ClassMethods.initialize(base)
       super
     end
     
-    def guess_type(value)
-      guesses = []
-      
-      config_types.each_pair do |type, config_class|
-        pattern = config_class.pattern
-        if pattern && pattern === value
-          guesses << type
-        end
-      end
+    def guess_caster(value) # :nodoc:
+      guess_value = value.kind_of?(Array) ? value.first : value
+      guesses = config_casters.keys.select {|type| type === guess_value }
       
       if guesses.length > 1
         guesses = guesses.sort_by {|guess| guess.to_s }
-        raise "multiple guesses for config type: #{value.inspect} #{guesses.inspect}"
+        raise "multiple guesses for cast type: #{value.inspect} #{guesses.inspect}"
       end
       
-      guesses[0]
+      config_casters[guesses.first]
     end
     
-    def clean_const_set(const, const_name)
+    def clean_const_set(const, const_name) # :nodoc:
       unless const_defined?(const_name) && const_get(const_name) == const
         const_set(const_name, const)
       end
