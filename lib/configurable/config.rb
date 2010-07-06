@@ -13,9 +13,6 @@ module Configurable
     # The writer method called on a receiver during set
     attr_reader :writer
     
-    # The cast method name
-    attr_reader :caster
-    
     # The default config value
     attr_reader :default
     
@@ -29,7 +26,6 @@ module Configurable
       @name    = name
       @reader  = (options[:reader] || name).to_sym
       @writer  = (options[:writer] || "#{name}=").to_sym
-      @caster  = (options[:caster] || "cast_#{name}")
       @desc    = options[:desc]
       @default = default
     end
@@ -44,10 +40,6 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    def cast(receiver, value)
-      receiver.send(caster, value)
-    end
-    
     def define_reader(receiver_class)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
@@ -56,23 +48,13 @@ module Configurable
       }, __FILE__, line
     end
     
-    def define_writer(receiver_class)
+    def define_writer(receiver_class, caster=nil)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
         def #{name}=(value)
           @#{name} = #{caster}(value)
         end
         public :#{name}=
-      }, __FILE__, line
-    end
-    
-    def define_caster(receiver_class)
-      line = __LINE__ + 1
-      receiver_class.class_eval %Q{
-        def #{caster}(value)
-          value
-        end
-        private :#{caster}
       }, __FILE__, line
     end
     

@@ -12,7 +12,7 @@ module Configurable
         @options_const_name = options[:options_const_name] or raise "no options constant specified: #{options.inspect}"
       end
       
-      def define_writer(receiver_class)
+      def define_writer(receiver_class, caster=nil)
         line = __LINE__ + 1
         receiver_class.class_eval %Q{
           def #{name}=(value)

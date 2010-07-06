@@ -3,7 +3,7 @@ require 'configurable/configs/select'
 module Configurable
   module Configs
     class ListSelect < Select
-      def define_writer(receiver_class)
+      def define_writer(receiver_class, caster=nil)
         line = __LINE__ + 1
         receiver_class.class_eval %Q{
           def #{name}=(values)

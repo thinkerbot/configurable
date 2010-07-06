@@ -88,17 +88,19 @@ module Configurable
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       if options[:options]
-        options_const = options[:options_const_name] ||= "#{name.to_s.upcase}_OPTIONS"
-        const_set(options_const, options[:options])
+        options[:options_const_name] ||= "#{name.to_s.upcase}_OPTIONS"
+        clean_const_set(options[:options], options[:options_const_name])
       end
       
-      config_class = Configs.config_class(default, options)
+      list = (Array === default)
+      select = options.has_key?(:options_const_name)
+      
+      config_class = Configs.config_class(list, select)
       config = config_class.new(name, default, options)
       config_registry[config.name] = config
       
       config.define_reader(self) unless options[:reader]
       config.define_writer(self) unless options[:writer]
-      config.define_caster(self) unless options[:caster]
       
       config
     end
@@ -112,11 +114,9 @@ module Configurable
       else
         configurable_class = Class.new { include Configurable }
       end
-        
+      
       const_name = options[:const_name] || name.to_s.capitalize
-      unless const_defined?(const_name) && const_get(const_name) == configurable_class
-        const_set(const_name, configurable_class)
-      end
+      clean_const_set(configurable_class, const_name)
       
       configurable_class.class_eval(&block) if block_given?
       check_infinite_nest(configurable_class)
@@ -127,7 +127,6 @@ module Configurable
       
       config.define_reader(self) unless options[:reader]
       config.define_writer(self) unless options[:writer]
-      config.define_caster(self) unless options[:caster]
       
       config
     end
@@ -216,6 +215,12 @@ module Configurable
       end
       
       guesses[0]
+    end
+    
+    def clean_const_set(const, const_name)
+      unless const_defined?(const_name) && const_get(const_name) == const
+        const_set(const_name, const)
+      end
     end
     
     # helper to recursively check for an infinite nest

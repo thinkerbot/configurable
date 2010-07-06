@@ -6,10 +6,7 @@ module Configurable
   module Configs
     module_function
     
-    def config_class(default, options)
-      list = (Array === default)
-      select = options.has_key?(:options_const_name)
-      
+    def config_class(list, select)
       case
       when list && select then ListSelect
       when list           then List
