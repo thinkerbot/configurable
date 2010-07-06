@@ -283,74 +283,91 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'invalid value for Float(): "abc"', err.message
   end
   
+  class BooleanCastClass
+    include Configurable
+    config :key, true
+  end
+  
+  def test_config_casts_boolean
+    obj = BooleanCastClass.new
+    obj.key = 'true'
+    assert_equal true, obj.key
+    
+    obj.key = 'false'
+    assert_equal false, obj.key
+    
+    err = assert_raises(ArgumentError) { obj.key = 'abc' }
+    assert_equal 'invalid value for boolean: "abc"', err.message
+  end
+  
   #
   # nest test
   #
   
-  # class A
-  #   include Configurable
-  # 
-  #   config :key, 'one'
-  #   nest :nest do
-  #     config :key, 'two'
-  #   end
-  # end
-  # 
-  # class B
-  #   include Configurable
-  # 
-  #   config :key, 1
-  #   nest :nest do 
-  #     config :key, 2
-  #     nest :nest do
-  #       config :key, 3
-  #     end
-  #   end
-  # end
-  # 
-  # class C
-  #   include Configurable
-  #   nest :a, A
-  #   nest :b, B
-  # end
-  # 
-  # def test_documentation
-  #   a = A.new
-  #   assert_equal 'one', a.key
-  #   assert_equal 'one', a.config[:key]
-  # 
-  #   assert_equal 'two', a.nest.key
-  #   assert_equal 'two', a.config[:nest][:key]
-  # 
-  #   a.nest.key = 'TWO'
-  #   assert_equal 'TWO', a.config[:nest][:key]
-  # 
-  #   a.config[:nest][:key] = 2
-  #   assert_equal 2, a.nest.key
-  # 
-  #   assert_equal({:key => 'one', :nest => {:key => 2}}, a.config.to_hash)
-  #   assert_equal({:key => 2}, a.nest.config.to_hash)
-  #   assert_equal A::Nest, a.nest.class
-  # 
-  #   c = C.new
-  #   c.b.key = 7
-  #   c.b.nest.key = "8"
-  #   c.config[:b][:nest][:nest][:key] = "9"
-  # 
-  #   expected = {
-  #   :a => {
-  #     :key => 'one',
-  #     :nest => {:key => 'two'}
-  #   },
-  #   :b => {
-  #     :key => 7,
-  #     :nest => {
-  #       :key => 8,
-  #       :nest => {:key => 9}
-  #     }
-  #   }}
-  #   assert_equal expected, c.config.to_hash
-  # end
+  class A
+    include Configurable
+  
+    config :key, 'one'
+    nest :nest do
+      config :key, 'two'
+    end
+  end
+  
+  class B
+    include Configurable
+  
+    config :key, 1
+    nest :nest do 
+      config :key, 2
+      nest :nest do
+        config :key, 3
+      end
+    end
+  end
+  
+  class C
+    include Configurable
+    nest :a, A
+    nest :b, B
+  end
+  
+  def test_nest_usage
+    a = A.new
+    assert_equal 'one', a.key
+    assert_equal 'one', a.config[:key]
+  
+    assert_equal 'two', a.nest.key
+    assert_equal 'two', a.config[:nest][:key]
+  
+    a.nest.key = 'TWO'
+    assert_equal 'TWO', a.config[:nest][:key]
+  
+    a.config[:nest][:key] = 2
+    assert_equal 2, a.nest.key
+  
+    assert_equal({:key => 'one', :nest => {:key => 2}}, a.config.to_hash)
+    assert_equal({:key => 2}, a.nest.config.to_hash)
+    assert_equal A::Nest, a.nest.class
+  
+    c = C.new
+    c.b.key = 7
+    c.b.nest.key = "8"
+    c.config[:b][:nest][:nest][:key] = "9"
+  
+    expected = {
+    :a => {
+      :key => 'one',
+      :nest => {:key => 'two'}
+    },
+    :b => {
+      :key => 7,
+      :nest => {
+        :key => 8,
+        :nest => {:key => 9}
+      }
+    }}
+    assert_equal expected, c.config.to_hash
+  end
   
   #
   # nest config
@@ -618,6 +635,43 @@ class ConfigurableTest < Test::Unit::TestCase
     obj.key = 'xyz'
     assert_equal CastClass, obj.key.class
     assert_equal 'xyz', obj.key.str
+  end
+  
+  class ConfigClassParent
+    include Configurable
+    config_cast(String) {|input| input.upcase }
+  end
+  
+  class ConfigClassChild < ConfigClassParent
+    config :key, 'abc'
+  end
+  
+  def test_config_casts_are_inherited
+    obj = ConfigClassChild.new
+    assert_equal 'ABC', obj.key
+    
+    obj.key = 'xyz'
+    assert_equal 'XYZ', obj.key
+  end
+  
+  class ConfigClassA
+    include Configurable
+    config_cast(String) {|input| input.upcase }
+    config :key, 'aBc'
+  end
+  
+  class ConfigClassB
+    include Configurable
+    config_cast(String) {|input| input.downcase }
+    config :key, 'aBc'
+  end
+  
+  def test_config_casts_are_not_shared_in_unrelated_ancestries
+    obj = ConfigClassA.new
+    assert_equal 'ABC', obj.key
+    
+    obj = ConfigClassB.new
+    assert_equal 'abc', obj.key
   end
   
   #

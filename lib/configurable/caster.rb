@@ -15,7 +15,7 @@ module Configurable
       when true, false then input
       when 'true'      then true
       when 'false'     then false
-      else raise ArgumentError, "invalid boolean value: #{input.inspect}"
+      else raise ArgumentError, "invalid value for boolean: #{input.inspect}"
       end
     end
   end

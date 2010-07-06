@@ -24,7 +24,7 @@ module Configurable
       end
       
       unless base.instance_variable_defined?(:@config_casters)
-        base.instance_variable_set(:@config_casters, Caster::DEFAULTS)
+        base.instance_variable_set(:@config_casters, Caster::DEFAULTS.dup)
       end
     end
     
@@ -135,7 +135,12 @@ module Configurable
     
     def config_cast(clas, options={}, &block)
       method_name = options[:method_name] || "config_cast_#{clas.to_s.gsub('::', '_').downcase}"
-      define_method(method_name, &block) if block
+      
+      if block_given?
+        define_method(method_name, &block)
+        protected(method_name)
+      end
+      
       config_casters[clas] = method_name
     end
     
