@@ -88,21 +88,28 @@ module Configurable
     def config(name, default=nil, options={})
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
-      if options[:options]
-        options[:options_const_name] ||= "#{name.to_s.upcase}_OPTIONS"
-        clean_const_set(options[:options], options[:options_const_name])
-      end
-      
-      list = (Array === default)
-      select = options.has_key?(:options_const_name)
       caster = options[:caster] || guess_caster(default)
+      options_const = options_const_set(name, options[:options])
       
-      config_class = Configs.config_class(list, select)
-      config = config_class.new(name, default, options)
+      config = Config.new(name, default, options)
       config_registry[config.name] = config
       
-      config.define_reader(self) unless options[:reader]
-      config.define_writer(self, caster) unless options[:writer]
+      unless options[:reader]
+        define_reader(name)
+      end
+      
+      unless options[:writer]
+        case
+        when config.list? && config.select?
+          define_list_select_writer(name, caster, options_const)
+        when config.select?
+          define_select_writer(name, caster, options_const)
+        when config.list?
+          define_list_writer(name, caster)
+        else
+          define_writer(name, caster)
+        end 
+      end
       
       config
     end
@@ -127,8 +134,8 @@ module Configurable
       config = Configs::Nest.new(name, configurable_class, options)
       config_registry[config.name] = config
       
-      config.define_reader(self) unless options[:reader]
-      config.define_writer(self) unless options[:writer]
+      define_reader(name) unless options[:reader]
+      define_nest_writer(name, configurable_class) unless options[:writer]
       
       config
     end
@@ -212,6 +219,87 @@ module Configurable
       super
     end
     
+    def define_reader(name) # :nodoc:
+      line = __LINE__ + 1
+      class_eval %Q{
+        attr_reader :#{name}
+        public :#{name}
+      }, __FILE__, line
+    end
+    
+    def define_writer(name, caster=nil) # :nodoc:
+      line = __LINE__ + 1
+      class_eval %Q{
+        def #{name}=(value)
+          @#{name} = #{caster}(value)
+        end
+        public :#{name}=
+      }, __FILE__, line
+    end
+    
+    def define_list_writer(name, caster) # :nodoc:
+      line = __LINE__ + 1
+      class_eval %Q{
+        def #{name}=(values)
+          unless values.kind_of?(Array)
+            raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
+          end
+
+          values.collect! {|value| #{caster}(value) }
+          @#{name} = values
+        end
+        public :#{name}=
+      }, __FILE__, line
+    end
+    
+    def define_select_writer(name, caster, options_const) # :nodoc:
+      line = __LINE__ + 1
+      class_eval %Q{
+        def #{name}=(value)
+          value = #{caster}(value)
+          unless #{options_const}.include?(value)
+            raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
+          end
+          @#{name} = value
+        end
+        public :#{name}=
+      }, __FILE__, line
+    end
+    
+    def define_list_select_writer(name, caster, options_const) # :nodoc:
+      line = __LINE__ + 1
+      class_eval %Q{
+        def #{name}=(values)
+          unless values.kind_of?(Array)
+            raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
+          end
+
+          values.collect! {|value| #{caster}(value) }
+
+          unless values.all? {|value| #{options_const}.include?(value) }
+            raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
+          end
+
+          @#{name} = values
+        end
+        public :#{name}=
+      }, __FILE__, line
+    end
+    
+    def define_nest_writer(name, configurable_class)
+      line = __LINE__ + 1
+      class_eval %Q{
+        def #{name}=(value)
+          unless value.kind_of?(#{configurable_class})
+            raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
+          end
+          
+          @#{name} = value
+        end
+        public :#{name}=
+      }, __FILE__, line
+    end
+    
     def guess_caster(value) # :nodoc:
       guess_value = value.kind_of?(Array) ? value.first : value
       guesses = config_casters.keys.select {|type| type === guess_value }
@@ -222,6 +310,14 @@ module Configurable
       end
       
       config_casters[guesses.first]
+    end
+    
+    def options_const_set(name, options) # :nodoc:
+      return nil unless options
+      
+      options_const = "#{name.to_s.upcase}_OPTIONS"
+      clean_const_set(options, options_const)
+      options_const
     end
     
     def clean_const_set(const, const_name) # :nodoc:

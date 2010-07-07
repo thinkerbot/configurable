@@ -52,20 +52,6 @@ module Configurable
           configurable.config.merge!(value)
         end
       end
-      
-      def define_writer(receiver_class)
-        line = __LINE__ + 1
-        receiver_class.class_eval %Q{
-          def #{name}=(value)
-            unless value.kind_of?(#{configurable_class})
-              raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
-            end
-            
-            @#{name} = value
-          end
-          public :#{name}=
-        }, __FILE__, line
-      end
     
       # Returns an inspection string.
       def inspect
