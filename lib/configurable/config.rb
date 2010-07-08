@@ -4,6 +4,13 @@ module Configurable
   # operations to a receiver, and track metadata for presentation of configs
   # in various user contexts.
   class Config
+    class << self
+      attr_accessor :pattern
+      attr_accessor :caster
+    end
+    @pattern = String
+    @caster = nil
+    
     # The config name
     attr_reader :name
     
@@ -21,6 +28,8 @@ module Configurable
     # A description of the config
     attr_reader :desc
     
+    attr_reader :type
+    
     # Initializes a new Config.
     def initialize(name, default=nil, opts={})
       check_name(name)
@@ -28,8 +37,9 @@ module Configurable
       @name    = name
       @reader  = (opts[:reader] || name).to_sym
       @writer  = (opts[:writer] || "#{name}=").to_sym
-      @desc    = opts[:desc]
       @options = opts[:options]
+      @desc    = opts[:desc]
+      @type    = opts[:type]
       @default = default
     end
     
