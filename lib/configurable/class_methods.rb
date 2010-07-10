@@ -160,11 +160,10 @@ module Configurable
       config
     end
     
-    def config_cast(clas, options={}, &block)
-      type = options[:type] || clas.to_s.split('::').last.downcase.to_sym
+    def config_type(type, options={}, &block)
       const_name = options[:const_name] || "#{type.to_s.capitalize}Config"
       
-      config_class = Class.new(Config) { match clas }
+      config_class = Class.new(Config)
       clean_const_set(config_class, const_name)
       
       if block_given?
@@ -173,9 +172,17 @@ module Configurable
         define_method(caster, &block)
       end
       
-      config_types_registry[type] = config_class
+      config_types_registry[type.to_sym] = config_class
       reset_config_types
       
+      config_class
+    end
+    
+    def config_cast(clas, options={}, &block)
+      type = options[:type] || clas.to_s.split('::').last.downcase.to_sym
+      
+      config_class = config_type(type, options, &block)
+      config_class.class_eval { match clas }
       config_class
     end
     
@@ -343,18 +350,18 @@ module Configurable
       guesses.first
     end
     
+    def clean_const_set(const, const_name) # :nodoc:
+      unless const_defined?(const_name) && const_get(const_name) == const
+        const_set(const_name, const)
+      end
+    end
+    
     def options_const_set(name, options) # :nodoc:
       return nil unless options
       
       options_const = "#{name.to_s.upcase}_OPTIONS"
       clean_const_set(options, options_const)
       options_const
-    end
-    
-    def clean_const_set(const, const_name) # :nodoc:
-      unless const_defined?(const_name) && const_get(const_name) == const
-        const_set(const_name, const)
-      end
     end
     
     # helper to recursively check for an infinite nest

@@ -31,8 +31,6 @@ module Configurable
     # A description of the config
     attr_reader :desc
     
-    attr_reader :type
-    
     # Initializes a new Config.
     def initialize(name, default=nil, opts={})
       check_name(name)
@@ -42,7 +40,6 @@ module Configurable
       @writer  = (opts[:writer] || "#{name}=").to_sym
       @options = opts[:options]
       @desc    = opts[:desc]
-      @type    = opts[:type]
       @default = default
     end
     

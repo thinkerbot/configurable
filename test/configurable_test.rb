@@ -6,123 +6,122 @@ class ConfigurableTest < Test::Unit::TestCase
   Config = Configurable::Config
   ConfigHash = Configurable::ConfigHash
   
-#   
-#   #
-#   # documentation test
-#   #
-#   
-#   class ConfigClass
-#     include Configurable
-#     config :one, 'one'
-#     config :two, 'two'
-#     config :three, 'three'
-#   end
-#   
-#   class ValidationClass
-#     include Configurable
-#     config(:one, 'one') {|v| v.upcase }
-#     config :two, 2, &c.integer
-#   end
-# 
-#   module A
-#     include Configurable
-#     config :a, 'a'
-#     config :b, 'b'
-#   end
-# 
-#   class B
-#     include A
-#   end
-# 
-#   class C < B
-#     config :b, 'B'
-#     config :c, 'C'
-#   end
-#   
-#   class NestingClass
-#     include Configurable
-#     config :one, 'one'
-#     nest :two do
-#       config :three, 'three'
-#     end
-#   end
-#   
-#   class AlternativeClass
-#     include Configurable
-# 
-#     config_attr :sym, 'value', :reader => :get_sym, :writer => :set_sym
-# 
-#     def get_sym
-#       @sym
-#     end
-# 
-#     def set_sym(input)
-#       @sym = input.to_sym
-#     end
-#   end
-# 
-#   class AttributesClass
-#     include Configurable
-#     block = c.register(:type => :upcase) {|v| v.upcase }
-# 
-#     config :a, 'A', &block
-#     config :b, 'B', &block
-#   end
-#   
-#   def test_documentation
-#     c = ConfigClass.new
-#     assert_equal Configurable::ConfigHash, c.config.class
-#     assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config.to_hash)
-#   
-#     c.config[:one] = 'ONE'
-#     assert_equal 'ONE', c.one
-#   
-#     c.one = 1           
-#     assert_equal({:one => 1, :two => 'two', :three => 'three'}, c.config.to_hash)
-#   
-#     c.config[:undeclared] = 'value'
-#     assert_equal({:undeclared => 'value'}, c.config.store)
-#   
-#     ###
-#     c = ValidationClass.new
-#     assert_equal({:one => 'ONE', :two => 2}, c.config.to_hash)
-#   
-#     c.one = 'aNothER'             
-#     assert_equal 'ANOTHER', c.one
-#   
-#     c.two = -2
-#     assert_equal(-2, c.two)
-#     c.two = "3"
-#     assert_equal 3, c.two
-#     assert_raises(Configurable::Validation::ValidationError) { c.two = nil }
-#     assert_raises(Configurable::Validation::ValidationError) { c.two = 'str' }
-# 
-#     ###
-#     assert_equal({:a => 'a', :b => 'b'}, B.new.config.to_hash)
-#     assert_equal({:a => 'a', :b => 'B', :c => 'C'}, C.new.config.to_hash)
-# 
-#     ###
-#     c = NestingClass.new
-#     assert_equal({:one => 'one', :two => {:three => 'three'}}, c.config.to_hash)
-#   
-#     c.two.three = 'THREE'
-#     assert_equal 'THREE', c.config[:two][:three]
-#   
-#     ###
-#     alt = AlternativeClass.new
-#     assert_equal false, alt.respond_to?(:sym)
-#     assert_equal false, alt.respond_to?(:sym=)
-#     
-#     alt.config[:sym] = 'one'
-#     assert_equal :one, alt.get_sym
-#   
-#     alt.set_sym('two')
-#     assert_equal :two, alt.config[:sym]
-#   
-#     ###
-#     assert_equal :upcase, AttributesClass.configurations[:a][:type]
-#     assert_equal :upcase, AttributesClass.configurations[:b][:type]
-#   end
+  #
+  # documentation test
+  #
+  
+  class ConfigClass
+    include Configurable
+    config :one, 'one'
+    config :two, 'two'
+    config :three, 'three'
+  end
+  
+  class ValidationClass
+    include Configurable
+    config_type(:upcase) {|v| v.upcase }
+    config(:one, 'one', :type => :upcase)
+    config :two, 2
+  end
+
+  module A
+    include Configurable
+    config :a, 'a'
+    config :b, 'b'
+  end
+
+  class B
+    include A
+  end
+
+  class C < B
+    config :b, 'B'
+    config :c, 'C'
+  end
+  
+  class NestingClass
+    include Configurable
+    config :one, 'one'
+    nest :two do
+      config :three, 'three'
+    end
+  end
+  
+  class AlternativeClass
+    include Configurable
+
+    config :sym, 'value', :reader => :get_sym, :writer => :set_sym
+
+    def get_sym
+      @sym
+    end
+
+    def set_sym(input)
+      @sym = input.to_sym
+    end
+  end
+
+  class AttributesClass
+    include Configurable
+    config_type(:upcase) {|v| v.upcase }
+
+    config :a, 'A', :type => :upcase
+    config :b, 'B', :type => :upcase
+  end
+  
+  def test_documentation
+    c = ConfigClass.new
+    assert_equal Configurable::ConfigHash, c.config.class
+    assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config.to_hash)
+  
+    c.config[:one] = 'ONE'
+    assert_equal 'ONE', c.one
+  
+    c.one = 1           
+    assert_equal({:one => 1, :two => 'two', :three => 'three'}, c.config.to_hash)
+  
+    c.config[:undeclared] = 'value'
+    assert_equal({:undeclared => 'value'}, c.config.store)
+  
+    ###
+    c = ValidationClass.new
+    assert_equal({:one => 'ONE', :two => 2}, c.config.to_hash)
+  
+    c.one = 'aNothER'             
+    assert_equal 'ANOTHER', c.one
+  
+    c.two = -2
+    assert_equal(-2, c.two)
+    c.two = "3"
+    assert_equal 3, c.two
+    assert_raises(ArgumentError) { c.two = 'str' }
+
+    ###
+    assert_equal({:a => 'a', :b => 'b'}, B.new.config.to_hash)
+    assert_equal({:a => 'a', :b => 'B', :c => 'C'}, C.new.config.to_hash)
+
+    ###
+    c = NestingClass.new
+    assert_equal({:one => 'one', :two => {:three => 'three'}}, c.config.to_hash)
+  
+    c.two.three = 'THREE'
+    assert_equal 'THREE', c.config[:two][:three]
+  
+    ###
+    alt = AlternativeClass.new
+    assert_equal false, alt.respond_to?(:sym)
+    assert_equal false, alt.respond_to?(:sym=)
+    
+    alt.config[:sym] = 'one'
+    assert_equal :one, alt.get_sym
+  
+    alt.set_sym('two')
+    assert_equal :two, alt.config[:sym]
+  
+    ###
+    assert_equal AttributesClass::UpcaseConfig, AttributesClass.configurations[:a].class
+    assert_equal AttributesClass::UpcaseConfig, AttributesClass.configurations[:b].class
+  end
   
   #
   # include test
@@ -304,7 +303,7 @@ class ConfigurableTest < Test::Unit::TestCase
   # nest test
   #
   
-  class A
+  class NestA
     include Configurable
   
     config :key, 'one'
@@ -313,7 +312,7 @@ class ConfigurableTest < Test::Unit::TestCase
     end
   end
   
-  class B
+  class NestB
     include Configurable
   
     config :key, 1
@@ -325,14 +324,14 @@ class ConfigurableTest < Test::Unit::TestCase
     end
   end
   
-  class C
+  class NestC
     include Configurable
-    nest :a, A
-    nest :b, B
+    nest :a, NestA
+    nest :b, NestB
   end
   
   def test_nest_usage
-    a = A.new
+    a = NestA.new
     assert_equal 'one', a.key
     assert_equal 'one', a.config[:key]
   
@@ -347,9 +346,9 @@ class ConfigurableTest < Test::Unit::TestCase
   
     assert_equal({:key => 'one', :nest => {:key => 2}}, a.config.to_hash)
     assert_equal({:key => 2}, a.nest.config.to_hash)
-    assert_equal A::Nest, a.nest.class
+    assert_equal NestA::Nest, a.nest.class
   
-    c = C.new
+    c = NestC.new
     c.b.key = 7
     c.b.nest.key = "8"
     c.config[:b][:nest][:nest][:key] = "9"
@@ -910,25 +909,6 @@ class ConfigurableTest < Test::Unit::TestCase
     end
   end
   
-#   #
-#   # DEFAULT_ATTRIBUTES test
-#   #
-#   
-#   class DefaultOptionsClassOne
-#     include Configurable
-#   end
-#   
-#   class DefaultOptionsClassTwo
-#     include Configurable
-#     DEFAULT_ATTRIBUTES = DEFAULT_ATTRIBUTES.dup
-#     DEFAULT_ATTRIBUTES[:key] = 'value'
-#   end
-#   
-#   def test_default_attributes_may_be_overridden
-#     assert_equal({}, DefaultOptionsClassOne::DEFAULT_ATTRIBUTES[:key])
-#     assert_equal('value', DefaultOptionsClassTwo::DEFAULT_ATTRIBUTES[:key])
-#   end
-#   
   #
   # initialize test
   #
