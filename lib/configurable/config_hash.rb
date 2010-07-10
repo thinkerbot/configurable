@@ -25,7 +25,7 @@ module Configurable
       
       @receiver = receiver
       configs.each_pair do |name, config|
-        value = @store.has_key?(name) ? @store.delete(name) : config.default
+        value = store.has_key?(name) ? store.delete(name) : config.default
         config.set(receiver, value)
       end
       
@@ -34,7 +34,7 @@ module Configurable
     
     def unbind
       configs.each_pair do |name, config|
-        @store[name] = config.get(receiver)
+        store[name] = config.get(receiver)
       end
       @receiver = nil
       self
@@ -53,7 +53,7 @@ module Configurable
       if config = configs[key]
         config.get(receiver)
       else
-        @store[key]
+        store[key]
       end
     end
 
@@ -62,18 +62,18 @@ module Configurable
       if config = configs[key]
         config.set(receiver, value)
       else
-        @store[key] = value
+        store[key] = value
       end
     end
     
     # Returns the union of configs and store keys.
     def keys
-      configs.keys | @store.keys
+      configs.keys | store.keys
     end
     
     # True if the key is a key in configs or store.
     def has_key?(key)
-      configs.has_key?(key) || @store.has_key?(key) 
+      configs.has_key?(key) || store.has_key?(key) 
     end
     
     # Merges another with self.
@@ -83,7 +83,7 @@ module Configurable
         if config = configs[key]
           config.set(receiver, value)
         else
-          @store[key] = value
+          store[key] = value
         end
       end
     end
@@ -94,7 +94,7 @@ module Configurable
         yield(key, config.get(receiver))
       end
       
-      @store.each_pair do |key, value|
+      store.each_pair do |key, value|
         yield(key, value)
       end
     end

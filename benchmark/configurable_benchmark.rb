@@ -1,17 +1,24 @@
-require 'test/unit'
-require 'benchmark'
+require File.expand_path('../benchmark_helper', __FILE__)
 require 'configurable'
 
 class ConfigurableBenchmark < Test::Unit::TestCase
   ConfigHash = Configurable::ConfigHash
   
+  class Reference
+    attr_accessor :one, :two, :three
+    
+    def initialize
+      @one = nil
+      @two = nil
+      @three = nil
+    end
+  end
+  
   class Receiver
     include Configurable
-    config :one
-    config :two
-    config :three
-    config :four
-    config :five
+    config :one, 'one'
+    config :two, 'two'
+    config :three, 'three'
   end
   
   def test_initialize_speed
@@ -19,17 +26,16 @@ class ConfigurableBenchmark < Test::Unit::TestCase
     
     Benchmark.bm(25) do |x|
       n = 10
-      x.report("#{n}k reference") do 
-        (n * 1000).times { Object.new }
+      
+      x.report("#{n}k Reference") do 
+        (n * 1000).times { Reference.new }
       end
       
-      Receiver.cache_configurations(false)
-      x.report("#{n}k new") do 
+      x.report("#{n}k Configurable (cold)") do 
         (n * 1000).times { Receiver.new }
       end
       
-      Receiver.cache_configurations(true)
-      x.report("#{n}k new (cached)") do 
+      x.report("#{n}k Configurable (warm)") do 
         (n * 1000).times { Receiver.new }
       end
     end
@@ -38,7 +44,7 @@ class ConfigurableBenchmark < Test::Unit::TestCase
   def test_merge_speed
     puts "test_merge_speed"
     
-    config_hash = ConfigHash.new(Receiver.new)
+    config_hash = Receiver.new.config
     hash = {}
     
     Benchmark.bm(25) do |x|
@@ -48,17 +54,15 @@ class ConfigurableBenchmark < Test::Unit::TestCase
       end
       
       n = 10
-      x.report("#{n}k reference") do 
+      x.report("#{n}k Hash") do 
         (n * 1000).times { hash.merge!(another) }
       end
       
-      Receiver.cache_configurations(false)
-      x.report("#{n}k") do 
+      x.report("#{n}k ConfigHash (cold)") do 
         (n * 1000).times { config_hash.merge!(another) }
       end
       
-      Receiver.cache_configurations(true)
-      x.report("#{n}k (cached)") do 
+      x.report("#{n}k ConfigHash (warm)") do 
         (n * 1000).times { config_hash.merge!(another) }
       end
       

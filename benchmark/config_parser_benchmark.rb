@@ -1,5 +1,4 @@
-require 'test/unit'
-require 'benchmark'
+require File.expand_path('../benchmark_helper', __FILE__)
 require 'config_parser'
 
 class ConfigParserBenchmark < Test::Unit::TestCase

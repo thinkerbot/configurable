@@ -110,3 +110,10 @@ task :test => :bundle do
   tests = Dir.glob('test/**/*_test.rb')
   sh('ruby', '-w', '-e', 'ARGV.dup.each {|test| load test}', *tests)
 end
+
+desc 'Run the benchmarks'
+task :benchmark => :bundle do
+  benchmarks = Dir.glob('benchmark/**/*_benchmark.rb')
+  sh('ruby', '-w', '-e', 'ARGV.dup.each {|benchmark| load benchmark}', *benchmarks)
+end
+

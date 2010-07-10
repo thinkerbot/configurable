@@ -108,7 +108,7 @@ module Configurable
       config_class = config_types[type] or raise "unknown config type: #{type.inspect}"
       
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      caster = options[:caster] || config_class.caster
+      caster = options[:caster] || (type ? "cast_#{type}" : nil)
       options_const = options_const_set(name, options[:options])
       
       config = config_class.new(name, default, options)
@@ -170,9 +170,7 @@ module Configurable
       clean_const_set(config_class, const_name)
       
       if block_given?
-        caster = "cast_#{type}"
-        config_class.caster = caster
-        define_method(caster, &block)
+        define_method("cast_#{type}", &block)
       end
       
       config_types_registry[type.to_sym] = config_class

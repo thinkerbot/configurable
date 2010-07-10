@@ -1,4 +1,4 @@
-require 'configurable/version'
+require 'configurable/casters'
 require 'configurable/module_methods'
 
 # Configurable enables the specification of configurations within a class 
@@ -189,6 +189,7 @@ require 'configurable/module_methods'
 #   AttributesClass.configurations[:b][:type]   # => :upcase
 #
 module Configurable
+  include Casters
   
   # A ConfigHash bound to self.  Accessing configurations through config
   # is much slower (although sometimes more convenient) than through the

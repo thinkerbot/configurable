@@ -5,7 +5,6 @@ module Configurable
   # in various user contexts.
   class Config
     class << self
-      attr_accessor :caster
       attr_reader :matcher
       
       protected
