@@ -76,9 +76,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
     c.config[:one] = 'ONE'
     assert_equal 'ONE', c.one
-  
-    c.one = 1           
-    assert_equal({:one => 1, :two => 'two', :three => 'three'}, c.config.to_hash)
+    assert_equal({:one => 'ONE', :two => 'two', :three => 'three'}, c.config.to_hash)
   
     c.config[:undeclared] = 'value'
     assert_equal({:undeclared => 'value'}, c.config.store)
@@ -341,11 +339,11 @@ class ConfigurableTest < Test::Unit::TestCase
     a.nest.key = 'TWO'
     assert_equal 'TWO', a.config[:nest][:key]
   
-    a.config[:nest][:key] = 2
-    assert_equal 2, a.nest.key
+    a.config[:nest][:key] = 'too'
+    assert_equal 'too', a.nest.key
   
-    assert_equal({:key => 'one', :nest => {:key => 2}}, a.config.to_hash)
-    assert_equal({:key => 2}, a.nest.config.to_hash)
+    assert_equal({:key => 'one', :nest => {:key => 'too'}}, a.config.to_hash)
+    assert_equal({:key => 'too'}, a.nest.config.to_hash)
     assert_equal NestA::Nest, a.nest.class
   
     c = NestC.new
@@ -956,8 +954,8 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_initialize_config_merges_class_defaults_with_overrides
-    obj = Sample.new(:two => 2)
-    assert_equal({:one => 'one', :two => 2}, obj.config.to_hash)
+    obj = Sample.new(:two => 'TWO')
+    assert_equal({:one => 'one', :two => 'TWO'}, obj.config.to_hash)
   end
   
   #
@@ -970,25 +968,25 @@ class ConfigurableTest < Test::Unit::TestCase
     
     assert orig.config.object_id != copy.config.object_id
     
-    orig.two = 2
+    orig.two = 'TWO'
     copy.two = 'two'
-    assert_equal 2, orig.two
+    assert_equal 'TWO', orig.two
     assert_equal 'two', copy.two
     
-    orig.config[:three] = 3
+    orig.config[:three] = 'THREE'
     copy.config[:three] = 'three'
-    assert_equal 3, orig.config[:three]
+    assert_equal 'THREE', orig.config[:three]
     assert_equal 'three', copy.config[:three]
   end
   
   def test_dup_passes_along_current_config_values
     orig = Sample.new
-    orig.two = 2
-    orig.config[:three] = 3
-    assert_equal({:one => 'one', :two => 2, :three => 3}, orig.config.to_hash)
+    orig.two = 'TWO'
+    orig.config[:three] = 'THREE'
+    assert_equal({:one => 'one', :two => 'TWO', :three => 'THREE'}, orig.config.to_hash)
     
     copy = orig.dup
-    assert_equal({:one => 'one', :two => 2, :three => 3}, copy.config.to_hash)
+    assert_equal({:one => 'one', :two => 'TWO', :three => 'THREE'}, copy.config.to_hash)
   end
   
   class NonInitSample

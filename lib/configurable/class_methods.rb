@@ -1,4 +1,5 @@
 require 'lazydoc'
+require 'configurable/configs'
 require 'configurable/config_hash'
 autoload(:ConfigParser, 'config_parser')
 
@@ -8,6 +9,7 @@ module Configurable
     :switch  => Configs::Switch,
     :integer => Configs::Integer,
     :float   => Configs::Float,
+    :string  => Configs::String,
     nil      => Config
   }
   

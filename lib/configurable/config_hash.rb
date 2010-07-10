@@ -1,4 +1,4 @@
-require 'configurable/configs'
+require 'configurable/config'
 
 module Configurable
   
