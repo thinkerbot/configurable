@@ -163,9 +163,10 @@ module Configurable
     end
     
     def config_type(type, options={}, &block)
-      const_name = options[:const_name] || "#{type.to_s.capitalize}Config"
+      const_name = options[:const_name] || type.to_s.capitalize
+      matcher    = options[:match]
       
-      config_class = Class.new(Config)
+      config_class = Class.new(Config) { match matcher }
       clean_const_set(config_class, const_name)
       
       if block_given?
@@ -177,14 +178,6 @@ module Configurable
       config_types_registry[type.to_sym] = config_class
       reset_config_types
       
-      config_class
-    end
-    
-    def config_cast(clas, options={}, &block)
-      type = options[:type] || clas.to_s.split('::').last.downcase.to_sym
-      
-      config_class = config_type(type, options, &block)
-      config_class.class_eval { match clas }
       config_class
     end
     

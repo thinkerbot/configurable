@@ -117,8 +117,8 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :two, alt.config[:sym]
   
     ###
-    assert_equal AttributesClass::UpcaseConfig, AttributesClass.configurations[:a].class
-    assert_equal AttributesClass::UpcaseConfig, AttributesClass.configurations[:b].class
+    assert_equal AttributesClass::Upcase, AttributesClass.configurations[:a].class
+    assert_equal AttributesClass::Upcase, AttributesClass.configurations[:b].class
   end
   
   #
@@ -608,50 +608,41 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # config_cast test
+  # config_type test
   #
   
-  class CastClass
-    attr_reader :str
-    def initialize(str)
-      @str = str
-    end
-  end
-  
-  class CastConfigClass
+  class ConfigTypeClass
     include Configurable
-    config_cast(CastClass) {|input| CastClass === input ? input : CastClass.new(input) }
-    config :key, CastClass.new('abc')
+    config_type(:upcase) {|input| input.upcase }
+    config :key, 'abc', :type => :upcase
   end
   
-  def test_config_cast_registers_a_casting_method_for_class_of_object
-    obj = CastConfigClass.new
-    assert_equal CastClass, obj.key.class
-    assert_equal 'abc', obj.key.str
+  def test_config_type_registers_a_casting_type
+    obj = ConfigTypeClass.new
+    assert_equal 'ABC', obj.key
     
     obj.key = 'xyz'
-    assert_equal CastClass, obj.key.class
-    assert_equal 'xyz', obj.key.str
+    assert_equal 'XYZ', obj.key
   end
   
-  class ConfigClassParent
+  class ConfigTypeParent
     include Configurable
-    config_cast(String) {|input| input.upcase }
+    config_type(:upcase) {|input| input.upcase }
   end
   
-  module ConfigClassModule
+  module ConfigTypeModule
     include Configurable
-    config_cast(Integer) {|input| input * -1 }
+    config_type(:negate) {|input| input * -1 }
   end
   
-  class ConfigClassChild < ConfigClassParent
-    include ConfigClassModule
-    config :one, 'abc'
-    config :two, 1
+  class ConfigTypeChild < ConfigTypeParent
+    include ConfigTypeModule
+    config :one, 'abc', :type => :upcase
+    config :two, 1, :type => :negate
   end
   
-  def test_config_casts_are_inherited
-    obj = ConfigClassChild.new
+  def test_config_types_are_inherited
+    obj = ConfigTypeChild.new
     assert_equal 'ABC', obj.one
     assert_equal -1, obj.two
     
@@ -662,47 +653,17 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 10, obj.two
   end
   
-  class ConfigClassFloatParent
+  class ConfigTypeFloatParent
     include Configurable
     config :one, 'aBc'
   end
   
-  class ConfigClassFloatChild < ConfigClassFloatParent
-    config_cast(String) {|input| input.upcase }
+  class ConfigTypeFloatChild < ConfigTypeFloatParent
+    config_type(:upcase) {|input| input.upcase }
   end
   
-  class ConfigClassFloatParent
-    config :two, 'aBc'
-  end
-  
-  def test_config_casts_do_not_float_up
-    obj = ConfigClassFloatParent.new
-    assert_equal 'aBc', obj.one
-    assert_equal 'aBc', obj.two
-  end
-  
-  class ConfigClassA
-    include Configurable
-    config :one, 'aBc'
-    config_cast(String) {|input| input.upcase }
-    config :two, 'aBc'
-  end
-  
-  class ConfigClassB
-    include Configurable
-    config :one, 'aBc'
-    config_cast(String) {|input| input.downcase }
-    config :two, 'aBc'
-  end
-  
-  def test_config_casts_are_not_shared_in_unrelated_ancestries
-    obj = ConfigClassA.new
-    assert_equal 'aBc', obj.one
-    assert_equal 'ABC', obj.two
-    
-    obj = ConfigClassB.new
-    assert_equal 'aBc', obj.one
-    assert_equal 'abc', obj.two
+  def test_config_types_do_not_float_up
+    assert_equal nil, ConfigTypeFloatParent.config_types[:upcase]
   end
   
   #

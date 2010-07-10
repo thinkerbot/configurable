@@ -8,6 +8,8 @@ module Configurable
       attr_accessor :caster
       attr_reader :matcher
       
+      protected
+      
       def match(pattern)
         @matcher = pattern
       end
@@ -31,6 +33,10 @@ module Configurable
     # A description of the config
     attr_reader :desc
     
+    attr_reader :long
+    
+    attr_reader :short
+    
     # Initializes a new Config.
     def initialize(name, default=nil, opts={})
       check_name(name)
@@ -40,6 +46,8 @@ module Configurable
       @writer  = (opts[:writer] || "#{name}=").to_sym
       @options = opts[:options]
       @desc    = opts[:desc]
+      @long    = opts[:long] || name
+      @short   = opts[:short]
       @default = default
     end
     
