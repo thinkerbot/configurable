@@ -134,7 +134,9 @@ module Configurable
     
     protected
     
-    # Returns receiver.class.configurations.
+    # Returns receiver.class.configurations.  Caching here is not necessary or
+    # preferred as configurations are cached on the class (which allows late
+    # inclusion of configurable modules to work properly).
     def configs
       receiver ? receiver.class.configurations : {}
     end

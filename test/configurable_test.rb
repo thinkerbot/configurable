@@ -704,25 +704,12 @@ class ConfigurableTest < Test::Unit::TestCase
     include Configurable
     config :a, 'a'
     config :b, 'b'
-    
-    cache_configurations
   end
   
-  def test_remove_config_recaches_cached_configurations
+  def test_remove_config_resets_configurations
     assert_equal([:a, :b], CachedRemoveConfig.configurations.keys.sort_by {|key| key.to_s })
     CachedRemoveConfig.send(:remove_config, :a)
     assert_equal([:b], CachedRemoveConfig.configurations.keys)
-  end
-  
-  class NoCacheRemoveConfig
-    include Configurable
-    config :a, 'a'
-    config :b, 'b'
-  end
-  
-  def test_remove_config_does_not_accidentally_cache_uncached_configurations
-    NoCacheRemoveConfig.send(:remove_config, :a)
-    assert NoCacheRemoveConfig.configurations.object_id != NoCacheRemoveConfig.configurations.object_id
   end
   
   #
@@ -755,25 +742,12 @@ class ConfigurableTest < Test::Unit::TestCase
     include Configurable
     config :a, 'a'
     config :b, 'b'
-    
-    cache_configurations
   end
   
-  def test_undef_config_recaches_cached_configurations
+  def test_undef_config_resets_configurations
     assert_equal([:a, :b], CachedUndefConfig.configurations.keys.sort_by {|key| key.to_s })
     CachedUndefConfig.send(:undef_config, :a)
     assert_equal([:b], CachedUndefConfig.configurations.keys)
-  end
-  
-  class NoCacheUndefConfig
-    include Configurable
-    config :a, 'a'
-    config :b, 'b'
-  end
-  
-  def test_undef_config_does_not_accidentally_cache_uncached_configurations
-    NoCacheUndefConfig.send(:remove_config, :a)
-    assert NoCacheUndefConfig.configurations.object_id != NoCacheUndefConfig.configurations.object_id
   end
   
 #   #

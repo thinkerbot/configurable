@@ -16,12 +16,10 @@ module Configurable
     attr_reader :config_map
     
     def self.initialize(base)  # :nodoc:
+      base.reset_configurations
+      
       unless base.instance_variable_defined?(:@config_registry)
         base.instance_variable_set(:@config_registry, {})
-      end
-      
-      unless base.instance_variable_defined?(:@configurations)
-        base.instance_variable_set(:@configurations, nil)
       end
       
       unless base.instance_variable_defined?(:@config_types)
@@ -55,37 +53,30 @@ module Configurable
     
     # A hash of (key, Config) pairs representing all configurations defined
     # on this class or inherited from ancestors.  The configurations hash is
-    # generated on each call to ensure it accurately reflects any configs
-    # added on ancestors. This slows down initialization and config access
-    # through instance.config.
-    #
-    # Call cache_configurations after all configs have been declared in order
-    # to prevent regeneration of configurations and to significantly improve
-    # performance.
+    # memoized for performance.  Call reset_configurations if configurations
+    # needs to be recalculated for any reason.
     def configurations
-      return @configurations if @configurations
+      @configurations ||= begin
+        configurations = {}
       
-      configurations = {}
-      
-      ancestors.reverse.each do |ancestor|
-        next unless ancestor.kind_of?(ClassMethods)
-        ancestor.config_registry.each_pair do |key, value|
-          if value.nil?
-            configurations.delete(key)
-          else
-            configurations[key] = value
+        ancestors.reverse.each do |ancestor|
+          next unless ancestor.kind_of?(ClassMethods)
+          ancestor.config_registry.each_pair do |key, value|
+            if value.nil?
+              configurations.delete(key)
+            else
+              configurations[key] = value
+            end
           end
         end
-      end
       
-      configurations
+        configurations
+      end
     end
     
-    # Caches the configurations hash so as to improve peformance.  Call
-    # with on set to false to turn off caching.
-    def cache_configurations(on=true)
+    # Resets configurations such that they will be recalculated.
+    def reset_configurations
       @configurations = nil
-      @configurations = self.configurations if on
     end
     
     protected
@@ -100,6 +91,7 @@ module Configurable
       
       config = config_class.new(name, default, options)
       config_registry[config.name] = config
+      reset_configurations
       
       unless options[:reader]
         define_reader(name)
@@ -140,6 +132,7 @@ module Configurable
       # setup the nest config
       config = Configs::Nest.new(name, configurable_class, options)
       config_registry[config.name] = config
+      reset_configurations
       
       define_reader(name) unless options[:reader]
       define_nest_writer(name, configurable_class) unless options[:writer]
@@ -182,7 +175,7 @@ module Configurable
       }.merge(options)
       
       config = config_registry.delete(name)
-      cache_configurations(@configurations != nil)
+      reset_configurations
       
       undef_method(config.reader) if options[:reader]
       undef_method(config.writer) if options[:writer]
@@ -205,9 +198,7 @@ module Configurable
     # the config_registry.
     #
     def undef_config(name, options={})
-      # temporarily cache as an optimization
-      configs = configurations
-      unless configs.has_key?(name)
+      unless configurations.has_key?(name)
         raise NameError.new("#{name.inspect} is not a config on #{self}")
       end
       
@@ -216,9 +207,9 @@ module Configurable
         :writer => true
       }.merge(options)
       
-      config = configs[name]
+      config = configurations[name]
       config_registry[name] = nil
-      cache_configurations(@configurations != nil)
+      reset_configurations
       
       undef_method(config.reader) if options[:reader]
       undef_method(config.writer) if options[:writer]
