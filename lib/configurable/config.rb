@@ -5,11 +5,8 @@ module Configurable
   # in various user contexts.
   class Config
     class << self
-      attr_accessor :pattern
       attr_accessor :caster
     end
-    @pattern = String
-    @caster = nil
     
     # The config name
     attr_reader :name

@@ -3,8 +3,6 @@ require 'configurable/config'
 module Configurable
   module Configs
     class Flag < Config
-      @pattern = FalseClass
-      
       def self.caster
         "#{self}.cast"
       end
