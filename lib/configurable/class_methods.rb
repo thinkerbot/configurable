@@ -72,7 +72,8 @@ module Configurable
             end
           end
         end
-      
+        
+        reset_config_types
         configurations
       end
     end
@@ -89,7 +90,11 @@ module Configurable
         ancestors.reverse.each do |ancestor|
           next unless ancestor.kind_of?(ClassMethods)
           ancestor.config_types_registry.each_pair do |key, value|
-            config_types[key] = value
+            if value.nil?
+              config_types.delete(key)
+            else
+              config_types[key] = value
+            end
           end
         end
       
@@ -104,15 +109,14 @@ module Configurable
     protected
     
     def config(name, default=nil, options={})
-      options[:type] ||= guess_type(default)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
-      type = options[:type]
+      type = options.has_key?(:type) ? options.delete(:type) : guess_type(default)
       config_class = config_types[type] or raise "unknown config type: #{type.inspect}"
       
-      reader = options[:reader]
-      writer = options[:writer]
-      caster = options[:caster] || (type ? "cast_#{type}" : nil)
+      reader = options.delete(:reader)
+      writer = options.delete(:writer)
+      caster = options.has_key?(:caster) ? options.delete(:caster) : config_class.caster
       options_const = options_const_set(name, options[:options])
       
       config = config_class.new(name, default, reader, writer, options)
@@ -141,9 +145,10 @@ module Configurable
     
     def nest(name, configurable_class=nil, options={}, &block)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      const_name = options[:const_name] || name.to_s.capitalize
-      reader = options[:reader]
-      writer = options[:writer]
+      
+      reader = options.delete(:reader)
+      writer = options.delete(:writer)
+      const_name = options.has_key?(:const_name) ? options.delete(:const_name) : name.to_s.capitalize
       
       # define the nested configurable
       if configurable_class
@@ -172,23 +177,6 @@ module Configurable
       config
     end
     
-    def config_type(type, options={}, &block)
-      const_name = options[:const_name] || type.to_s.capitalize
-      matcher    = options[:matches]
-      
-      config_class = Class.new(Config) { match matcher }
-      clean_const_set(config_class, const_name)
-      
-      if block_given?
-        define_method("cast_#{type}", &block)
-      end
-      
-      config_types_registry[type.to_sym] = config_class
-      reset_config_types
-      
-      config_class
-    end
-    
     # Removes a configuration much like remove_method removes a method.  The
     # reader and writer for the config are likewise removed.  Nested configs
     # can be removed using this method.
@@ -211,6 +199,7 @@ module Configurable
       
       undef_method(config.reader) if options[:reader]
       undef_method(config.writer) if options[:writer]
+      config
     end
     
     # Undefines a configuration much like undef_method undefines a method.  The
@@ -245,8 +234,63 @@ module Configurable
       
       undef_method(config.reader) if options[:reader]
       undef_method(config.writer) if options[:writer]
+      config
     end
-
+    
+    def config_type(type, options={}, &block)
+      caster  = options.has_key?(:caster) ? options.delete(:caster) : "cast_#{type}".to_sym
+      matcher = options.delete(:matcher)
+      const_name = options.has_key?(:const_name) ? options.delete(:const_name) : type.to_s.capitalize
+      
+      config_class = Class.new(Config) do
+        cast_with caster
+        match matcher
+      end
+      clean_const_set(config_class, const_name)
+      
+      if block_given?
+        define_method(caster, &block)
+      end
+      
+      config_types_registry[type.to_sym] = config_class
+      reset_config_types
+      
+      config_class
+    end
+    
+    def remove_config_type(type, options={})
+      unless config_types.has_key?(type)
+        raise NameError.new("#{type.inspect} is not a config type on #{self}")
+      end
+      
+      options = {
+        :caster => true
+      }.merge(options)
+      
+      config_class = config_type_registry.delete(type)
+      reset_config_types
+      
+      undef_method(config_class.caster) if options[:caster]
+      config_class
+    end
+    
+    def undef_config_type(type, options={})
+      unless config_types.has_key?(type)
+        raise NameError.new("#{type.inspect} is not a config type on #{self}")
+      end
+      
+      options = {
+        :caster => true
+      }.merge(options)
+      
+      config_class = config_type_registry[type]
+      config_type_registry[type] = nil
+      reset_config_types
+      
+      undef_method(config_class.caster) if options[:caster]
+      config_class
+    end
+    
     private
     
     def inherited(base) # :nodoc:
@@ -354,6 +398,8 @@ module Configurable
     end
     
     def clean_const_set(const, const_name) # :nodoc:
+      return nil unless const_name
+      
       unless const_defined?(const_name) && const_get(const_name) == const
         const_set(const_name, const)
       end

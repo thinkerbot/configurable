@@ -5,14 +5,20 @@ module Configurable
   # in various user contexts.
   class Config
     class << self
+      attr_reader :caster
       attr_reader :matcher
       
       protected
+      
+      def cast_with(method_name)
+        @caster = method_name
+      end
       
       def match(pattern)
         @matcher = pattern
       end
     end
+    cast_with nil
     match nil
     
     # The config name
