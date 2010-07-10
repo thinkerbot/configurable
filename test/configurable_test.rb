@@ -642,36 +642,70 @@ class ConfigurableTest < Test::Unit::TestCase
     config_cast(String) {|input| input.upcase }
   end
   
+  module ConfigClassModule
+    include Configurable
+    config_cast(Integer) {|input| input * -1 }
+  end
+  
   class ConfigClassChild < ConfigClassParent
-    config :key, 'abc'
+    include ConfigClassModule
+    config :one, 'abc'
+    config :two, 1
   end
   
   def test_config_casts_are_inherited
     obj = ConfigClassChild.new
-    assert_equal 'ABC', obj.key
+    assert_equal 'ABC', obj.one
+    assert_equal -1, obj.two
     
-    obj.key = 'xyz'
-    assert_equal 'XYZ', obj.key
+    obj.one = 'xyz'
+    assert_equal 'XYZ', obj.one
+    
+    obj.two = -10
+    assert_equal 10, obj.two
+  end
+  
+  class ConfigClassFloatParent
+    include Configurable
+    config :one, 'aBc'
+  end
+  
+  class ConfigClassFloatChild < ConfigClassFloatParent
+    config_cast(String) {|input| input.upcase }
+  end
+  
+  class ConfigClassFloatParent
+    config :two, 'aBc'
+  end
+  
+  def test_config_casts_do_not_float_up
+    obj = ConfigClassFloatParent.new
+    assert_equal 'aBc', obj.one
+    assert_equal 'aBc', obj.two
   end
   
   class ConfigClassA
     include Configurable
+    config :one, 'aBc'
     config_cast(String) {|input| input.upcase }
-    config :key, 'aBc'
+    config :two, 'aBc'
   end
   
   class ConfigClassB
     include Configurable
+    config :one, 'aBc'
     config_cast(String) {|input| input.downcase }
-    config :key, 'aBc'
+    config :two, 'aBc'
   end
   
   def test_config_casts_are_not_shared_in_unrelated_ancestries
     obj = ConfigClassA.new
-    assert_equal 'ABC', obj.key
+    assert_equal 'aBc', obj.one
+    assert_equal 'ABC', obj.two
     
     obj = ConfigClassB.new
-    assert_equal 'abc', obj.key
+    assert_equal 'aBc', obj.one
+    assert_equal 'abc', obj.two
   end
   
   #

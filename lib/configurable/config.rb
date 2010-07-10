@@ -6,7 +6,13 @@ module Configurable
   class Config
     class << self
       attr_accessor :caster
+      attr_reader :matcher
+      
+      def match(pattern)
+        @matcher = pattern
+      end
     end
+    match nil
     
     # The config name
     attr_reader :name

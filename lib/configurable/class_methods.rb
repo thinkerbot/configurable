@@ -3,6 +3,13 @@ require 'configurable/config_hash'
 autoload(:ConfigParser, 'config_parser')
 
 module Configurable
+  DEFAULT_CONFIG_TYPES = {
+    :flag    => Configs::Flag,
+    :switch  => Configs::Switch,
+    :integer => Configs::Integer,
+    :float   => Configs::Float,
+    nil      => Config
+  }
   
   # ClassMethods extends classes that include Configurable and provides methods
   # for declaring configurations.
@@ -11,23 +18,17 @@ module Configurable
     # configurations for all configs declared across all ancestors.
     attr_reader :config_registry
     
-    attr_reader :config_types
-    
-    attr_reader :config_map
+    attr_reader :config_types_registry
     
     def self.initialize(base)  # :nodoc:
       base.reset_configurations
-      
       unless base.instance_variable_defined?(:@config_registry)
         base.instance_variable_set(:@config_registry, {})
       end
       
-      unless base.instance_variable_defined?(:@config_types)
-        base.instance_variable_set(:@config_types, Configs::DEFAULTS.dup)
-      end
-      
-      unless base.instance_variable_defined?(:@config_map)
-        base.instance_variable_set(:@config_map, Configs::MAP.dup)
+      base.reset_config_types
+      unless base.instance_variable_defined?(:@config_types_registry)
+        base.instance_variable_set(:@config_types_registry, {})
       end
     end
     
@@ -77,6 +78,25 @@ module Configurable
     # Resets configurations such that they will be recalculated.
     def reset_configurations
       @configurations = nil
+    end
+    
+    def config_types
+      @config_types ||= begin
+        config_types = Configurable::DEFAULT_CONFIG_TYPES.dup
+      
+        ancestors.reverse.each do |ancestor|
+          next unless ancestor.kind_of?(ClassMethods)
+          ancestor.config_types_registry.each_pair do |key, value|
+            config_types[key] = value
+          end
+        end
+      
+        config_types
+      end
+    end
+    
+    def reset_config_types
+      @config_types = nil
     end
     
     protected
@@ -144,7 +164,7 @@ module Configurable
       type = options[:type] || clas.to_s.split('::').last.downcase.to_sym
       const_name = options[:const_name] || "#{type.to_s.capitalize}Config"
       
-      config_class = Class.new(Config)
+      config_class = Class.new(Config) { match clas }
       clean_const_set(config_class, const_name)
       
       if block_given?
@@ -153,8 +173,10 @@ module Configurable
         define_method(caster, &block)
       end
       
-      config_map[clas] = type
-      config_types[type] = config_class
+      config_types_registry[type] = config_class
+      reset_config_types
+      
+      config_class
     end
     
     # Removes a configuration much like remove_method removes a method.  The
@@ -218,8 +240,6 @@ module Configurable
     private
     
     def inherited(base) # :nodoc:
-      base.instance_variable_set(:@config_types, config_types.dup)
-      base.instance_variable_set(:@config_map, config_map.dup)
       ClassMethods.initialize(base)
       super
     end
@@ -291,7 +311,7 @@ module Configurable
       }, __FILE__, line
     end
     
-    def define_nest_writer(name, configurable_class)
+    def define_nest_writer(name, configurable_class) # :nodoc:
       line = __LINE__ + 1
       class_eval %Q{
         def #{name}=(value)
@@ -307,14 +327,20 @@ module Configurable
     
     def guess_type(value) # :nodoc:
       guess_value = value.kind_of?(Array) ? value.first : value
-      guesses = config_map.keys.select {|pattern| pattern === guess_value }
       
-      if guesses.length > 1
-        guesses = guesses.sort_by {|guess| guess.to_s }
-        raise "multiple guesses for cast type: #{value.inspect} #{guesses.inspect}"
+      guesses = []
+      config_types.each_pair do |type, config_class|
+        if config_class.matcher && config_class.matcher === guess_value
+          guesses << type
+        end
       end
       
-      config_map[guesses.first]
+      if guesses.length > 1
+        guesses = guesses.sort_by {|type| type.to_s }
+        raise "multiple guesses for type: #{value.inspect} #{guesses.inspect}"
+      end
+      
+      guesses.first
     end
     
     def options_const_set(name, options) # :nodoc:
