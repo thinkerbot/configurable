@@ -5,7 +5,7 @@ module Configurable
     class Nest < Config
       
       # Initializes a new NestConfig
-      def initialize(name, configurable_class=nil, options={})
+      def initialize(name, configurable_class=nil, reader=nil, writer=nil, attributes={})
         unless configurable_class.kind_of?(Class) && configurable_class.ancestors.include?(Configurable)
           raise ArgumentError, "not a Configurable class: #{configurable_class}"
         end

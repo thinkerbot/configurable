@@ -27,27 +27,21 @@ module Configurable
     # The default config value
     attr_reader :default
     
-    attr_reader :options
-    
-    # A description of the config
-    attr_reader :desc
-    
-    attr_reader :long
-    
-    attr_reader :short
+    attr_reader :attributes
     
     # Initializes a new Config.
-    def initialize(name, default=nil, opts={})
+    def initialize(name, default=nil, reader=nil, writer=nil, attributes={})
       check_name(name)
       
       @name    = name
-      @reader  = (opts[:reader] || name).to_sym
-      @writer  = (opts[:writer] || "#{name}=").to_sym
-      @options = opts[:options]
-      @desc    = opts[:desc]
-      @long    = opts[:long] || name
-      @short   = opts[:short]
       @default = default
+      @reader  = (reader || name).to_sym
+      @writer  = (writer || "#{name}=").to_sym
+      @attributes = attributes
+    end
+    
+    def [](key)
+      attributes[key]
     end
     
     # Calls reader on the receiver and returns the result.
@@ -65,7 +59,7 @@ module Configurable
     end
     
     def select?
-      !options.nil?
+      attributes[:options] ? true : false
     end
     
     # Returns an inspect string.

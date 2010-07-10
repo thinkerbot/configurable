@@ -104,22 +104,26 @@ module Configurable
     protected
     
     def config(name, default=nil, options={})
-      type = options[:type] ||= guess_type(default)
+      options[:type] ||= guess_type(default)
+      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      
+      type = options[:type]
       config_class = config_types[type] or raise "unknown config type: #{type.inspect}"
       
-      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      reader = options[:reader]
+      writer = options[:writer]
       caster = options[:caster] || (type ? "cast_#{type}" : nil)
       options_const = options_const_set(name, options[:options])
       
-      config = config_class.new(name, default, options)
+      config = config_class.new(name, default, reader, writer, options)
       config_registry[config.name] = config
       reset_configurations
       
-      unless options[:reader]
+      unless reader
         define_reader(name)
       end
       
-      unless options[:writer]
+      unless writer
         case
         when config.list? && config.select?
           define_list_select_writer(name, caster, options_const)
@@ -137,6 +141,9 @@ module Configurable
     
     def nest(name, configurable_class=nil, options={}, &block)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      const_name = options[:const_name] || name.to_s.capitalize
+      reader = options[:reader]
+      writer = options[:writer]
       
       # define the nested configurable
       if configurable_class
@@ -144,27 +151,30 @@ module Configurable
       else
         configurable_class = Class.new { include Configurable }
       end
-      
-      const_name = options[:const_name] || name.to_s.capitalize
       clean_const_set(configurable_class, const_name)
       
       configurable_class.class_eval(&block) if block_given?
       check_infinite_nest(configurable_class)
       
       # setup the nest config
-      config = Configs::Nest.new(name, configurable_class, options)
+      config = Configs::Nest.new(name, configurable_class, reader, writer, options)
       config_registry[config.name] = config
       reset_configurations
       
-      define_reader(name) unless options[:reader]
-      define_nest_writer(name, configurable_class) unless options[:writer]
+      unless reader
+        define_reader(name)
+      end
+      
+      unless writer
+        define_nest_writer(name, configurable_class)
+      end
       
       config
     end
     
     def config_type(type, options={}, &block)
       const_name = options[:const_name] || type.to_s.capitalize
-      matcher    = options[:match]
+      matcher    = options[:matches]
       
       config_class = Class.new(Config) { match matcher }
       clean_const_set(config_class, const_name)

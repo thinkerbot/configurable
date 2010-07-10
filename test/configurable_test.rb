@@ -832,13 +832,13 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
-    desc = LazydocClass.configurations[:one].desc
+    desc = LazydocClass.configurations[:one][:desc]
     assert_equal "one with documentation", desc.to_s
     
-    desc = LazydocClass.configurations[:two].desc
+    desc = LazydocClass.configurations[:two][:desc]
     assert_equal "two description", desc.to_s
     
-    desc = LazydocClass.configurations[:three].desc
+    desc = LazydocClass.configurations[:three][:desc]
     assert_equal "three with offset documentation", desc.to_s
   end
   
@@ -858,12 +858,12 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_configurable_registers_documentation_for_configs_in_modules
     [:one, :three].each do |name|
-      desc = LazydocIncludeClass.configurations[name].desc
+      desc = LazydocIncludeClass.configurations[name][:desc]
       assert_equal "#{name} with documentation", desc.to_s
     end
     
     [:two, :four].each do |name|
-      desc = LazydocIncludeClass.configurations[name].desc
+      desc = LazydocIncludeClass.configurations[name][:desc]
       assert_equal "#{name} description", desc.to_s
     end
   end
