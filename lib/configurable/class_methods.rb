@@ -113,7 +113,7 @@ module Configurable
     
     def config(name, default=nil, attrs={})
       attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      attrs[:type] ||= guess_type(default)
+      attrs[:type] ||= guess_config_type(default)
       attrs[:list] ||= default.kind_of?(Array)
       
       reader  = attrs.delete(:reader)
@@ -132,28 +132,20 @@ module Configurable
     def nest(name, options={}, &block)
       options = {:class => options} unless options.kind_of?(Hash)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      options[:type] ||= :nest
       
       reader = options.delete(:reader)
       writer = options.delete(:writer)
-      configurable_class = options.delete(:class)
+      base_class = options.delete(:class)
       const_name = options.delete(:const_name) || name.to_s.capitalize
-      
-      # define the configurable class
-      if configurable_class.nil?
-        configurable_class = Class.new { include Configurable }
-      elsif block_given?
-        configurable_class = Class.new(configurable_class)
-      end
-      clean_const_set(configurable_class, const_name)
-      configurable_class.class_eval(&block) if block_given?
-      check_infinite_nest(configurable_class)
+      configurable_class = define_configurable_class(base_class, const_name, block)
       
       nest = Nest.new(name, configurable_class, reader, writer, options)
       config_registry[nest.name] = nest
       reset_configurations
       
       define_config_reader(nest) unless reader
-      define_nest_writer(nest) unless writer
+      define_nest_writer(nest)   unless writer
       
       nest
     end
@@ -273,6 +265,24 @@ module Configurable
       super
     end
     
+    def guess_config_type(value) # :nodoc:
+      guess_value = value.kind_of?(Array) ? value.first : value
+      
+      guesses = []
+      config_types.each_pair do |type, config_type|
+        if config_type.matches?(guess_value)
+          guesses << type
+        end
+      end
+      
+      if guesses.length > 1
+        guesses = guesses.sort_by {|type| type.to_s }
+        raise "multiple guesses for type: #{value.inspect} #{guesses.inspect}"
+      end
+      
+      guesses.first
+    end
+    
     def define_config_reader(config) # :nodoc:
       name = config.name
       
@@ -288,7 +298,8 @@ module Configurable
       list   = config[:list]
       type   = config_types[config[:type]]
       caster = type ? type.caster : nil
-      options_const = options_const_set(name, config[:options])
+      const_name    = config[:options_const] || "#{name.to_s.upcase}_OPTIONS"
+      options_const = define_options_const(const_name, config[:options])
       
       case
       when list && options_const
@@ -378,22 +389,25 @@ module Configurable
       }, __FILE__, line
     end
     
-    def guess_type(value) # :nodoc:
-      guess_value = value.kind_of?(Array) ? value.first : value
-      
-      guesses = []
-      config_types.each_pair do |type, config_type|
-        if config_type.matches?(guess_value)
-          guesses << type
+    def define_configurable_class(base_class, const_name, block) # :nodoc:
+      configurable_class =
+        case
+        when base_class.nil? then Class.new { include Configurable }
+        when block           then Class.new(base_class)
+        else base_class
         end
-      end
+        
+      clean_const_set(configurable_class, const_name)
+      configurable_class.class_eval(&block) if block
       
-      if guesses.length > 1
-        guesses = guesses.sort_by {|type| type.to_s }
-        raise "multiple guesses for type: #{value.inspect} #{guesses.inspect}"
-      end
-      
-      guesses.first
+      check_infinite_nest(configurable_class)
+      configurable_class
+    end
+    
+    def define_options_const(const_name, options) # :nodoc:
+      return nil unless options
+      clean_const_set(options, const_name)
+      const_name
     end
     
     def clean_const_set(const, const_name) # :nodoc:
@@ -402,14 +416,6 @@ module Configurable
       unless const_defined?(const_name) && const_get(const_name) == const
         const_set(const_name, const)
       end
-    end
-    
-    def options_const_set(name, options) # :nodoc:
-      return nil unless options
-      
-      options_const = "#{name.to_s.upcase}_OPTIONS"
-      clean_const_set(options, options_const)
-      options_const
     end
     
     # helper to recursively check for an infinite nest
