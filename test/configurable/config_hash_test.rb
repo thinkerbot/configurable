@@ -1,5 +1,6 @@
 require File.expand_path('../../test_helper', __FILE__)
 require 'configurable/config_hash'
+require 'configurable/config'
 
 class ConfigHashTest < Test::Unit::TestCase
   Config = Configurable::Config

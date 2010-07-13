@@ -4,23 +4,6 @@ module Configurable
   # operations to a receiver, and track metadata for presentation of configs
   # in various user contexts.
   class Config
-    class << self
-      attr_reader :caster
-      attr_reader :matcher
-      
-      protected
-      
-      def cast_with(method_name)
-        @caster = method_name
-      end
-      
-      def match(pattern)
-        @matcher = pattern
-      end
-    end
-    cast_with nil
-    match nil
-    
     # The config name
     attr_reader :name
     
@@ -58,14 +41,6 @@ module Configurable
     # Calls writer on the receiver with the value.
     def set(receiver, value)
       receiver.send(writer, value)
-    end
-    
-    def list?
-      Array === default
-    end
-    
-    def select?
-      attributes[:options] ? true : false
     end
     
     # Returns an inspect string.

@@ -1,5 +1,3 @@
-require 'configurable/config'
-
 module Configurable
   
   # ConfigHash acts like a hash that maps get and set operations as specified

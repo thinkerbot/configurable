@@ -1,16 +1,19 @@
 require 'lazydoc'
-require 'configurable/configs'
+require 'configurable/config'
+require 'configurable/config_type'
 require 'configurable/config_hash'
+require 'configurable/nest'
+
 autoload(:ConfigParser, 'config_parser')
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
-    :flag    => Configs::Flag,
-    :switch  => Configs::Switch,
-    :integer => Configs::Integer,
-    :float   => Configs::Float,
-    :string  => Configs::String,
-    nil      => Config
+    :flag    => ConfigType.new(:cast_boolean, FalseClass),
+    :switch  => ConfigType.new(:cast_boolean, TrueClass),
+    :integer => ConfigType.new(:Integer, Integer),
+    :float   => ConfigType.new(:Float, Float),
+    :string  => ConfigType.new(:cast_string, String),
+    nil      => ConfigType.new(nil)
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
@@ -108,73 +111,51 @@ module Configurable
     
     protected
     
-    def config(name, default=nil, options={})
-      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+    def config(name, default=nil, attrs={})
+      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attrs[:type] ||= guess_type(default)
+      attrs[:list] ||= default.kind_of?(Array)
       
-      type = options.has_key?(:type) ? options.delete(:type) : guess_type(default)
-      config_class = config_types[type] or raise "unknown config type: #{type.inspect}"
+      reader  = attrs.delete(:reader)
+      writer  = attrs.delete(:writer)
       
-      reader = options.delete(:reader)
-      writer = options.delete(:writer)
-      caster = options.has_key?(:caster) ? options.delete(:caster) : config_class.caster
-      options_const = options_const_set(name, options[:options])
-      
-      config = config_class.new(name, default, reader, writer, options)
+      config = Config.new(name, default, reader, writer, attrs)
       config_registry[config.name] = config
       reset_configurations
       
-      unless reader
-        define_reader(name)
-      end
-      
-      unless writer
-        case
-        when config.list? && config.select?
-          define_list_select_writer(name, caster, options_const)
-        when config.select?
-          define_select_writer(name, caster, options_const)
-        when config.list?
-          define_list_writer(name, caster)
-        else
-          define_writer(name, caster)
-        end 
-      end
+      define_config_reader(config) unless reader
+      define_config_writer(config) unless writer
       
       config
     end
     
-    def nest(name, configurable_class=nil, options={}, &block)
+    def nest(name, options={}, &block)
+      options = {:class => options} unless options.kind_of?(Hash)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       reader = options.delete(:reader)
       writer = options.delete(:writer)
-      const_name = options.has_key?(:const_name) ? options.delete(:const_name) : name.to_s.capitalize
+      configurable_class = options.delete(:class)
+      const_name = options.delete(:const_name) || name.to_s.capitalize
       
-      # define the nested configurable
-      if configurable_class
-        configurable_class = Class.new(configurable_class) if block_given?
-      else
+      # define the configurable class
+      if configurable_class.nil?
         configurable_class = Class.new { include Configurable }
+      elsif block_given?
+        configurable_class = Class.new(configurable_class)
       end
       clean_const_set(configurable_class, const_name)
-      
       configurable_class.class_eval(&block) if block_given?
       check_infinite_nest(configurable_class)
       
-      # setup the nest config
-      config = Configs::Nest.new(name, configurable_class, reader, writer, options)
-      config_registry[config.name] = config
+      nest = Nest.new(name, configurable_class, reader, writer, options)
+      config_registry[nest.name] = nest
       reset_configurations
       
-      unless reader
-        define_reader(name)
-      end
+      define_config_reader(nest) unless reader
+      define_nest_writer(nest) unless writer
       
-      unless writer
-        define_nest_writer(name, configurable_class)
-      end
-      
-      config
+      nest
     end
     
     # Removes a configuration much like remove_method removes a method.  The
@@ -238,24 +219,18 @@ module Configurable
     end
     
     def config_type(type, options={}, &block)
-      caster  = options.has_key?(:caster) ? options.delete(:caster) : "cast_#{type}".to_sym
-      matcher = options.delete(:matcher)
-      const_name = options.has_key?(:const_name) ? options.delete(:const_name) : type.to_s.capitalize
-      
-      config_class = Class.new(Config) do
-        cast_with caster
-        match matcher
-      end
-      clean_const_set(config_class, const_name)
+      caster  = options[:caster] || "cast_#{type}".to_sym
+      matcher = options[:matcher]
       
       if block_given?
         define_method(caster, &block)
       end
       
-      config_types_registry[type.to_sym] = config_class
+      config_type = ConfigType.new(caster, matcher)
+      config_types_registry[type.to_sym] = config_type
       reset_config_types
       
-      config_class
+      config_type
     end
     
     def remove_config_type(type, options={})
@@ -267,11 +242,11 @@ module Configurable
         :caster => true
       }.merge(options)
       
-      config_class = config_type_registry.delete(type)
+      config_type = config_type_registry.delete(type)
       reset_config_types
       
-      undef_method(config_class.caster) if options[:caster]
-      config_class
+      undef_method(config_type.caster) if options[:caster]
+      config_type
     end
     
     def undef_config_type(type, options={})
@@ -283,12 +258,12 @@ module Configurable
         :caster => true
       }.merge(options)
       
-      config_class = config_type_registry[type]
+      config_type = config_type_registry[type]
       config_type_registry[type] = nil
       reset_config_types
       
-      undef_method(config_class.caster) if options[:caster]
-      config_class
+      undef_method(config_type.caster) if options[:caster]
+      config_type
     end
     
     private
@@ -298,7 +273,9 @@ module Configurable
       super
     end
     
-    def define_reader(name) # :nodoc:
+    def define_config_reader(config) # :nodoc:
+      name = config.name
+      
       line = __LINE__ + 1
       class_eval %Q{
         attr_reader :#{name}
@@ -306,7 +283,26 @@ module Configurable
       }, __FILE__, line
     end
     
-    def define_writer(name, caster=nil) # :nodoc:
+    def define_config_writer(config)
+      name   = config.name
+      list   = config[:list]
+      type   = config_types[config[:type]]
+      caster = type ? type.caster : nil
+      options_const = options_const_set(name, config[:options])
+      
+      case
+      when list && options_const
+        define_list_select_writer(name, caster, options_const)
+      when options_const
+        define_select_writer(name, caster, options_const)
+      when list
+        define_list_writer(name, caster)
+      else
+        define_default_writer(name, caster)
+      end
+    end
+    
+    def define_default_writer(name, caster=nil) # :nodoc:
       line = __LINE__ + 1
       class_eval %Q{
         def #{name}=(value)
@@ -365,7 +361,10 @@ module Configurable
       }, __FILE__, line
     end
     
-    def define_nest_writer(name, configurable_class) # :nodoc:
+    def define_nest_writer(config) # :nodoc:
+      name = config.name
+      configurable_class = config.configurable_class
+      
       line = __LINE__ + 1
       class_eval %Q{
         def #{name}=(value)
@@ -383,8 +382,8 @@ module Configurable
       guess_value = value.kind_of?(Array) ? value.first : value
       
       guesses = []
-      config_types.each_pair do |type, config_class|
-        if config_class.matcher && config_class.matcher === guess_value
+      config_types.each_pair do |type, config_type|
+        if config_type.matches?(guess_value)
           guesses << type
         end
       end
@@ -418,7 +417,7 @@ module Configurable
       raise "infinite nest detected" if klass == self
       
       klass.configurations.each_value do |config|
-        if config.kind_of?(Configs::Nest)
+        if config.kind_of?(Nest)
           check_infinite_nest(config.configurable_class)
         end
       end

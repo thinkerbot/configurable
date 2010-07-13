@@ -117,8 +117,8 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :two, alt.config[:sym]
   
     ###
-    assert_equal AttributesClass::Upcase, AttributesClass.configurations[:a].class
-    assert_equal AttributesClass::Upcase, AttributesClass.configurations[:b].class
+    assert_equal :upcase, AttributesClass.configurations[:a][:type]
+    assert_equal :upcase, AttributesClass.configurations[:b][:type]
   end
   
   #
@@ -398,8 +398,8 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class NestWithoutAccessors
     include Configurable
-    nest :no_reader, nil, :reader => :alt
-    nest :no_writer, nil, :writer => :alt
+    nest :no_reader, :reader => :alt
+    nest :no_writer, :writer => :alt
   end
   
   def test_nest_does_not_create_accessors_if_alternates_are_specified
