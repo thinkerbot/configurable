@@ -5,7 +5,7 @@ require 'configurable'
 class ConfigParserTest < Test::Unit::TestCase
   Option = ConfigParser::Option
   Config = Configurable::Config
-  Nest = Configurable::Nest
+  Nest = Configurable::Configs::Nest
   ConfigHash = Configurable::ConfigHash
   
   attr_reader :c

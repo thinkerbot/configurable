@@ -1,8 +1,7 @@
 require 'lazydoc'
-require 'configurable/config'
+require 'configurable/configs'
 require 'configurable/config_type'
 require 'configurable/config_hash'
-require 'configurable/nest'
 
 autoload(:ConfigParser, 'config_parser')
 
@@ -111,22 +110,30 @@ module Configurable
     
     protected
     
-    def config(name, default=nil, attrs={})
-      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      attrs[:type] ||= guess_config_type(default)
-      attrs[:list] ||= default.kind_of?(Array)
-      
-      reader  = attrs.delete(:reader)
-      writer  = attrs.delete(:writer)
-      
-      config = Config.new(name, default, reader, writer, attrs)
+    def register_config(config, options={})
       config_registry[config.name] = config
       reset_configurations
       
-      define_config_reader(config) unless reader
-      define_config_writer(config) unless writer
+      options = {
+        :reader => true,
+        :writer => true
+      }.merge(options)
       
+      config.define_reader(self) if options[:reader]
+      config.define_writer(self) if options[:writer]
       config
+    end
+    
+    def config(name, default=nil, attrs={})
+      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attrs[:type] ||= guess_config_type(default)
+      
+      reader  = attrs.delete(:reader)
+      writer  = attrs.delete(:writer)
+      config_class = default.kind_of?(Array) ? Configs::List : Config
+      
+      config = config_class.new(name, default, reader, writer, attrs)
+      register_config config, :reader => !reader, :writer => !writer
     end
     
     def nest(name, options={}, &block)
@@ -140,14 +147,8 @@ module Configurable
       const_name = options.delete(:const_name) || name.to_s.capitalize
       configurable_class = define_configurable_class(base_class, const_name, block)
       
-      nest = Nest.new(name, configurable_class, reader, writer, options)
-      config_registry[nest.name] = nest
-      reset_configurations
-      
-      define_config_reader(nest) unless reader
-      define_nest_writer(nest)   unless writer
-      
-      nest
+      config = Configs::Nest.new(name, configurable_class, reader, writer, options)
+      register_config config, :reader => !reader, :writer => !writer
     end
     
     # Removes a configuration much like remove_method removes a method.  The
@@ -283,112 +284,6 @@ module Configurable
       guesses.first
     end
     
-    def define_config_reader(config) # :nodoc:
-      name = config.name
-      
-      line = __LINE__ + 1
-      class_eval %Q{
-        attr_reader :#{name}
-        public :#{name}
-      }, __FILE__, line
-    end
-    
-    def define_config_writer(config)
-      name   = config.name
-      list   = config[:list]
-      type   = config_types[config[:type]]
-      caster = type ? type.caster : nil
-      const_name    = config[:options_const] || "#{name.to_s.upcase}_OPTIONS"
-      options_const = define_options_const(const_name, config[:options])
-      
-      case
-      when list && options_const
-        define_list_select_writer(name, caster, options_const)
-      when options_const
-        define_select_writer(name, caster, options_const)
-      when list
-        define_list_writer(name, caster)
-      else
-        define_default_writer(name, caster)
-      end
-    end
-    
-    def define_default_writer(name, caster=nil) # :nodoc:
-      line = __LINE__ + 1
-      class_eval %Q{
-        def #{name}=(value)
-          @#{name} = #{caster}(value)
-        end
-        public :#{name}=
-      }, __FILE__, line
-    end
-    
-    def define_list_writer(name, caster) # :nodoc:
-      line = __LINE__ + 1
-      class_eval %Q{
-        def #{name}=(values)
-          unless values.kind_of?(Array)
-            raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
-          end
-
-          values.collect! {|value| #{caster}(value) }
-          @#{name} = values
-        end
-        public :#{name}=
-      }, __FILE__, line
-    end
-    
-    def define_select_writer(name, caster, options_const) # :nodoc:
-      line = __LINE__ + 1
-      class_eval %Q{
-        def #{name}=(value)
-          value = #{caster}(value)
-          unless #{options_const}.include?(value)
-            raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
-          end
-          @#{name} = value
-        end
-        public :#{name}=
-      }, __FILE__, line
-    end
-    
-    def define_list_select_writer(name, caster, options_const) # :nodoc:
-      line = __LINE__ + 1
-      class_eval %Q{
-        def #{name}=(values)
-          unless values.kind_of?(Array)
-            raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
-          end
-
-          values.collect! {|value| #{caster}(value) }
-
-          unless values.all? {|value| #{options_const}.include?(value) }
-            raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
-          end
-
-          @#{name} = values
-        end
-        public :#{name}=
-      }, __FILE__, line
-    end
-    
-    def define_nest_writer(config) # :nodoc:
-      name = config.name
-      configurable_class = config.configurable_class
-      
-      line = __LINE__ + 1
-      class_eval %Q{
-        def #{name}=(value)
-          unless value.kind_of?(#{configurable_class})
-            raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
-          end
-          
-          @#{name} = value
-        end
-        public :#{name}=
-      }, __FILE__, line
-    end
-    
     def define_configurable_class(base_class, const_name, block) # :nodoc:
       configurable_class =
         case
@@ -396,26 +291,16 @@ module Configurable
         when block           then Class.new(base_class)
         else base_class
         end
-        
-      clean_const_set(configurable_class, const_name)
-      configurable_class.class_eval(&block) if block
       
+      if const_name
+        unless const_defined?(const_name) && const_get(const_name) == configurable_class
+          const_set(const_name, configurable_class)
+        end
+      end
+      
+      configurable_class.class_eval(&block) if block
       check_infinite_nest(configurable_class)
       configurable_class
-    end
-    
-    def define_options_const(const_name, options) # :nodoc:
-      return nil unless options
-      clean_const_set(options, const_name)
-      const_name
-    end
-    
-    def clean_const_set(const, const_name) # :nodoc:
-      return nil unless const_name
-      
-      unless const_defined?(const_name) && const_get(const_name) == const
-        const_set(const_name, const)
-      end
     end
     
     # helper to recursively check for an infinite nest
@@ -423,7 +308,7 @@ module Configurable
       raise "infinite nest detected" if klass == self
       
       klass.configurations.each_value do |config|
-        if config.kind_of?(Nest)
+        if config.kind_of?(Configs::Nest)
           check_infinite_nest(config.configurable_class)
         end
       end

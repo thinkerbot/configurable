@@ -43,12 +43,57 @@ module Configurable
       receiver.send(writer, value)
     end
     
+    def nil_value
+      attributes[:nil_value]
+    end
+    
+    def options
+      attributes[:options]
+    end
+    
+    def ivar
+      @ivar ||= "@#{name}".to_sym
+    end
+    
+    def define_reader(receiver_class)
+      line = __LINE__ + 1
+      receiver_class.class_eval %Q{
+        attr_reader :#{name}
+        public :#{name}
+      }, __FILE__, line
+    end
+    
+    def define_writer(receiver_class)
+      caster = get_caster(receiver_class)
+      options = self.options
+      ivar = self.ivar
+      name = self.name
+      nil_value = self.nil_value
+      
+      receiver_class.send(:define_method, writer) do |value|
+        value = nil_value if value.nil?
+        value = send(caster, value) if caster
+        
+        unless options.nil? || options.include?(value)
+          raise ArgumentError, "invalid value for #{name}: #{value.inspect}"
+        end
+        
+        instance_variable_set(ivar, value)
+      end
+    end
+    
     # Returns an inspect string.
     def inspect
       "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} default=#{default.inspect} >"
     end
     
     protected
+    
+    def get_caster(receiver_class)
+      type = attributes[:type]
+      config_type = receiver_class.config_types[type]
+      config_type ? config_type.caster : nil
+    end
     
     def check_name(name) # :nodoc
       unless name.kind_of?(Symbol)
