@@ -386,17 +386,17 @@ class ConfigParser
     on(attributes, &block)
   end
   
-  # Adds a hash of delegates (for example the configurations for a Configurable
+  # Adds a hash of configs (for example the configurations for a Configurable
   # class) to self.  Configs are added like:
   #
-  #   define(key, delegate.default, delegate.attributes)
+  #   define(key, config.default, config.attributes)
   #
   # ==== Nesting
   #
   # When you nest Configurable classes, a special syntax is necessary to
-  # specify nested configurations in a flat format compatible with the
-  # command line.  As such, nested delegates are recursively added with
-  # their key as a prefix.  For instance:
+  # specify nested configurations in a flat format compatible with the command
+  # line.  As such, nested configs are recursively added with their key as a
+  # prefix.  For instance:
   #
   #   class NestClass
   #     include Configurable
@@ -404,7 +404,7 @@ class ConfigParser
   #       config :key, 'value'
   #     end
   #   end
-  #  
+  #   
   #   psr = ConfigParser.new
   #   psr.add(NestClass.configurations)
   #   psr.parse('--nest:key value')
@@ -412,25 +412,37 @@ class ConfigParser
   #   psr.config                 # => {'nest:key' => 'value'}
   #   psr.nested_config          # => {'nest' => {'key' => 'value'}}
   #
-  # Side note: The fact that all the keys end up as strings underscores
-  # the importance of having indifferent access for delegates.  If you
-  # set use_indifferent_access(false), be prepared to symbolize nested
-  # keys as necessary.
+  # Side note: The fact that all the keys end up as strings underscores the
+  # importance of having indifferent access for configs.  If you set
+  # use_indifferent_access(false), be prepared to symbolize nested keys as
+  # necessary.
   #
-  def add(delegates, nesting=nil)
-    delegates.keys.sort_by do |key|
-      (delegates[key][:long] || key).to_s
+  def add(configs, nesting=nil)
+    configs.keys.sort_by do |key|
+      (configs[key][:long] || key).to_s
     end.each do |key|
-      delegate = delegates[key]
+      config = configs[key]
       key = nesting ? "#{nesting}:#{key}" : key
       
-      case delegate[:type]
+      case config[:type]
       when :hidden
         next
       when :nest
-        add(delegate.nest_class.configurations, key)
+        add(config.configurable_class.configurations, key)
       else
-        define(key, delegate.default, delegate.attributes)
+        attributes = {
+          :long => config[:long] || key,
+          :short => config[:short],
+          :desc => config[:desc],
+          :type => case
+          when config[:list] && config[:options] then :list_select
+          when config[:options] then :select
+          when config[:list]    then :list
+          when config[:hidden]  then :hidden
+          else config[:type]
+          end
+        }
+        define(key, config.default, attributes)
       end
     end
   end
