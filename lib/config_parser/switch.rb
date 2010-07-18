@@ -16,7 +16,7 @@ class ConfigParser
       super
       raise ArgumentError, "arg_name specified for switch: #{arg_name}" if arg_name
       raise ArgumentError, "no long specified" unless long
-      @negative_long = Utils.prefix_long(long, 'no-')
+      @negative_long = prefix_long(long, 'no-')
     end
     
     # Returns an array of non-nil switches mapping to self (ie 
@@ -28,7 +28,7 @@ class ConfigParser
     # Calls the block with false if the negative long is specified,
     # or calls the block with true in all other cases.  Raises an
     # error if a value is specified.
-    def parse(switch, value, argv)
+    def parse(switch, value, argv=[], config={})
       raise "value specified for switch: #{switch}" if value
       value = (switch == negative_long ? false : true)
       block ? block.call(value) : value
@@ -38,7 +38,7 @@ class ConfigParser
     
     # helper returning long formatted for to_s
     def long_str # :nodoc:
-      long ? Utils.prefix_long(long, '[no-]') : ''
+      long ? prefix_long(long, '[no-]') : ''
     end
   end
 end

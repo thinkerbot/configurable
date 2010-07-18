@@ -1,12 +1,15 @@
-require 'config_parser/utils'
+require 'configurable/utils'
 
 class ConfigParser
   
   # Represents an option registered with ConfigParser.
   class Option
+    include Configurable::Utils
     
     # A format string used by to_s
     LINE_FORMAT = "%-36s %-43s"
+    
+    attr_reader :name
     
     # The short switch mapping to self
     attr_reader :short 
@@ -21,9 +24,6 @@ class ConfigParser
     # The description printed by to_s
     attr_reader :desc
     
-    # The block called when one of the switches mapping
-    # to self is parse; block will receive the parsed
-    # argument if arg_name is specified.
     attr_reader :block
     
     # Initializes a new Option using attribute values for :long, :short,
@@ -31,8 +31,9 @@ class ConfigParser
     # using Utils.longify and Utils.shortify, meaning both bare strings
     # (ex 'opt', 'o') and full switches ('--opt', '-o') are valid.
     def initialize(attributes={}, &block)
-      @short = Utils.shortify(attributes[:short])
-      @long = Utils.longify(attributes[:long])
+      @name = attributes[:name]
+      @short = shortify(attributes[:short])
+      @long = longify(attributes[:long])
       @arg_name = attributes[:arg_name]
       @desc = attributes[:desc]
       @block = block
@@ -58,17 +59,23 @@ class ConfigParser
     # In this case, parse simply calls the block.  If a non-nil value is
     # specified, parse raises an error.
     #
-    def parse(switch, value, argv)
+    def parse(switch, value, argv=[], config={})
       if arg_name
         unless value
           raise "no value provided for: #{switch}" if argv.empty?
           value = argv.shift
         end
-        block ? block.call(value) : value
+        value = block ? block.call(value) : value
       else
         raise "value specified for flag: #{switch}" if value
-        block ? block.call : nil
+        value = block ? block.call : nil
       end
+      
+      if name
+        config[name] = value
+      end
+      
+      value
     end
     
     # Formats self as a help string for use on the command line.

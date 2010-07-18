@@ -22,6 +22,19 @@ module Configurable
           public :#{name}=
         }, __FILE__, line
       end
+      
+      def parse(switch, value, argv=[], config={})
+        split = ',' # attributes[:split]
+        n = nil # attributes[:n]
+
+        array = (config[name] ||= [])
+        array.concat(split ? value.split(split) : [value])
+        if n && array.length > n
+          raise "too many assignments: #{name.inspect}"
+        end
+        
+        array
+      end
     end
   end
 end

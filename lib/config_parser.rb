@@ -1,6 +1,6 @@
 require 'config_parser/option'
 require 'config_parser/switch'
-
+require 'configurable/configs'
 autoload(:Shellwords, 'shellwords')
 
 # ConfigParser is the Configurable equivalent of 
@@ -171,7 +171,8 @@ class ConfigParser
     end
   end
   
-  include Utils
+  DEFAULT_OPTION_BREAK = '--'
+  include Configurable::Utils
   
   # Returns an array of the options registered with self, in the order in
   # which they were added.  Separators are also stored in the registry.
@@ -180,34 +181,31 @@ class ConfigParser
   # A hash of (switch, Option) pairs mapping command line
   # switches like '-s' or '--long' to the Option that
   # handles them.
-  attr_reader :switches
+  attr_reader :options
+  
+  attr_reader :defaults
+  
+  attr_accessor :option_break
+  
+  attr_accessor :preserve_option_break
   
   # The hash receiving configurations produced by parse.
   attr_accessor :config
   
-  # A hash of default configurations merged into config during parse. These
-  # defaults are defined as options are added to self (via define, add, etc)
-  # and do not need to be manually specified.
-  attr_reader :defaults
-  
-  # A hash of default parsing options that adjust the behavior of parse
-  # (see parse).
-  attr_reader :default_parse_options
-  
   # Initializes a new ConfigParser and passes it to the block, if given.
-  def initialize(config={}, default_parse_options={})
+  def initialize(config={}, opts={})
+    opts = {
+      :option_break => DEFAULT_OPTION_BREAK,
+      :preserve_option_break => false
+    }.merge(opts)
+    
     @registry = []
-    @switches = {}
-    @config = config
+    @options = {}
     @defaults = {}
-    @default_parse_options = {
-      :clear_config => true,
-      :add_defaults => true,
-      :ignore_unknown_options => false,
-      :option_break => OPTION_BREAK,
-      :keep_break => false
-    }.merge(default_parse_options)
-
+    @config = config
+    @option_break = opts[:option_break]
+    @preserve_option_break = opts[:preserve_option_break]
+    
     yield(self) if block_given?
   end
   
@@ -227,13 +225,6 @@ class ConfigParser
     ConfigParser.nest(config)
   end
   
-  # Returns an array of the options registered with self.
-  def options
-    @registry.select do |opt|
-      opt.kind_of?(Option)
-    end
-  end
-  
   # Adds a separator string to self, used in to_s.
   def separator(str)
     @registry << str
@@ -247,7 +238,7 @@ class ConfigParser
   def register(opt, override=false)
     if override
       existing = opt.switches.collect do |switch|
-        @switches.delete(switch)
+        @options.delete(switch)
       end
       @registry -= existing
     end
@@ -257,9 +248,9 @@ class ConfigParser
     end
     
     opt.switches.each do |switch|
-      case @switches[switch]
+      case @options[switch]
       when opt then next
-      when nil then @switches[switch] = opt
+      when nil then @options[switch] = opt
       else raise ArgumentError, "switch is already mapped to a different option: #{switch}"
       end
     end
@@ -370,20 +361,16 @@ class ConfigParser
     # ensure setup does not modifiy input attributes
     attributes = attributes.dup
     
-    block = case attributes[:type]
-    when :switch then setup_switch(key, default_value, attributes)
-    when :flag   then setup_flag(key, default_value, attributes)
-    when :list, :list_select then setup_list(key, attributes)
+    config_class = case attributes[:type]
+    when :switch then Configurable::Configs::Switch
+    when :flag   then Configurable::Configs::Flag
+    when :list   then Configurable::Configs::List
+    when :list_select then Configurable::Configs::ListSelect
     when :hidden then return nil
-    else
-      if respond_to?("setup_#{attributes[:type]}")
-        send("setup_#{attributes[:type]}", key, default_value, attributes)
-      else
-        setup_option(key, attributes)
-      end
+    else Configurable::Config
     end
     
-    on(attributes, &block)
+    register config_class.new(key.to_sym, default_value, nil, nil, attributes)
   end
   
   # Adds a hash of configs (for example the configurations for a Configurable
@@ -457,28 +444,24 @@ class ConfigParser
   # add_defaults:: adds the default values to config (true)
   # ignore_unknown_options:: causes unknown options to be ignored (false)
   #
-  def parse(argv=ARGV, options={})
+  def parse(argv=ARGV)
     argv = argv.dup unless argv.kind_of?(String)
-    parse!(argv, options)
+    parse!(argv)
   end
   
   # Same as parse, but removes parsed args from argv.
-  def parse!(argv=ARGV, options={})
+  def parse!(argv=ARGV)
     argv = Shellwords.shellwords(argv) if argv.kind_of?(String)
     
     args = []
-    remainder = scan(argv, options) {|arg| args << arg}
+    remainder = scan(argv) {|arg| args << arg}
     args.concat(remainder)
     argv.replace(args)
     
     argv
   end
   
-  def scan(argv=ARGV, options={})
-    options = default_parse_options.merge(options)
-    config.clear if options[:clear_config]
-    
-    option_break = options[:option_break]
+  def scan(argv=ARGV)
     while !argv.empty?
       arg = argv.shift
   
@@ -491,7 +474,7 @@ class ConfigParser
       # add the remaining args and break
       # for the option break
       if option_break === arg
-        argv.unshift(arg) if options[:keep_break]
+        argv.unshift(arg) if preserve_option_break
         break
       end
   
@@ -501,16 +484,12 @@ class ConfigParser
       arg =~ LONG_OPTION || arg =~ SHORT_OPTION || arg =~ ALT_SHORT_OPTION 
   
       # lookup the option
-      unless option = @switches[$1]
+      unless option = @options[$1]
         raise "unknown option: #{$1 || arg}"
       end
   
-      option.parse($1, $2, argv)
+      option.parse($1, $2, argv, config)
     end
-    
-    defaults.each_pair do |key, default|
-      config[key] = default unless config.has_key?(key)
-    end if options[:add_defaults]
     
     argv
   end

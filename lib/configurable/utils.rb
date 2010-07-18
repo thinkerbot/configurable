@@ -1,8 +1,11 @@
-class ConfigParser
+module Configurable
   
   # A medly of methods used throughout the ConfigParser classes.
   module Utils
     module_function
+    
+    # A format string used by to_s
+    LINE_FORMAT = "%-36s %-43s"
     
     # The option break argument
     OPTION_BREAK = "--"
@@ -114,64 +117,6 @@ class ConfigParser
       end
       
       attributes
-    end
-    
-    # Attributes:
-    #
-    #   :long      the long key ("--key") 
-    #   :arg_name  the argument name ("KEY") 
-    #
-    def setup_option(key, attributes={})
-      infer_long(key, attributes)
-      infer_arg_name(key, attributes)
-      
-      lambda {|value| config[key] = value }
-    end
-    
-    # Attributes:
-    #
-    #   :long      the long key ("--key") 
-    #
-    def setup_flag(key, default=true, attributes={})
-      infer_long(key, attributes)
-      
-      lambda {config[key] = !default }
-    end
-    
-    # Attributes:
-    #
-    #   :long      the long key ("--[no-]key") 
-    #
-    def setup_switch(key, default=true, attributes={})
-      infer_long(key, attributes)
-      
-      if attributes[:long].to_s =~ /^(?:--)?(\[no-\])?(.*)$/ 
-        attributes[:long] = "--[no-]#{$2}" unless $1
-      end
-      
-      lambda {|value| config[key] = value }
-    end
-    
-    # Attributes:
-    #
-    #   :long      the long key ("--key")
-    #   :arg_name  the argument name ("KEY")
-    #   :split     the split character
-    #
-    def setup_list(key, attributes={})
-      infer_long(key, attributes)
-      infer_arg_name(key, attributes)
-      
-      split = attributes[:split]
-      n = attributes[:n]
-      
-      lambda do |value|
-        array = (config[key] ||= [])
-        array.concat(split ? value.split(split) : [value])
-        if n && array.length > n
-          raise "too many assignments: #{key.inspect}"
-        end
-      end
     end
   end
 end
