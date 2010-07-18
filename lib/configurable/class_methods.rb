@@ -12,6 +12,7 @@ module Configurable
     :integer => ConfigType.new(:Integer, Integer),
     :float   => ConfigType.new(:Float, Float),
     :string  => ConfigType.new(:cast_string, String),
+    :nest    => ConfigType.new(nil),
     nil      => ConfigType.new(nil)
   }
   
@@ -119,18 +120,26 @@ module Configurable
         :writer => true
       }.merge(options)
       
-      config.define_reader(self) if options[:reader]
-      config.define_writer(self) if options[:writer]
+      if options[:reader]
+        config.define_reader(self)
+      end
+      
+      if options[:writer]
+        config_type = config_types[config.type]
+        config.define_writer(self, config_type ? config_type.caster : nil)
+      end
+      
       config
     end
     
     def config(name, default=nil, attrs={})
       attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       attrs[:type] ||= guess_config_type(default)
+      attrs[:list] ||= default.kind_of?(Array)
       
       reader  = attrs.delete(:reader)
       writer  = attrs.delete(:writer)
-      config_class = default.kind_of?(Array) ? Configs::List : Config
+      config_class = attrs[:config_class] || guess_config_class(attrs)
       
       config = config_class.new(name, default, reader, writer, attrs)
       register_config config, :reader => !reader, :writer => !writer
@@ -264,6 +273,18 @@ module Configurable
     def inherited(base) # :nodoc:
       ClassMethods.initialize(base)
       super
+    end
+    
+    def guess_config_class(attrs) # :nodoc:
+      list    = attrs[:list]
+      options = attrs[:options]
+      
+      case
+      when list && options then Configs::ListSelect
+      when list    then Configs::List
+      when options then Configs::Select
+      else Config
+      end
     end
     
     def guess_config_type(value) # :nodoc:

@@ -419,27 +419,26 @@ class ConfigParser
   #
   def add(configs, nesting=nil)
     configs.keys.sort_by do |key|
-      (configs[key][:long] || key).to_s
+      (configs[key].long || key).to_s
     end.each do |key|
       config = configs[key]
       key = nesting ? "#{nesting}:#{key}" : key
       
-      case config[:type]
+      case config.type
       when :hidden
         next
       when :nest
         add(config.configurable_class.configurations, key)
       else
         attributes = {
-          :long => config[:long] || key,
-          :short => config[:short],
-          :desc => config[:desc],
+          :long => config.long || key,
+          :short => config.short,
+          :desc => config.desc,
           :type => case
-          when config[:list] && config[:options] then :list_select
-          when config[:options] then :select
-          when config[:list]    then :list
-          when config[:hidden]  then :hidden
-          else config[:type]
+          when Configurable::Configs::Select then :select
+          when Configurable::Configs::List   then :list
+          when Configurable::Configs::ListSelect then :list_select
+          when config.hidden ? :hidden : config.type
           end
         }
         define(key, config.default, attributes)

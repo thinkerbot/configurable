@@ -1,7 +1,9 @@
 module Configurable
   module Configs
-    class List < Config
+    class ListSelect < Select
       def define_writer(receiver_class, caster=nil)
+        options = define_options_constant(receiver_class)
+
         line = __LINE__ + 1
         receiver_class.class_eval %Q{
           def #{name}=(values)
@@ -10,6 +12,11 @@ module Configurable
             end
 
             values.collect! {|value| #{caster}(value) }
+
+            unless values.all? {|value| #{options}.include?(value) }
+              raise ArgumentError, "invalid value for #{name}: \#{values.inspect}"
+            end
+
             @#{name} = values
           end
           public :#{name}=

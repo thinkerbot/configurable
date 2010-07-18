@@ -16,21 +16,25 @@ module Configurable
     # The default config value
     attr_reader :default
     
-    attr_reader :attributes
+    attr_reader :long
+    attr_reader :short
+    attr_reader :hidden
+    attr_reader :desc
+    attr_reader :type
     
     # Initializes a new Config.
-    def initialize(name, default=nil, reader=nil, writer=nil, attributes={})
+    def initialize(name, default=nil, reader=nil, writer=nil, attrs={})
       check_name(name)
       
       @name    = name
       @default = default
       @reader  = (reader || name).to_sym
       @writer  = (writer || "#{name}=").to_sym
-      @attributes = attributes
-    end
-    
-    def [](key)
-      attributes[key]
+      @long    = attrs[:long]
+      @short   = attrs[:short]
+      @hidden  = attrs[:hidden]
+      @desc    = attrs[:desc]
+      @type    = attrs[:type]
     end
     
     # Calls reader on the receiver and returns the result.
@@ -43,18 +47,6 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    def nil_value
-      attributes[:nil_value]
-    end
-    
-    def options
-      attributes[:options]
-    end
-    
-    def ivar
-      @ivar ||= "@#{name}".to_sym
-    end
-    
     def define_reader(receiver_class)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
@@ -63,23 +55,14 @@ module Configurable
       }, __FILE__, line
     end
     
-    def define_writer(receiver_class)
-      caster = get_caster(receiver_class)
-      options = self.options
-      ivar = self.ivar
-      name = self.name
-      nil_value = self.nil_value
-      
-      receiver_class.send(:define_method, writer) do |value|
-        value = nil_value if value.nil?
-        value = send(caster, value) if caster
-        
-        unless options.nil? || options.include?(value)
-          raise ArgumentError, "invalid value for #{name}: #{value.inspect}"
+    def define_writer(receiver_class, caster=nil)
+      line = __LINE__ + 1
+      receiver_class.class_eval %Q{
+        def #{name}=(value)
+          @#{name} = #{caster}(value)
         end
-        
-        instance_variable_set(ivar, value)
-      end
+        public :#{name}=
+      }, __FILE__, line
     end
     
     # Returns an inspect string.
@@ -88,12 +71,6 @@ module Configurable
     end
     
     protected
-    
-    def get_caster(receiver_class)
-      type = attributes[:type]
-      config_type = receiver_class.config_types[type]
-      config_type ? config_type.caster : nil
-    end
     
     def check_name(name) # :nodoc
       unless name.kind_of?(Symbol)
