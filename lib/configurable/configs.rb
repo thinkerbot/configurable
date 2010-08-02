@@ -1,6 +1,4 @@
 require 'configurable/config'
-require 'configurable/configs/flag'
-require 'configurable/configs/switch'
 require 'configurable/configs/list'
 require 'configurable/configs/select'
 require 'configurable/configs/list_select'

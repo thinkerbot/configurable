@@ -1,9 +1,12 @@
 $:.unshift File.expand_path('../submodule/lazydoc/lib', __FILE__)
+$:.unshift File.expand_path('../submodule/config_parser/lib', __FILE__)
 $:.unshift File.expand_path('../lib', __FILE__)
 
 require 'lazydoc/version'
+require 'config_parser/version'
 require 'configurable/version'
 
+$:.shift
 $:.shift
 $:.shift
 
@@ -19,7 +22,9 @@ Gem::Specification.new do |s|
   s.rubyforge_project = 'tap'
   s.has_rdoc = true
   s.rdoc_options.concat %w{--main README -S -N --title Configurable}
+  
   s.add_dependency('lazydoc', ">= #{Lazydoc::VERSION}")
+  s.add_dependency('config_parser', ">= #{ConfigParser::VERSION}")
 
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{

@@ -644,7 +644,7 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_config_types_are_inherited
     obj = ConfigTypeChild.new
     assert_equal 'ABC', obj.one
-    assert_equal -1, obj.two
+    assert_equal(-1, obj.two)
     
     obj.one = 'xyz'
     assert_equal 'XYZ', obj.one
