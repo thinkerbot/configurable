@@ -125,7 +125,7 @@ module Configurable
       end
       
       if options[:writer]
-        config_type = config_types[config.type]
+        config_type = config_types[config[:type]]
         config.define_writer(self, config_type ? config_type.caster : nil)
       end
       

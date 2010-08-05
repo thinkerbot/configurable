@@ -17,12 +17,7 @@ module Configurable
     # The default config value
     attr_reader :default
     
-    # The description printed by to_s
-    attr_reader :desc
-    
-    attr_reader :hidden
-    
-    attr_reader :type
+    attr_reader :attrs
     
     # Initializes a new Config.
     def initialize(name, default=nil, reader=nil, writer=nil, attrs={})
@@ -32,9 +27,11 @@ module Configurable
       @default = default
       @reader  = (reader || name).to_sym
       @writer  = (writer || "#{name}=").to_sym
-      @desc    = attrs[:desc]
-      @hidden  = attrs[:hidden]
-      @type    = attrs[:type]
+      @attrs   = attrs
+    end
+    
+    def [](key)
+      attrs[key]
     end
     
     # Calls reader on the receiver and returns the result.
