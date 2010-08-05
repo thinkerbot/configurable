@@ -742,32 +742,32 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal([:b], CachedUndefConfig.configurations.keys)
   end
   
-#   #
-#   # parse test
-#   #
-#   
-#   class ParseClass
-#     include Configurable
-#     config(:one, 'one') {|v| v.upcase }
-#   end
-#   
-#   def test_parse_parses_configs_from_argv
-#     args, config = ParseClass.parse("a b --one value c")
-#     assert_equal ["a", "b", "c"], args
-#     assert_equal({:one => 'value'}, config)
-#   end
-#   
-#   def test_parse_is_non_destructive_to_argv
-#     argv = ["a", "b", "--one", "value", "c"]
-#     ParseClass.parse(argv)
-#     assert_equal ["a", "b", "--one", "value", "c"], argv
-#   end
-#   
-#   def test_parse_bang_is_destructive_to_argv
-#     argv = ["a", "b", "--one", "value", "c"]
-#     ParseClass.parse!(argv)
-#     assert_equal ["a", "b", "c"], argv
-#   end
+  #
+  # parse test
+  #
+  
+  class ParseClass
+    include Configurable
+    config(:one, 'one') {|v| v.upcase }
+  end
+  
+  def test_parse_parses_configs_from_argv
+    args, config = ParseClass.parse("a b --one value c")
+    assert_equal ["a", "b", "c"], args
+    assert_equal({:one => 'value'}, config)
+  end
+  
+  def test_parse_is_non_destructive_to_argv
+    argv = ["a", "b", "--one", "value", "c"]
+    ParseClass.parse(argv)
+    assert_equal ["a", "b", "--one", "value", "c"], argv
+  end
+  
+  def test_parse_bang_is_destructive_to_argv
+    argv = ["a", "b", "--one", "value", "c"]
+    ParseClass.parse!(argv)
+    assert_equal ["a", "b", "c"], argv
+  end
   
   #
   # inheritance test

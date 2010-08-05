@@ -23,8 +23,8 @@ Gem::Specification.new do |s|
   s.has_rdoc = true
   s.rdoc_options.concat %w{--main README -S -N --title Configurable}
   
-  s.add_dependency('lazydoc', ">= #{Lazydoc::VERSION}")
-  s.add_dependency('config_parser', ">= #{ConfigParser::VERSION}")
+  s.add_dependency('lazydoc', "~> #{Lazydoc::VERSION}")
+  s.add_dependency('config_parser', "~> #{ConfigParser::VERSION}")
 
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{

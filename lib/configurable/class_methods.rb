@@ -1,9 +1,8 @@
 require 'lazydoc'
+require 'config_parser'
 require 'configurable/configs'
 require 'configurable/config_type'
 require 'configurable/config_hash'
-
-autoload(:ConfigParser, 'config_parser')
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
@@ -44,17 +43,22 @@ module Configurable
     # the block, if given, to register additonal options.  
     #
     # See ConfigParser#parse for more information.
-    def parse(argv=ARGV, options={}) # :yields: parser
-      parse!(argv.dup, options)
+    def parse(argv=ARGV, options={}, &block) # :yields: parser
+      parse!(argv.dup, options, &block)
     end
     
     # Same as parse, but removes parsed args from argv.
     def parse!(argv=ARGV, options={})
-      parser = ConfigParser.new
-      parser.add(configurations)
+      parser = ConfigParser.new({}, options)
       
-      args = parser.parse!(argv, options)
-      [args, parser.config]
+      configurations.each_value do |config|
+        parser.add(config.name, config.default, config.attrs)
+      end
+      
+      yield(parser) if block_given?
+      
+      parser.sort_opts!
+      [parser.parse!(argv), parser.config]
     end
     
     # A hash of (key, Config) pairs representing all configurations defined
