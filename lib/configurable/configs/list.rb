@@ -1,7 +1,7 @@
 module Configurable
   module Configs
     class List < Config
-      def define_writer(receiver_class, caster=nil)
+      def define_default_writer(receiver_class, caster=nil)
         line = __LINE__ + 1
         receiver_class.class_eval %Q{
           def #{name}=(values)

@@ -9,8 +9,8 @@ module Configurable
         @options = attrs[:options] || []
       end
       
-      def define_writer(receiver_class, caster=nil)
-        options = define_options_constant(receiver_class)
+      def define_default_writer(receiver_class, caster=nil)
+        options = define_default_options_constant(receiver_class)
 
         line = __LINE__ + 1
         receiver_class.class_eval %Q{
@@ -25,7 +25,7 @@ module Configurable
         }, __FILE__, line
       end
       
-      def define_options_constant(receiver_class)
+      def define_default_options_constant(receiver_class)
         const_name = "#{name}_OPTIONS".upcase
         receiver_class.const_set(const_name, options)
         const_name

@@ -115,53 +115,66 @@ module Configurable
     
     protected
     
-    def register_config(config, options={})
-      config_registry[config.name] = config
+    def define_config(name, options={})
+      default = options.delete(:default)
+      reader  = options.delete(:reader)
+      writer  = options.delete(:writer)
+      attrs   = options[:attrs] || options
+      
+      config_class = options.delete(:config_class) || guess_config_class(attrs)
+      config = config_class.new(name, default, reader, writer, attrs)
+      
+      unless reader
+        config.define_default_reader(self)
+      end
+      
+      unless writer
+        config_type = config_types[attrs[:type]]
+        config.define_default_writer(self, config_type ? config_type.caster : nil)
+      end
+      
+      config_registry[name] = config
       reset_configurations
-      
-      options = {
-        :reader => true,
-        :writer => true
-      }.merge(options)
-      
-      if options[:reader]
-        config.define_reader(self)
-      end
-      
-      if options[:writer]
-        config_type = config_types[config[:type]]
-        config.define_writer(self, config_type ? config_type.caster : nil)
-      end
-      
       config
     end
     
-    def config(name, default=nil, attrs={})
-      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      attrs[:type] ||= guess_config_type(default)
-      attrs[:list] ||= default.kind_of?(Array)
+    def config(name, default=nil, options={})
+      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      options[:type] ||= guess_config_type(default)
+      options[:list] ||= default.kind_of?(Array)
+      options[:default] = default
       
-      reader  = attrs.delete(:reader)
-      writer  = attrs.delete(:writer)
-      config_class = attrs[:config_class] || guess_config_class(attrs)
-      
-      config = config_class.new(name, default, reader, writer, attrs)
-      register_config config, :reader => !reader, :writer => !writer
+      define_config(name, options)
     end
     
     def nest(name, options={}, &block)
       options = {:class => options} unless options.kind_of?(Hash)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       options[:type] ||= :nest
+      options[:config_class] ||= Configs::Nest
       
-      reader = options.delete(:reader)
-      writer = options.delete(:writer)
       base_class = options.delete(:class)
       const_name = options.delete(:const_name) || name.to_s.capitalize
-      configurable_class = define_configurable_class(base_class, const_name, block)
       
-      config = Configs::Nest.new(name, configurable_class, reader, writer, options)
-      register_config config, :reader => !reader, :writer => !writer
+      configurable_class = begin
+        case
+        when base_class.nil? then Class.new { include Configurable }
+        when block           then Class.new(base_class)
+        else base_class
+        end
+      end
+      
+      if const_name
+        unless const_defined?(const_name) && const_get(const_name) == configurable_class
+          const_set(const_name, configurable_class)
+        end
+      end
+      
+      configurable_class.class_eval(&block) if block
+      check_infinite_nest(configurable_class)
+      
+      options[:default] = configurable_class
+      define_config(name, options)
     end
     
     # Removes a configuration much like remove_method removes a method.  The
@@ -184,8 +197,9 @@ module Configurable
       config = config_registry.delete(name)
       reset_configurations
       
-      undef_method(config.reader) if options[:reader]
-      undef_method(config.writer) if options[:writer]
+      remove_method(config.reader) if options[:reader]
+      remove_method(config.writer) if options[:writer]
+      
       config
     end
     
@@ -221,6 +235,7 @@ module Configurable
       
       undef_method(config.reader) if options[:reader]
       undef_method(config.writer) if options[:writer]
+      
       config
     end
     
@@ -251,11 +266,11 @@ module Configurable
       config_type = config_type_registry.delete(type)
       reset_config_types
       
-      undef_method(config_type.caster) if options[:caster]
+      remove_method(config_type.caster) if options[:caster]
       config_type
     end
     
-    def undef_config_type(type, options={})
+    def undef_config_type(type)
       unless config_types.has_key?(type)
         raise NameError.new("#{type.inspect} is not a config type on #{self}")
       end
@@ -307,25 +322,6 @@ module Configurable
       end
       
       guesses.first
-    end
-    
-    def define_configurable_class(base_class, const_name, block) # :nodoc:
-      configurable_class =
-        case
-        when base_class.nil? then Class.new { include Configurable }
-        when block           then Class.new(base_class)
-        else base_class
-        end
-      
-      if const_name
-        unless const_defined?(const_name) && const_get(const_name) == configurable_class
-          const_set(const_name, configurable_class)
-        end
-      end
-      
-      configurable_class.class_eval(&block) if block
-      check_infinite_nest(configurable_class)
-      configurable_class
     end
     
     # helper to recursively check for an infinite nest

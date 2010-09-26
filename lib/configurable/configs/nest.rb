@@ -3,7 +3,7 @@ module Configurable
     class Nest < Config
     
       # Initializes a new NestConfig
-      def initialize(name, configurable_class=nil, reader=nil, writer=nil, attributes={})
+      def initialize(name, configurable_class=nil, reader=nil, writer=nil, attrs={})
         unless configurable_class.kind_of?(Class) && configurable_class.ancestors.include?(Configurable)
           raise ArgumentError, "not a Configurable class: #{configurable_class}"
         end
@@ -51,7 +51,7 @@ module Configurable
         end
       end
       
-      def define_writer(receiver_class, caster=nil)
+      def define_default_writer(receiver_class, caster=nil)
         line = __LINE__ + 1
         receiver_class.class_eval %Q{
           def #{name}=(value)

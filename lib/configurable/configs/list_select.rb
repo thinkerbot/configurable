@@ -1,8 +1,8 @@
 module Configurable
   module Configs
     class ListSelect < Select
-      def define_writer(receiver_class, caster=nil)
-        options = define_options_constant(receiver_class)
+      def define_default_writer(receiver_class, caster=nil)
+        options = define_default_options_constant(receiver_class)
 
         line = __LINE__ + 1
         receiver_class.class_eval %Q{

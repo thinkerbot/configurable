@@ -44,7 +44,7 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    def define_reader(receiver_class)
+    def define_default_reader(receiver_class)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
         attr_reader :#{name}
@@ -52,7 +52,7 @@ module Configurable
       }, __FILE__, line
     end
     
-    def define_writer(receiver_class, caster=nil)
+    def define_default_writer(receiver_class, caster=nil)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
         def #{name}=(value)
