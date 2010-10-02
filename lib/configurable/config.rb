@@ -1,8 +1,15 @@
 module Configurable
   
-  # Configs setup config getters/setters, determine how to delegate read/write
-  # operations to a receiver, and track metadata for presentation of configs
-  # in various user contexts.
+  # Configs are used by ConfigHash to delegate get/set configs on a receiver.
+  # Config instances typically do not do any work themselves; the receiver
+  # class is responsible for defining the actual reader/writer methods so that
+  # their logic will be enforced when config values are accessed directly
+  # rather than through Config.
+  #
+  # However, in most cases the Config really knows what the reader/writer
+  # methods should look like.  As a result they have the rather odd ability to
+  # define the default reader/writer methods on a reciever class. Use as
+  # appropriate.
   class Config
     
     # The config name
@@ -17,6 +24,9 @@ module Configurable
     # The default config value
     attr_reader :default
     
+    # A hash of attributes used to format self in user interfaces.  Typically
+    # these are just the attributes used by ConfigParser (ex: long, short,
+    # desc).
     attr_reader :attrs
     
     # Initializes a new Config.
@@ -30,6 +40,7 @@ module Configurable
       @attrs   = attrs
     end
     
+    # Get the specified attribute from attrs.
     def [](key)
       attrs[key]
     end
@@ -44,6 +55,11 @@ module Configurable
       receiver.send(writer, value)
     end
     
+    # Defines the default reader method on receiver_class, literally:
+    #
+    #   attr_reader :name
+    #   public :name
+    #
     def define_default_reader(receiver_class)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{
@@ -52,6 +68,15 @@ module Configurable
       }, __FILE__, line
     end
     
+    # Defines the default writer method on receiver_class, using the caster to
+    # cast the input before setting it as the config value. The caster should
+    # be a method name as this is the added code:
+    #
+    #   def name=(value)
+    #     @name = caster(value)
+    #   end
+    #   public :name=
+    #
     def define_default_writer(receiver_class, caster=nil)
       line = __LINE__ + 1
       receiver_class.class_eval %Q{

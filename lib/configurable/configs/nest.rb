@@ -1,5 +1,7 @@
 module Configurable
   module Configs
+    
+    # Represents a config where the input is expected to be Configurable.
     class Nest < Config
     
       # Initializes a new NestConfig
@@ -16,7 +18,8 @@ module Configurable
         @default
       end
     
-      # Returns a hash of the default configuration values for configurable_class.
+      # Returns a hash of the default configuration values for
+      # configurable_class.
       def default
         default = {}
         configurable_class.configurations.each_pair do |key, config|
@@ -25,7 +28,7 @@ module Configurable
         default
       end
   
-      # Calls the reader on the reciever to retreive an instance of the 
+      # Calls the reader on the reciever to retreive an instance of the
       # configurable_class and returns it's config.  Returns nil if the reader
       # returns nil.
       def get(receiver)
@@ -51,6 +54,22 @@ module Configurable
         end
       end
       
+      # Defines the default writer method on receiver_class, using the caster
+      # to cast the input to an instance of configurable_class before setting
+      # it as the config value. The caster should be a method name as this is
+      # the added code:
+      #
+      #   def name=(value)
+      #     value = caster(value)
+      #
+      #     unless value.kind_of?(configurable_class)
+      #       raise ArgumentError, "invalid value for name: #{value.inspect}"
+      #     end
+      #
+      #     @name = value
+      #   end
+      #   public :name=
+      #
       def define_default_writer(receiver_class, caster=nil)
         line = __LINE__ + 1
         receiver_class.class_eval %Q{

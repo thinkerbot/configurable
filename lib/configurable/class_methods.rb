@@ -22,6 +22,9 @@ module Configurable
     # configurations for all configs declared across all ancestors.
     attr_reader :config_registry
     
+    # A hash of (key, ConfigType) pairs tracking configuration types defined
+    # on self.  See config_types for all configuration types declared across
+    # all ancestors.
     attr_reader :config_types_registry
     
     def self.initialize(base)  # :nodoc:
@@ -90,6 +93,10 @@ module Configurable
       @configurations = nil
     end
     
+    # A hash of (key, ConfigType) pairs representing all configuration types
+    # defined on this class or inherited from ancestors.  The config_types
+    # hash is memoized for performance.  Call reset_config_types if
+    # config_types needs to be recalculated for any reason.
     def config_types
       @config_types ||= begin
         config_types = Configurable::DEFAULT_CONFIG_TYPES.dup
@@ -109,6 +116,7 @@ module Configurable
       end
     end
     
+    # Resets config_types such that they will be recalculated.
     def reset_config_types
       @config_types = nil
     end
