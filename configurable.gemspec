@@ -1,14 +1,5 @@
-$:.unshift File.expand_path('../submodule/lazydoc/lib', __FILE__)
-$:.unshift File.expand_path('../submodule/config_parser/lib', __FILE__)
-$:.unshift File.expand_path('../lib', __FILE__)
-
-require 'lazydoc/version'
-require 'config_parser/version'
-require 'configurable/version'
-
-$:.shift
-$:.shift
-$:.shift
+# -*- encoding: utf-8 -*-
+require File.expand_path('../lib/configurable/version', __FILE__)
 
 Gem::Specification.new do |s|
   s.name = 'configurable'
@@ -23,8 +14,9 @@ Gem::Specification.new do |s|
   s.has_rdoc = true
   s.rdoc_options.concat %w{--main README -S -N --title Configurable}
   
-  s.add_dependency('lazydoc', "~> #{Lazydoc::VERSION}")
-  s.add_dependency('config_parser', "~> #{ConfigParser::VERSION}")
+  s.add_dependency('lazydoc', "~> 1.0")
+  s.add_dependency('config_parser', "= 0.3.0")
+  s.add_development_dependency('bundler', '~> 1.0')
 
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{

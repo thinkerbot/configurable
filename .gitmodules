@@ -1,6 +1,0 @@
-[submodule "submodule/lazydoc"]
-	path = submodule/lazydoc
-	url = git://github.com/bahuvrihi/lazydoc.git
-[submodule "submodule/config_parser"]
-	path = submodule/config_parser
-	url = git://github.com/bahuvrihi/config_parser.git

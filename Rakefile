@@ -1,6 +1,7 @@
 require 'rake'
 require 'rake/rdoctask'
-require 'rake/gempackagetask'
+require 'bundler'
+Bundler::GemHelper.install_tasks
 
 #
 # Gem specification
@@ -10,10 +11,6 @@ def gemspec
   require 'rubygems/specification'
   path = File.expand_path('configurable.gemspec')
   eval(File.read(path), binding, path, 0)
-end
-
-Rake::GemPackageTask.new(gemspec) do |pkg|
-  pkg.need_tar = true
 end
 
 desc 'Prints the gemspec manifest.'
@@ -31,7 +28,7 @@ task :print_manifest do
   # included already (marking by the absence
   # of a label)
   Dir.glob('**/*').each do |file|
-    next if file =~ /^(rdoc|pkg|backup|test|submodule|.*\.rbc)/ || File.directory?(file)
+    next if file =~ /^(rdoc|pkg|test|.*\.rbc)/ || File.directory?(file)
     
     path = File.expand_path(file)
     files[path] = ['', file] unless files.has_key?(path)
@@ -75,25 +72,14 @@ end
 # Dependency tasks
 #
 
-desc 'Checkout submodules'
-task :submodules do
-  output = `git submodule status 2>&1`
-  
-  if output =~ /^-/m
-    puts "Missing submodules:\n#{output}"
-    sh "git submodule init"
-    sh "git submodule update"
-    puts
-  end
-end
-
 desc 'Bundle dependencies'
 task :bundle do
   output = `bundle check 2>&1`
   
   unless $?.to_i == 0
     puts output
-    sh "bundle install"
+    puts "bundle install 2>&1"
+    system "bundle install 2>&1"
     puts
   end
 end
