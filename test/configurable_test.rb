@@ -66,7 +66,6 @@ class ConfigurableTest < Test::Unit::TestCase
     config_type(:upcase) {|v| v.upcase }
 
     config :a, 'A', :type => :upcase
-    config :b, 'B', :type => :upcase
   end
   
   def test_documentation
@@ -115,10 +114,6 @@ class ConfigurableTest < Test::Unit::TestCase
   
     alt.set_sym('two')
     assert_equal :two, alt.config[:sym]
-  
-    ###
-    assert_equal :upcase, AttributesClass.configurations[:a][:type]
-    assert_equal :upcase, AttributesClass.configurations[:b][:type]
   end
   
   #

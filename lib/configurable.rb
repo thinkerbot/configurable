@@ -1,4 +1,3 @@
-require 'configurable/casters'
 require 'configurable/module_methods'
 
 # Configurable enables the specification of configurations within a class 
@@ -189,7 +188,6 @@ require 'configurable/module_methods'
 #   AttributesClass.configurations[:b][:type]   # => :upcase
 #
 module Configurable
-  include Casters
   
   # A ConfigHash bound to self.  Accessing configurations through config
   # is much slower (although sometimes more convenient) than through the
@@ -211,10 +209,21 @@ module Configurable
     @config = ConfigHash.new(orig.config.store.dup, self)
   end
 
-  protected
-
+  private
+  
   # Initializes config. Default config values are overridden as specified.
   def initialize_config(overrides={})
     @config = ConfigHash.new(overrides).bind(self)
+  end
+  
+  module_function
+  
+  def cast_boolean(input)
+    case input
+    when true, false then input
+    when 'true'      then true
+    when 'false'     then false
+    else raise ArgumentError, "invalid value for boolean: #{input.inspect}"
+    end
   end
 end

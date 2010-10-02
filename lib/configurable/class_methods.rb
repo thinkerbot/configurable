@@ -6,11 +6,11 @@ require 'configurable/config_hash'
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
-    :flag    => ConfigType.new(:cast_boolean, FalseClass),
-    :switch  => ConfigType.new(:cast_boolean, TrueClass),
+    :flag    => ConfigType.new('Configurable.cast_boolean', FalseClass),
+    :switch  => ConfigType.new('Configurable.cast_boolean', TrueClass),
     :integer => ConfigType.new(:Integer, Integer),
     :float   => ConfigType.new(:Float, Float),
-    :string  => ConfigType.new(:cast_string, String),
+    :string  => ConfigType.new(:String, String),
     :nest    => ConfigType.new(nil),
     nil      => ConfigType.new(nil)
   }
@@ -127,7 +127,10 @@ module Configurable
       default = options.delete(:default)
       reader  = options.delete(:reader)
       writer  = options.delete(:writer)
-      attrs   = options[:attrs] || options
+      type    = options.delete(:type)
+      
+      config_type = config_types[type]
+      attrs   = config_type.default_attrs.merge(options[:attrs] || options)
       
       config_class = options.delete(:config_class) || guess_config_class(attrs)
       config = config_class.new(name, default, reader, writer, attrs)
@@ -137,7 +140,6 @@ module Configurable
       end
       
       unless writer
-        config_type = config_types[attrs[:type]]
         config.define_default_writer(self, config_type ? config_type.caster : nil)
       end
       
@@ -248,14 +250,15 @@ module Configurable
     end
     
     def config_type(type, options={}, &block)
-      caster  = options[:caster] || "cast_#{type}".to_sym
-      matcher = options[:matcher]
+      caster  = options.delete(:caster) || "cast_#{type}".to_sym
+      matcher = options.delete(:matcher)
+      default_attrs = options[:default_attrs] || options
       
       if block_given?
         define_method(caster, &block)
       end
       
-      config_type = ConfigType.new(caster, matcher)
+      config_type = ConfigType.new(caster, matcher, default_attrs)
       config_types_registry[type.to_sym] = config_type
       reset_config_types
       
