@@ -160,17 +160,14 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_select_allows_any_of_the_values_in_options
-    obj = SelectClass.new
-    obj.key = 'a'
-    assert_equal 'a', obj.key
-    
-    obj.key = 'c'
-    assert_equal 'c', obj.key
+    config = SelectClass.configurations[:key]
+    assert_equal 'a', config.cast('a')
+    assert_equal 'c', config.cast('c')
   end
   
   def test_select_config_raises_error_if_value_is_not_in_options
-    obj = SelectClass.new
-    err = assert_raises(ArgumentError) { obj.key = 'z' }
+    config = SelectClass.configurations[:key]
+    err = assert_raises(ArgumentError) { config.cast('z') }
     assert_equal 'invalid value for key: "z"', err.message
   end
   
@@ -180,18 +177,14 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_list_an_array_of_values
-    obj = ListClass.new
-    
-    obj.key = [1, 2, 3]
-    assert_equal [1, 2, 3], obj.key
-    
-    obj.key = []
-    assert_equal [], obj.key
+    config = ListClass.configurations[:key]
+    assert_equal [1, 2, 3], config.cast([1,2,3])
+    assert_equal [], config.cast([])
   end
   
   def test_list_config_raises_error_for_non_array_values
-    obj = ListClass.new
-    err = assert_raises(ArgumentError) { obj.key = 'str'}
+    config = ListClass.configurations[:key]
+    err = assert_raises(ArgumentError) { config.cast('str') }
     assert_equal 'invalid value for key: "str"', err.message
   end
   
@@ -201,25 +194,21 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_list_select_allows_an_array_composed_of_values_in_options
-    obj = ListSelectClass.new
-    
-    obj.key = ['a', 'c', 'a']
-    assert_equal ['a', 'c', 'a'], obj.key
-    
-    obj.key = []
-    assert_equal [], obj.key
+    config = ListSelectClass.configurations[:key]
+    assert_equal ['a', 'c', 'a'], config.cast(['a', 'c', 'a'])
+    assert_equal [], config.cast([])
   end
   
   def test_list_select_config_raises_error_for_non_array_values
-    obj = ListSelectClass.new
-    err = assert_raises(ArgumentError) { obj.key = 'str'}
+    config = ListSelectClass.configurations[:key]
+    err = assert_raises(ArgumentError) { config.cast('str') }
     assert_equal 'invalid value for key: "str"', err.message
   end
   
   def test_list_select_config_raises_error_for_array_values_not_in_options
-    obj = ListSelectClass.new
-    err = assert_raises(ArgumentError) { obj.key = ['z']}
-    assert_equal 'invalid value for key: ["z"]', err.message
+    config = ListSelectClass.configurations[:key]
+    err = assert_raises(ArgumentError) { config.cast(['z']) }
+    assert_equal 'invalid value for key: "z"', err.message
   end
   
   def test_config_raises_error_for_non_symbol_keys
@@ -242,9 +231,8 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_does_not_cast_strings
-    obj = StringCastClass.new
-    obj.key = 'xyz'
-    assert_equal 'xyz', obj.key
+    config = StringCastClass.configurations[:key]
+    assert_equal 'xyz', config.cast('xyz')
   end
   
   class IntegerCastClass
@@ -253,11 +241,10 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_casts_integers
-    obj = IntegerCastClass.new
-    obj.key = '2'
-    assert_equal 2, obj.key
+    config = IntegerCastClass.configurations[:key]
+    assert_equal 2, config.cast('2')
     
-    err = assert_raises(ArgumentError) { obj.key = 'abc' }
+    err = assert_raises(ArgumentError) { config.cast('abc') }
     assert_equal 'invalid value for Integer: "abc"', err.message
   end
   
@@ -267,11 +254,10 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_casts_floats
-    obj = FloatCastClass.new
-    obj.key = '2.1'
-    assert_equal 2.1, obj.key
+    config = FloatCastClass.configurations[:key]
+    assert_equal 2.1, config.cast('2.1')
     
-    err = assert_raises(ArgumentError) { obj.key = 'abc' }
+    err = assert_raises(ArgumentError) { config.cast('abc') }
     assert_equal 'invalid value for Float(): "abc"', err.message
   end
   
@@ -281,14 +267,11 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_casts_boolean
-    obj = BooleanCastClass.new
-    obj.key = 'true'
-    assert_equal true, obj.key
+    config = BooleanCastClass.configurations[:key]
+    assert_equal true, config.cast('true')
+    assert_equal false, config.cast('false')
     
-    obj.key = 'false'
-    assert_equal false, obj.key
-    
-    err = assert_raises(ArgumentError) { obj.key = 'abc' }
+    err = assert_raises(ArgumentError) { config.cast('abc') }
     assert_equal 'invalid value for boolean: "abc"', err.message
   end
   
@@ -343,8 +326,8 @@ class ConfigurableTest < Test::Unit::TestCase
   
     c = NestC.new
     c.b.key = 7
-    c.b.nest.key = "8"
-    c.config[:b][:nest][:nest][:key] = "9"
+    c.b.nest.key = 8
+    c.config[:b][:nest][:nest][:key] = 9
   
     expected = {
     :a => {
@@ -442,13 +425,6 @@ class ConfigurableTest < Test::Unit::TestCase
     c = NestChild.new
     p = NestParent.new :nest => c
     assert_equal c.object_id, p.nest.object_id
-  end
-  
-  def test_parent_writer_is_validated
-    p = NestParent.new
-    obj = Object.new 
-    err = assert_raises(ArgumentError) { p.nest = obj }
-    assert_equal "invalid value for nest: #{obj.inspect}", err.message
   end
   
   #
@@ -613,11 +589,8 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_type_registers_a_casting_type
-    obj = ConfigTypeClass.new
-    assert_equal 'ABC', obj.key
-    
-    obj.key = 'xyz'
-    assert_equal 'XYZ', obj.key
+    config = ConfigTypeClass.configurations[:key]
+    assert_equal 'XYZ', config.cast('xyz')
   end
   
   class ConfigTypeParent
@@ -637,15 +610,11 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_types_are_inherited
-    obj = ConfigTypeChild.new
-    assert_equal 'ABC', obj.one
-    assert_equal(-1, obj.two)
+    config = ConfigTypeChild.configurations[:one]
+    assert_equal 'XYZ', config.cast('xyz')
     
-    obj.one = 'xyz'
-    assert_equal 'XYZ', obj.one
-    
-    obj.two = -10
-    assert_equal 10, obj.two
+    config = ConfigTypeChild.configurations[:two]
+    assert_equal 10, config.cast(-10)
   end
   
   class ConfigTypeFloatParent

@@ -6,13 +6,13 @@ require 'configurable/config_hash'
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
-    :flag    => ConfigType.new('Configurable.cast_boolean', FalseClass),
-    :switch  => ConfigType.new('Configurable.cast_boolean', TrueClass),
-    :integer => ConfigType.new(:Integer, Integer),
-    :float   => ConfigType.new(:Float, Float),
-    :string  => ConfigType.new(:String, String),
-    :nest    => ConfigType.new(nil),
-    nil      => ConfigType.new(nil)
+    :flag    => ConfigType.new(FalseClass) {|value| ConfigType.cast_boolean(value) },
+    :switch  => ConfigType.new(TrueClass)  {|value| ConfigType.cast_boolean(value) },
+    :integer => ConfigType.new(Integer) {|value| Integer(value) },
+    :float   => ConfigType.new(Float)   {|value| Float(value) },
+    :string  => ConfigType.new(String)  {|value| String(value) },
+    :nest    => ConfigType.new,
+    nil      => ConfigType.new
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
@@ -62,6 +62,16 @@ module Configurable
       
       parser.sort_opts!
       [parser.parse!(argv), parser.config]
+    end
+    
+    def cast(configs={})
+      configs.keys.each do |key|
+        if config = configurations[key]
+          configs[key] = config.cast(configs[key])
+        end
+      end
+      
+      configs
     end
     
     # A hash of (key, Config) pairs representing all configurations defined
@@ -123,38 +133,32 @@ module Configurable
     
     protected
     
-    def define_config(name, options={})
+    def define_config(name, options={}, &caster)
       default = options.delete(:default)
       reader  = options.delete(:reader)
       writer  = options.delete(:writer)
       type    = options.delete(:type)
+      attrs   = options[:attrs] || options
       
-      config_type = config_types[type]
-      attrs   = config_type.default_attrs.merge(options[:attrs] || options)
-      
+      config_type  = config_types[type]
       config_class = options.delete(:config_class) || guess_config_class(attrs)
-      config = config_class.new(name, default, reader, writer, attrs)
+      config = config_class.new(name, default, reader, writer, caster || config_type.caster, attrs)
       
-      unless reader
-        config.define_default_reader(self)
-      end
-      
-      unless writer
-        config.define_default_writer(self, config_type ? config_type.caster : nil)
-      end
+      attr_reader(name) unless reader
+      attr_writer(name) unless writer
       
       config_registry[name] = config
       reset_configurations
       config
     end
     
-    def config(name, default=nil, options={})
+    def config(name, default=nil, options={}, &caster)
       options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       options[:type] ||= guess_config_type(default)
       options[:list] ||= default.kind_of?(Array)
       options[:default] = default
       
-      define_config(name, options)
+      define_config(name, options, &caster)
     end
     
     def nest(name, options={}, &block)
@@ -249,16 +253,10 @@ module Configurable
       config
     end
     
-    def config_type(type, options={}, &block)
-      caster  = options.delete(:caster) || "cast_#{type}".to_sym
+    def config_type(type, options={}, &caster)
       matcher = options.delete(:matcher)
-      default_attrs = options[:default_attrs] || options
       
-      if block_given?
-        define_method(caster, &block)
-      end
-      
-      config_type = ConfigType.new(caster, matcher, default_attrs)
+      config_type = ConfigType.new(matcher, &caster)
       config_types_registry[type.to_sym] = config_type
       reset_config_types
       
@@ -322,7 +320,7 @@ module Configurable
       
       guesses = []
       config_types.each_pair do |type, config_type|
-        if config_type.matches?(guess_value)
+        if config_type === guess_value
           guesses << type
         end
       end

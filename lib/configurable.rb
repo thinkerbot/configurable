@@ -215,15 +215,4 @@ module Configurable
   def initialize_config(overrides={})
     @config = ConfigHash.new(overrides).bind(self)
   end
-  
-  module_function
-  
-  def cast_boolean(input)
-    case input
-    when true, false then input
-    when 'true'      then true
-    when 'false'     then false
-    else raise ArgumentError, "invalid value for boolean: #{input.inspect}"
-    end
-  end
 end

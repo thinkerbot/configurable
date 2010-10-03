@@ -5,7 +5,7 @@ module Configurable
     class Nest < Config
     
       # Initializes a new NestConfig
-      def initialize(name, configurable_class=nil, reader=nil, writer=nil, attrs={})
+      def initialize(name, configurable_class=nil, reader=nil, writer=nil, caster=nil, attrs={})
         unless configurable_class.kind_of?(Class) && configurable_class.ancestors.include?(Configurable)
           raise ArgumentError, "not a Configurable class: #{configurable_class}"
         end
@@ -54,36 +54,9 @@ module Configurable
         end
       end
       
-      # Defines the default writer method on receiver_class, using the caster
-      # to cast the input to an instance of configurable_class before setting
-      # it as the config value. The caster should be a method name as this is
-      # the added code:
-      #
-      #   def name=(value)
-      #     value = caster(value)
-      #
-      #     unless value.kind_of?(configurable_class)
-      #       raise ArgumentError, "invalid value for name: #{value.inspect}"
-      #     end
-      #
-      #     @name = value
-      #   end
-      #   public :name=
-      #
-      def define_default_writer(receiver_class, caster=nil)
-        line = __LINE__ + 1
-        receiver_class.class_eval %Q{
-          def #{name}=(value)
-            value = #{caster}(value)
-            
-            unless value.kind_of?(#{configurable_class})
-              raise ArgumentError, "invalid value for #{name}: \#{value.inspect}"
-            end
-
-            @#{name} = value
-          end
-          public :#{name}=
-        }, __FILE__, line
+      def cast(value)
+        value = super(value)
+        configurable_class.cast(value)
       end
     
       # Returns an inspection string.

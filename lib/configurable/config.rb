@@ -21,6 +21,8 @@ module Configurable
     # The writer method called on a receiver during set
     attr_reader :writer
     
+    attr_reader :caster
+    
     # The default config value
     attr_reader :default
     
@@ -30,13 +32,14 @@ module Configurable
     attr_reader :attrs
     
     # Initializes a new Config.
-    def initialize(name, default=nil, reader=nil, writer=nil, attrs={})
+    def initialize(name, default=nil, reader=nil, writer=nil, caster=nil, attrs={})
       check_name(name)
       
       @name    = name
       @default = default
       @reader  = (reader || name).to_sym
       @writer  = (writer || "#{name}=").to_sym
+      @caster  = caster
       @attrs   = attrs
     end
     
@@ -55,36 +58,8 @@ module Configurable
       receiver.send(writer, value)
     end
     
-    # Defines the default reader method on receiver_class, literally:
-    #
-    #   attr_reader :name
-    #   public :name
-    #
-    def define_default_reader(receiver_class)
-      line = __LINE__ + 1
-      receiver_class.class_eval %Q{
-        attr_reader :#{name}
-        public :#{name}
-      }, __FILE__, line
-    end
-    
-    # Defines the default writer method on receiver_class, using the caster to
-    # cast the input before setting it as the config value. The caster should
-    # be a method name as this is the added code:
-    #
-    #   def name=(value)
-    #     @name = caster(value)
-    #   end
-    #   public :name=
-    #
-    def define_default_writer(receiver_class, caster=nil)
-      line = __LINE__ + 1
-      receiver_class.class_eval %Q{
-        def #{name}=(value)
-          @#{name} = #{caster}(value)
-        end
-        public :#{name}=
-      }, __FILE__, line
+    def cast(value)
+      caster ? caster.call(value) : value
     end
     
     # Returns an inspect string.
