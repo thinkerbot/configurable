@@ -54,10 +54,19 @@ module Configurable
         end
       end
       
-      # Same as super, but extracts the result using configurable_class
-      def extract(source, target={})
+      # Same as super, but recursively maps the result using configurable_class.
+      def map_by_key(source, target={})
         if source.has_key?(name)
-          target[key] = configurable_class.extract(source[name])
+          target[key] = configurable_class.map_by_key(source[name])
+        end
+        
+        target
+      end
+      
+      # Same as super, but recursively maps the result using configurable_class
+      def map_by_name(source, target={})
+        if source.has_key?(key)
+          target[name] = configurable_class.map_by_name(source[key])
         end
         
         target

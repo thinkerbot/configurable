@@ -61,12 +61,18 @@ module Configurable
       [parser.parse!(argv), parser.config]
     end
     
-    def extract(argh)
-      result = {}
+    def map_by_key(source, target={})
       configs.each_value do |config|
-        config.extract(argh, result)
+        config.map_by_key(source, target)
       end
-      result
+      target
+    end
+    
+    def map_by_name(source, target={})
+      configs.each_value do |config|
+        config.map_by_name(source, target)
+      end
+      target
     end
     
     def cast(argh={})

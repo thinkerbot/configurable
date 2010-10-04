@@ -359,25 +359,35 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # extract test
+  # map_by_key, map_by_name test
   #
   
-  class ExtractClass
+  class MapClass
     include Configurable
     config(:one)
   end
   
-  def test_extract_maps_config_names_to_config_keys
+  def test_map_by_key_maps_config_names_to_config_keys
     assert_equal({
       :one => 'NAME'
-    }, ExtractClass.extract(:one => 'KEY', 'one' => 'NAME'))
+    }, MapClass.map_by_key(:one => 'KEY', 'one' => 'NAME'))
   end
   
-  def test_extract_maps_ignores_unknown_keys
-    assert_equal({}, ExtractClass.extract(:unknown => 'value'))
+  def test_map_by_key_maps_ignores_unknown_names
+    assert_equal({}, MapClass.map_by_key('unknown' => 'value'))
   end
   
-  class NestExtractClass
+  def test_map_by_name_maps_config_keys_to_config_names
+    assert_equal({
+      'one' => 'KEY'
+    }, MapClass.map_by_name(:one => 'KEY', 'one' => 'NAME'))
+  end
+  
+  def test_map_by_name_maps_ignores_unknown_keys
+    assert_equal({}, MapClass.map_by_name(:unknown => 'value'))
+  end
+  
+  class NestMapClass
     include Configurable
     config(:one)
     nest(:nest) do
@@ -385,7 +395,7 @@ class ConfigurableTest < Test::Unit::TestCase
     end
   end
   
-  def test_extract_recursively_extracts_values_for_nested_configs
+  def test_map_by_key_recursively_maps_nested_configs
     source = {
       'one' => 'ONE',
       'nest' => {'two' => 'TWO'}
@@ -396,7 +406,21 @@ class ConfigurableTest < Test::Unit::TestCase
       :nest => {:two => 'TWO'}
     }
     
-    assert_equal(target, NestExtractClass.extract(source))
+    assert_equal(target, NestMapClass.map_by_key(source))
+  end
+  
+  def test_map_by_name_recursively_maps_nested_configs
+    source = {
+      :one => 'ONE',
+      :nest => {:two => 'TWO'}
+    }
+    
+    target = {
+      'one' => 'ONE',
+      'nest' => {'two' => 'TWO'}
+    }
+    
+    assert_equal(target, NestMapClass.map_by_name(source))
   end
   
   #

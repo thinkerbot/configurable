@@ -68,20 +68,37 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   #
-  # extract test
+  # map_by_key test
   #
   
-  def test_extract_writes_the_value_keyed_by_name_in_source_to_target_by_key
+  def test_map_by_key_writes_the_value_keyed_by_name_in_source_to_target_by_key
     source = {:key => 'KEY', 'key' => 'NAME'}
     target = {}
-    assert_equal target, c.extract(source, target)
+    assert_equal target, c.map_by_key(source, target)
     
     assert_equal({:key => 'NAME'}, target)
     assert_equal({:key => 'KEY', 'key' => 'NAME'}, source)
   end
   
-  def test_extract_writes_nothing_if_source_does_not_have_a_value_keyed_by_name
-    assert_equal({}, c.extract({:key => 'KEY'}))
+  def test_map_by_key_writes_nothing_if_source_does_not_have_a_value_keyed_by_name
+    assert_equal({}, c.map_by_key({:key => 'KEY'}))
+  end
+  
+  #
+  # map_by_name test
+  #
+  
+  def test_map_by_name_writes_the_value_keyed_by_key_in_source_to_target_by_name
+    source = {:key => 'KEY', 'key' => 'NAME'}
+    target = {}
+    assert_equal target, c.map_by_name(source, target)
+    
+    assert_equal({'key' => 'KEY'}, target)
+    assert_equal({:key => 'KEY', 'key' => 'NAME'}, source)
+  end
+  
+  def test_map_by_name_writes_nothing_if_source_does_not_have_a_value_keyed_by_key
+    assert_equal({}, c.map_by_name({'key' => 'KEY'}))
   end
   
   #
