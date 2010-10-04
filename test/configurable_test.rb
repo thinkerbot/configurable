@@ -19,8 +19,8 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class ValidationClass
     include Configurable
-    config_type(:upcase) {|v| v.upcase }
-    config(:one, 'one', :type => :upcase)
+    caster(:upcase) {|v| v.upcase }
+    config(:one, 'one', :caster => :upcase)
     config :two, 2
   end
 
@@ -63,9 +63,9 @@ class ConfigurableTest < Test::Unit::TestCase
 
   class AttributesClass
     include Configurable
-    config_type(:upcase) {|v| v.upcase }
+    caster(:upcase) {|v| v.upcase }
 
-    config :a, 'A', :type => :upcase
+    config :a, 'A', :caster => :upcase
   end
   
   def test_documentation
@@ -128,8 +128,8 @@ class ConfigurableTest < Test::Unit::TestCase
     assert IncludeClass.kind_of?(Configurable::ClassMethods)
   end
    
-  def test_extend_initializes_class_configurations
-    assert_equal({}, IncludeClass.configurations)
+  def test_extend_initializes_class_configs
+    assert_equal({}, IncludeClass.configs)
   end
   
   #
@@ -141,15 +141,15 @@ class ConfigurableTest < Test::Unit::TestCase
     config :key, 'value'
   end
   
-  def test_configurations_may_be_declared_in_modules
-    assert_equal [:key], ConfigModule.configurations.keys
+  def test_configs_may_be_declared_in_modules
+    assert_equal [:key], ConfigModule.configs.keys
   end
   
   class IncludingConfigModule
     include ConfigModule
   end
   
-  def test_module_configurations_are_added_to_class_on_include
+  def test_module_configs_are_added_to_class_on_include
     obj = IncludingConfigModule.new
     assert_equal({:key => 'value'}, obj.config.to_hash)
   end
@@ -203,55 +203,56 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # config_type test
+  # casters test
   #
   
-  class ConfigTypeClass
+  class CasterClass
     include Configurable
-    config_type(:upcase) {|input| input.upcase }
-    config :key, 'abc', :type => :upcase
+    caster(:upcase) {|input| input.upcase }
+    config :key, 'abc', :caster => :upcase
   end
   
-  def test_config_type_registers_a_casting_type
-    config = ConfigTypeClass.configurations[:key]
-    assert_equal 'XYZ', config.cast('xyz')
+  def test_caster_registers_a_casting_type
+    caster = CasterClass.casters[:upcase]
+    assert_equal 'XYZ', caster.call('xyz')
+    assert_equal 'XYZ', CasterClass.configs[:key].cast('xyz')
   end
   
-  class ConfigTypeParent
+  class CasterParent
     include Configurable
-    config_type(:upcase) {|input| input.upcase }
+    caster(:upcase) {|input| input.upcase }
   end
   
-  module ConfigTypeModule
+  module CasterModule
     include Configurable
-    config_type(:negate) {|input| input * -1 }
+    caster(:negate) {|input| input * -1 }
   end
   
-  class ConfigTypeChild < ConfigTypeParent
-    include ConfigTypeModule
-    config :one, 'abc', :type => :upcase
-    config :two, 1, :type => :negate
+  class CasterChild < CasterParent
+    include CasterModule
+    config :one, 'abc', :caster => :upcase
+    config :two, 1, :caster => :negate
   end
   
-  def test_config_types_are_inherited
-    config = ConfigTypeChild.configurations[:one]
+  def test_casters_are_inherited
+    config = CasterChild.configs[:one]
     assert_equal 'XYZ', config.cast('xyz')
     
-    config = ConfigTypeChild.configurations[:two]
+    config = CasterChild.configs[:two]
     assert_equal 10, config.cast(-10)
   end
   
-  class ConfigTypeFloatParent
+  class CasterFloatParent
     include Configurable
     config :one, 'aBc'
   end
   
-  class ConfigTypeFloatChild < ConfigTypeFloatParent
-    config_type(:upcase) {|input| input.upcase }
+  class CasterFloatChild < CasterFloatParent
+    caster(:upcase) {|input| input.upcase }
   end
   
-  def test_config_types_do_not_float_up
-    assert_equal nil, ConfigTypeFloatParent.config_types[:upcase]
+  def test_casters_do_not_float_up
+    assert_equal nil, CasterFloatParent.casters[:upcase]
   end
   
   #
@@ -270,12 +271,12 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'b', c.b
     
     RemoveConfig.send(:remove_config, :a)
-    assert_equal([:b], RemoveConfig.configurations.keys)
+    assert_equal([:b], RemoveConfig.configs.keys)
     assert !c.respond_to?(:a)
     assert !c.respond_to?(:a=)
     
     RemoveConfig.send(:remove_config, :b, :reader => false, :writer => false)
-    assert_equal([], RemoveConfig.configurations.keys)
+    assert_equal([], RemoveConfig.configs.keys)
     assert c.respond_to?(:b)
     assert c.respond_to?(:b=)
   end
@@ -286,10 +287,10 @@ class ConfigurableTest < Test::Unit::TestCase
     config :b, 'b'
   end
   
-  def test_remove_config_resets_configurations
-    assert_equal([:a, :b], CachedRemoveConfig.configurations.keys.sort_by {|key| key.to_s })
+  def test_remove_config_resets_configs
+    assert_equal([:a, :b], CachedRemoveConfig.configs.keys.sort_by {|key| key.to_s })
     CachedRemoveConfig.send(:remove_config, :a)
-    assert_equal([:b], CachedRemoveConfig.configurations.keys)
+    assert_equal([:b], CachedRemoveConfig.configs.keys)
   end
   
   #
@@ -308,12 +309,12 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'b', c.b
     
     UndefConfig.send(:undef_config, :a)
-    assert_equal([:b], UndefConfig.configurations.keys)
+    assert_equal([:b], UndefConfig.configs.keys)
     assert !c.respond_to?(:a)
     assert !c.respond_to?(:a=)
     
     UndefConfig.send(:undef_config, :b, :reader => false, :writer => false)
-    assert_equal([], UndefConfig.configurations.keys)
+    assert_equal([], UndefConfig.configs.keys)
     assert c.respond_to?(:b)
     assert c.respond_to?(:b=)
   end
@@ -324,10 +325,10 @@ class ConfigurableTest < Test::Unit::TestCase
     config :b, 'b'
   end
   
-  def test_undef_config_resets_configurations
-    assert_equal([:a, :b], CachedUndefConfig.configurations.keys.sort_by {|key| key.to_s })
+  def test_undef_config_resets_configs
+    assert_equal([:a, :b], CachedUndefConfig.configs.keys.sort_by {|key| key.to_s })
     CachedUndefConfig.send(:undef_config, :a)
-    assert_equal([:b], CachedUndefConfig.configurations.keys)
+    assert_equal([:b], CachedUndefConfig.configs.keys)
   end
   
   #
@@ -382,7 +383,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal({:one => 'one'}, obj.config.to_hash)
   end
     
-  def test_subclasses_inherit_configurations
+  def test_subclasses_inherit_configs
     obj = IncludeSubclass.new
     assert_equal({
       :one => 'one',
@@ -396,7 +397,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert obj.respond_to?(:one=)
   end
   
-  def test_inherited_configurations_can_be_overridden
+  def test_inherited_configs_can_be_overridden
     obj = OverrideSubclass.new
     assert_equal({:one => 'ONE'}, obj.config.to_hash)
   end
@@ -420,13 +421,13 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
-    desc = LazydocClass.configurations[:one][:desc]
+    desc = LazydocClass.configs[:one][:desc]
     assert_equal "one with documentation", desc.to_s
     
-    desc = LazydocClass.configurations[:two][:desc]
+    desc = LazydocClass.configs[:two][:desc]
     assert_equal "two description", desc.to_s
     
-    desc = LazydocClass.configurations[:three][:desc]
+    desc = LazydocClass.configs[:three][:desc]
     assert_equal "three with offset documentation", desc.to_s
   end
   
@@ -446,12 +447,12 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_configurable_registers_documentation_for_configs_in_modules
     [:one, :three].each do |name|
-      desc = LazydocIncludeClass.configurations[name][:desc]
+      desc = LazydocIncludeClass.configs[name][:desc]
       assert_equal "#{name} with documentation", desc.to_s
     end
     
     [:two, :four].each do |name|
-      desc = LazydocIncludeClass.configurations[name][:desc]
+      desc = LazydocIncludeClass.configs[name][:desc]
       assert_equal "#{name} description", desc.to_s
     end
   end

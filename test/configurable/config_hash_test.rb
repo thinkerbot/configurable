@@ -7,8 +7,8 @@ class ConfigHashTest < Test::Unit::TestCase
   ConfigHash = Configurable::ConfigHash
   
   class Receiver
-    def self.configurations
-      @configurations ||= {:key => Config.new(:key)}
+    def self.configs
+      @configs ||= {:key => Config.new(:key)}
     end
     
     attr_accessor :key

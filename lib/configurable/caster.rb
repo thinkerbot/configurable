@@ -1,7 +1,7 @@
 module Configurable
-  class ConfigType
+  class Caster
     class << self
-      def cast_boolean(input)
+      def cast_to_bool(input)
         case input
         when true, false then input
         when 'true'      then true
@@ -12,11 +12,14 @@ module Configurable
     end
     
     attr_reader :matcher
-    attr_reader :caster
     
-    def initialize(matcher=nil, &caster)
+    def initialize(matcher=nil, &block)
       @matcher = matcher
-      @caster = caster
+      @block = block
+    end
+    
+    def call(value)
+      @block ? @block.call(value) : value
     end
     
     def ===(value)
