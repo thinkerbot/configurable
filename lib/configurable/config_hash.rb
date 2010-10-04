@@ -22,8 +22,8 @@ module Configurable
       unbind if @receiver
       
       @receiver = receiver
-      configs.each_pair do |name, config|
-        value = store.has_key?(name) ? store.delete(name) : config.default
+      configs.each_pair do |key, config|
+        value = store.has_key?(key) ? store.delete(key) : config.default
         config.set(receiver, value)
       end
       
@@ -31,8 +31,8 @@ module Configurable
     end
     
     def unbind
-      configs.each_pair do |name, config|
-        store[name] = config.get(receiver)
+      configs.each_pair do |key, config|
+        store[key] = config.get(receiver)
       end
       @receiver = nil
       self

@@ -14,11 +14,36 @@ class ConfigTest < Test::Unit::TestCase
   # initialize test
   #
   
-  def test_initialize_determines_reader_and_writer_from_name
+  def test_sets_attributes_from_attrs
+    caster = lambda {}
+    
+    c = Config.new(:KEY,
+     :name => 'NAME', 
+     :reader => :READER, 
+     :writer => :WRITER, 
+     :default => :DEFAULT,
+     :caster => caster
+    )
+    
+    assert_equal :KEY, c.key
+    assert_equal 'NAME', c.name
+    assert_equal :READER, c.reader
+    assert_equal :WRITER, c.writer
+    assert_equal :DEFAULT, c.default
+    assert_equal caster, c.caster
+  end
+  
+  def test_initialize_determines_name_reader_and_writer_from_key
     c = Config.new(:key)
+    assert_equal :key, c.key
+    assert_equal 'key', c.name
     assert_equal :key, c.reader
     assert_equal :key=, c.writer
-    assert_equal nil, c.default
+  end
+  
+  def test_initialize_allows_arbitrary_keys_with_valid_name
+    assert_equal 'string', Config.new('string').key
+    assert_equal 1, Config.new(1, :name => 'one').key
   end
   
   #
@@ -40,5 +65,16 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal nil, receiver.key
     c.set(receiver, 'value')
     assert_equal 'value', receiver.key
+  end
+  
+  #
+  # cast test
+  #
+  
+  def test_cast_calls_caster_with_input_and_returns_the_result
+    upcase = lambda {|value| value.upcase }
+    
+    c = Config.new(:key, :caster => upcase)
+    assert_equal 'ABC', c.cast('aBc')
   end
 end

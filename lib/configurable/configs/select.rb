@@ -1,24 +1,23 @@
 module Configurable
   module Configs
     
-    # Represents a config where the input is expected to be one of a specified
-    # whitelist.  The default writer will enforce this constraints.
+    # Represents a config where the input is in a specified whitelist.
     class Select < Config
       
-      # An array of allowed values for the config. Note the writer must do the
-      # work of checking and enforcing this constraint.
+      # An array of allowed values for the config, enforced on cast.
       attr_reader :options
       
-      def initialize(name, default=nil, reader=nil, writer=nil, caster=nil, attrs={})
+      def initialize(key, attrs={})
         super
-        @options = attrs[:options] || []
+        @options = attrs[:options] ||= []
       end
       
+      # Casts the value using caster and checks the value is in options.
       def cast(value)
         value = super(value)
     
         unless options.include?(value)
-          raise ArgumentError, "invalid value for #{name}: #{value.inspect}"
+          raise ArgumentError, "invalid value for config: #{value.inspect} (#{name})"
         end
     
         value

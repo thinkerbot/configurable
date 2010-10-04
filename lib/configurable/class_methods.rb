@@ -11,8 +11,7 @@ module Configurable
     :integer => ConfigType.new(Integer) {|value| Integer(value) },
     :float   => ConfigType.new(Float)   {|value| Float(value) },
     :string  => ConfigType.new(String)  {|value| String(value) },
-    :nest    => ConfigType.new,
-    nil      => ConfigType.new
+    :nest    => ConfigType.new
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
@@ -133,42 +132,41 @@ module Configurable
     
     protected
     
-    def define_config(name, options={}, &caster)
-      default = options.delete(:default)
-      reader  = options.delete(:reader)
-      writer  = options.delete(:writer)
-      type    = options.delete(:type)
-      attrs   = options[:attrs] || options
+    def define_config(key, attrs={}, config_class=Config)
+      reader = attrs[:reader]
+      writer = attrs[:writer]
       
-      config_type  = config_types[type]
-      config_class = options.delete(:config_class) || guess_config_class(attrs)
-      config = config_class.new(name, default, reader, writer, caster || config_type.caster, attrs)
+      config = config_class.new(key, attrs)
       
-      attr_reader(name) unless reader
-      attr_writer(name) unless writer
+      attr_reader(config.name) unless reader
+      attr_writer(config.name) unless writer
       
-      config_registry[name] = config
+      config_registry[config.key] = config
       reset_configurations
       config
     end
     
-    def config(name, default=nil, options={}, &caster)
-      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      options[:type] ||= guess_config_type(default)
-      options[:list] ||= default.kind_of?(Array)
-      options[:default] = default
+    def config(key, default=nil, attrs={}, &caster)
+      if caster && attrs.has_key?(:caster)
+        raise "please specify only a caster block or the :caster option"
+      end
       
-      define_config(name, options, &caster)
+      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attrs[:list] ||= default.kind_of?(Array)
+      attrs[:caster] ||= (caster || guess_caster(default))
+      attrs[:default] = default
+      
+      define_config(key, attrs, guess_config_class(attrs))
     end
     
-    def nest(name, options={}, &block)
+    def nest(key, options={}, &block)
       options = {:class => options} unless options.kind_of?(Hash)
-      options[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      options[:type] ||= :nest
-      options[:config_class] ||= Configs::Nest
+      
+      attrs = options[:attrs] || options
+      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       base_class = options.delete(:class)
-      const_name = options.delete(:const_name) || name.to_s.capitalize
+      const_name = options.delete(:const_name) || key.to_s.capitalize
       
       configurable_class = begin
         case
@@ -187,8 +185,8 @@ module Configurable
       configurable_class.class_eval(&block) if block
       check_infinite_nest(configurable_class)
       
-      options[:default] = configurable_class
-      define_config(name, options)
+      attrs[:default] = configurable_class
+      define_config(key, options, Configs::Nest)
     end
     
     # Removes a configuration much like remove_method removes a method.  The
@@ -198,9 +196,9 @@ module Configurable
     # Setting :reader or :writer to false in the options prevents those methods
     # from being removed.
     #
-    def remove_config(name, options={})
-      unless config_registry.has_key?(name)
-        raise NameError.new("#{name.inspect} is not a config on #{self}")
+    def remove_config(key, options={})
+      unless config_registry.has_key?(key)
+        raise NameError.new("#{key.inspect} is not a config on #{self}")
       end
       
       options = {
@@ -208,7 +206,7 @@ module Configurable
         :writer => true
       }.merge(options)
       
-      config = config_registry.delete(name)
+      config = config_registry.delete(key)
       reset_configurations
       
       remove_method(config.reader) if options[:reader]
@@ -233,9 +231,9 @@ module Configurable
     # This is unlike remove_config where the config is simply deleted from
     # the config_registry.
     #
-    def undef_config(name, options={})
-      unless configurations.has_key?(name)
-        raise NameError.new("#{name.inspect} is not a config on #{self}")
+    def undef_config(key, options={})
+      unless configurations.has_key?(key)
+        raise NameError.new("#{key.inspect} is not a config on #{self}")
       end
       
       options = {
@@ -243,8 +241,8 @@ module Configurable
         :writer => true
       }.merge(options)
       
-      config = configurations[name]
-      config_registry[name] = nil
+      config = configurations[key]
+      config_registry[key] = nil
       reset_configurations
       
       undef_method(config.reader) if options[:reader]
@@ -253,9 +251,7 @@ module Configurable
       config
     end
     
-    def config_type(type, options={}, &caster)
-      matcher = options.delete(:matcher)
-      
+    def config_type(type, matcher=nil, &caster)
       config_type = ConfigType.new(matcher, &caster)
       config_types_registry[type.to_sym] = config_type
       reset_config_types
@@ -263,19 +259,13 @@ module Configurable
       config_type
     end
     
-    def remove_config_type(type, options={})
+    def remove_config_type(type)
       unless config_types.has_key?(type)
         raise NameError.new("#{type.inspect} is not a config type on #{self}")
       end
       
-      options = {
-        :caster => true
-      }.merge(options)
-      
       config_type = config_type_registry.delete(type)
       reset_config_types
-      
-      remove_method(config_type.caster) if options[:caster]
       config_type
     end
     
@@ -284,15 +274,9 @@ module Configurable
         raise NameError.new("#{type.inspect} is not a config type on #{self}")
       end
       
-      options = {
-        :caster => true
-      }.merge(options)
-      
       config_type = config_type_registry[type]
       config_type_registry[type] = nil
       reset_config_types
-      
-      undef_method(config_type.caster) if options[:caster]
       config_type
     end
     
@@ -315,22 +299,23 @@ module Configurable
       end
     end
     
-    def guess_config_type(value) # :nodoc:
+    def guess_caster(value) # :nodoc:
       guess_value = value.kind_of?(Array) ? value.first : value
       
       guesses = []
       config_types.each_pair do |type, config_type|
         if config_type === guess_value
-          guesses << type
+          guesses << config_type
         end
       end
       
       if guesses.length > 1
         guesses = guesses.sort_by {|type| type.to_s }
-        raise "multiple guesses for type: #{value.inspect} #{guesses.inspect}"
+        raise "multiple guesses for caster: #{value.inspect} #{guesses.inspect}"
       end
       
-      guesses.first
+      config_type = guesses.first
+      config_type.caster
     end
     
     # helper to recursively check for an infinite nest

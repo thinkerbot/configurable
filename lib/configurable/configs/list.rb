@@ -2,14 +2,16 @@ module Configurable
   module Configs
     
     # Represents a list style config where the input is expected to be an
-    # Array.  The default writer will enforce this constraint.
+    # Array.
     class List < Config
+      
+      # Validates the input is an array and casts each value using caster.
       def cast(values)
         unless values.kind_of?(Array)
-          raise ArgumentError, "invalid value for #{name}: #{values.inspect}"
+          raise ArgumentError, "invalid value for config: #{values.inspect} (#{name})"
         end
         
-        values.collect! {|value| super(value) } 
+        values.collect {|value| super(value) } 
       end
     end
   end
