@@ -61,6 +61,14 @@ module Configurable
       [parser.parse!(argv), parser.config]
     end
     
+    def extract(argh)
+      result = {}
+      configs.each_value do |config|
+        config.extract(argh, result)
+      end
+      result
+    end
+    
     def cast(argh={})
       argh.keys.each do |key|
         if config = configs[key]

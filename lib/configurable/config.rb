@@ -64,6 +64,12 @@ module Configurable
       caster ? caster.call(value) : value
     end
     
+    # Writes the value keyed by name in source into target by key.
+    def extract(source, target={})
+      target[key] = source[name] if source.has_key?(name)
+      target
+    end
+    
     # Returns an inspect string.
     def inspect
       "#<#{self.class}:#{object_id} key=#{key} name=#{name} default=#{default.inspect} reader=#{reader} writer=#{writer} >"

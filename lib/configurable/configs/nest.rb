@@ -54,6 +54,15 @@ module Configurable
         end
       end
       
+      # Same as super, but extracts the result using configurable_class
+      def extract(source, target={})
+        if source.has_key?(name)
+          target[key] = configurable_class.extract(source[name])
+        end
+        
+        target
+      end
+      
       def cast(value)
         value = super(value)
         configurable_class.cast(value)

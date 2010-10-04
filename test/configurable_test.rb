@@ -340,7 +340,7 @@ class ConfigurableTest < Test::Unit::TestCase
     config(:one, 'one') {|v| v.upcase }
   end
   
-  def test_parse_parses_configs_from_argv
+  def test_parse_parses_configs_from_argv_without_casting
     args, config = ParseClass.parse("a b --one value c")
     assert_equal ["a", "b", "c"], args
     assert_equal({:one => 'value'}, config)
@@ -356,6 +356,47 @@ class ConfigurableTest < Test::Unit::TestCase
     argv = ["a", "b", "--one", "value", "c"]
     ParseClass.parse!(argv)
     assert_equal ["a", "b", "c"], argv
+  end
+  
+  #
+  # extract test
+  #
+  
+  class ExtractClass
+    include Configurable
+    config(:one)
+  end
+  
+  def test_extract_maps_config_names_to_config_keys
+    assert_equal({
+      :one => 'NAME'
+    }, ExtractClass.extract(:one => 'KEY', 'one' => 'NAME'))
+  end
+  
+  def test_extract_maps_ignores_unknown_keys
+    assert_equal({}, ExtractClass.extract(:unknown => 'value'))
+  end
+  
+  class NestExtractClass
+    include Configurable
+    config(:one)
+    nest(:nest) do
+      config(:two)
+    end
+  end
+  
+  def test_extract_recursively_extracts_values_for_nested_configs
+    source = {
+      'one' => 'ONE',
+      'nest' => {'two' => 'TWO'}
+    }
+    
+    target = {
+      :one => 'ONE',
+      :nest => {:two => 'TWO'}
+    }
+    
+    assert_equal(target, NestExtractClass.extract(source))
   end
   
   #

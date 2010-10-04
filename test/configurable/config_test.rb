@@ -68,6 +68,23 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   #
+  # extract test
+  #
+  
+  def test_extract_writes_the_value_keyed_by_name_in_source_to_target_by_key
+    source = {:key => 'KEY', 'key' => 'NAME'}
+    target = {}
+    assert_equal target, c.extract(source, target)
+    
+    assert_equal({:key => 'NAME'}, target)
+    assert_equal({:key => 'KEY', 'key' => 'NAME'}, source)
+  end
+  
+  def test_extract_writes_nothing_if_source_does_not_have_a_value_keyed_by_name
+    assert_equal({}, c.extract({:key => 'KEY'}))
+  end
+  
+  #
   # cast test
   #
   
