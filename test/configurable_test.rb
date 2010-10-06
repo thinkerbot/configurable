@@ -4,117 +4,8 @@ require 'tempfile'
 
 class ConfigurableTest < Test::Unit::TestCase
   Config = Configurable::Config
+  Configs = Configurable::Configs
   ConfigHash = Configurable::ConfigHash
-  
-  #
-  # documentation test
-  #
-  
-  class ConfigClass
-    include Configurable
-    config :one, 'one'
-    config :two, 'two'
-    config :three, 'three'
-  end
-  
-  class ValidationClass
-    include Configurable
-    caster(:upcase) {|v| v.upcase }
-    config(:one, 'one', :caster => :upcase)
-    config :two, 2
-  end
-
-  module A
-    include Configurable
-    config :a, 'a'
-    config :b, 'b'
-  end
-
-  class B
-    include A
-  end
-
-  class C < B
-    config :b, 'B'
-    config :c, 'C'
-  end
-  
-  class NestingClass
-    include Configurable
-    config :one, 'one'
-    nest :two do
-      config :three, 'three'
-    end
-  end
-  
-  class AlternativeClass
-    include Configurable
-
-    config :sym, 'value', :reader => :get_sym, :writer => :set_sym
-
-    def get_sym
-      @sym
-    end
-
-    def set_sym(input)
-      @sym = input.to_sym
-    end
-  end
-
-  class AttributesClass
-    include Configurable
-    caster(:upcase) {|v| v.upcase }
-
-    config :a, 'A', :caster => :upcase
-  end
-  
-  def test_documentation
-    c = ConfigClass.new
-    assert_equal Configurable::ConfigHash, c.config.class
-    assert_equal({:one => 'one', :two => 'two', :three => 'three'}, c.config.to_hash)
-  
-    c.config[:one] = 'ONE'
-    assert_equal 'ONE', c.one
-    assert_equal({:one => 'ONE', :two => 'two', :three => 'three'}, c.config.to_hash)
-  
-    c.config[:undeclared] = 'value'
-    assert_equal({:undeclared => 'value'}, c.config.store)
-  
-    ###
-    c = ValidationClass.new
-    assert_equal({:one => 'ONE', :two => 2}, c.config.to_hash)
-  
-    c.one = 'aNothER'             
-    assert_equal 'ANOTHER', c.one
-  
-    c.two = -2
-    assert_equal(-2, c.two)
-    c.two = "3"
-    assert_equal 3, c.two
-    assert_raises(ArgumentError) { c.two = 'str' }
-
-    ###
-    assert_equal({:a => 'a', :b => 'b'}, B.new.config.to_hash)
-    assert_equal({:a => 'a', :b => 'B', :c => 'C'}, C.new.config.to_hash)
-
-    ###
-    c = NestingClass.new
-    assert_equal({:one => 'one', :two => {:three => 'three'}}, c.config.to_hash)
-  
-    c.two.three = 'THREE'
-    assert_equal 'THREE', c.config[:two][:three]
-  
-    ###
-    alt = AlternativeClass.new
-    assert_equal false, alt.respond_to?(:sym)
-    assert_equal false, alt.respond_to?(:sym=)
-    
-    alt.config[:sym] = 'one'
-    assert_equal :one, alt.get_sym
-  
-    alt.set_sym('two')
-    assert_equal :two, alt.config[:sym]
-  end
   
   #
   # include test
@@ -531,6 +422,181 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_inherited_configs_can_be_overridden
     obj = OverrideSubclass.new
     assert_equal({:one => 'ONE'}, obj.config.to_hash)
+  end
+  
+  #
+  # define_config tests
+  #
+
+  class DefineConfigClass
+    include Configurable
+    define_config :key
+  end
+
+  def test_define_config_registers_config
+    assert_equal [:key], DefineConfigClass.configs.keys
+  end
+
+  def test_define_config_generates_accessors
+    obj = DefineConfigClass.new
+    assert obj.respond_to?(:key)
+    assert obj.respond_to?(:key=)
+
+    obj.key = 'VALUE'
+    assert_equal 'VALUE', obj.key
+  end
+
+  class DefineConfigNoAccessorsClass
+    include Configurable
+    define_config :no_reader, :reader => :no_reader
+    define_config :no_writer, :writer => :no_writer=
+  end
+
+  def test_define_config_does_not_generate_reader_if_reader_is_specified
+    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader')
+    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader=')
+  end
+  
+  def test_define_config_does_not_generate_writer_if_writer_is_specified
+    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer')
+    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer=')
+  end
+  
+  class DefineConfigCasterClass
+    include Configurable
+    caster(:upcase) {|value| value.upcase }
+    define_config :key, :caster => :upcase
+  end
+
+  def test_define_config_resolves_caster_if_possible
+    assert_equal 'ABC', DefineConfigCasterClass.configs[:key].caster.call('abc')
+  end
+  
+  #
+  # config test
+  #
+  
+  class ConfigClass
+    include Configurable
+    config :key, :default
+  end
+
+  def test_config_sets_default_as_specified
+    assert_equal :default, ConfigClass.configs[:key].default
+  end
+  
+  class ConfigAttrsClass
+    include Configurable
+    config :key, :default, :short => :s
+  end
+
+  def test_config_sets_attrs_as_specified
+    assert_equal :s, ConfigAttrsClass.configs[:key][:short]
+  end
+  
+  class ConfigCasterClass
+    include Configurable
+    config(:key, 'XYZ') {|value| value.upcase }
+  end
+
+  def test_config_sets_caster_to_block_if_specified
+    assert_equal 'ABC', ConfigCasterClass.configs[:key].caster.call('abc')
+  end
+  
+  def test_config_raises_error_for_caster_block_and_option
+    err = assert_raises(RuntimeError) {
+      Class.new.class_eval %q{
+        include Configurable
+        config(:key, nil, :caster => :string) {|value| }
+      }
+    }
+    
+    msg = 'please specify only a caster block or the :caster option'
+    assert_equal true, err.message.include?(msg)
+  end
+  
+  class SelectClass
+    include Configurable
+    config :key, 'a', :options => %w{a b c}
+  end
+  
+  def test_options_option_generates_select_config
+    config = SelectClass.configs[:key]
+    assert_equal Configs::Select, config.class
+  end
+  
+  class ListClass
+    include Configurable
+    config :key, []
+  end
+  
+  def test_array_default_generates_a_list_config
+    config = ListClass.configs[:key]
+    assert_equal Configs::List, config.class
+  end
+  
+  class ListSelectClass
+    include Configurable
+    config :key, [], :options => %w{a b c}
+  end
+  
+  def test_array_default_and_options_option_generates_a_list_select_config
+    config = ListSelectClass.configs[:key]
+    assert_equal Configs::ListSelect, config.class
+  end
+  
+  #
+  # config cast test
+  #
+  
+  class StringCastClass
+    include Configurable
+    config :key, 'abc'
+  end
+  
+  def test_config_stringifies_strings
+    config = StringCastClass.configs[:key]
+    assert_equal 'xyz', config.cast(:xyz)
+  end
+  
+  class IntegerCastClass
+    include Configurable
+    config :key, 1
+  end
+  
+  def test_config_casts_integers
+    config = IntegerCastClass.configs[:key]
+    assert_equal 2, config.cast('2')
+  
+    err = assert_raises(ArgumentError) { config.cast('abc') }
+    assert_equal 'invalid value for Integer: "abc"', err.message
+  end
+  
+  class FloatCastClass
+    include Configurable
+    config :key, 1.2
+  end
+  
+  def test_config_casts_floats
+    config = FloatCastClass.configs[:key]
+    assert_equal 2.1, config.cast('2.1')
+  
+    err = assert_raises(ArgumentError) { config.cast('abc') }
+    assert_equal 'invalid value for Float(): "abc"', err.message
+  end
+  
+  class BooleanCastClass
+    include Configurable
+    config :key, true
+  end
+  
+  def test_config_casts_boolean
+    config = BooleanCastClass.configs[:key]
+    assert_equal true, config.cast('true')
+    assert_equal false, config.cast('false')
+  
+    err = assert_raises(ArgumentError) { config.cast('abc') }
+    assert_equal 'invalid value for boolean: "abc"', err.message
   end
   
   #

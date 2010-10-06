@@ -46,6 +46,16 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal 1, Config.new(1, :name => 'one').key
   end
   
+  def test_initialize_raises_error_for_non_string_names
+    err = assert_raises(RuntimeError) { Config.new(:key, :name => :sym) }
+    assert_equal 'invalid name: :sym (not a String)', err.message
+  end
+  
+  def test_config_raises_error_for_non_word_characters_in_name
+    err = assert_raises(NameError) { Config.new(:key, :name => 'k,ey') }
+    assert_equal 'invalid characters in name: "k,ey"', err.message
+  end
+  
   #
   # get test
   #
