@@ -39,8 +39,9 @@ module Configurable
     # Parses configs from argv in a non-destructive manner by generating a
     # ConfigParser using the configs for self.  Returns an array like
     # [args, config] where the args are the arguments that remain after
-    # parsing, and config is a hash of the parsed configs. The parser is
-    # yielded to the block, if given, to register additonal options.  
+    # parsing, and config is a hash of the parsed configs, keyed by config
+    # key. The parser is yielded to the block, if given, to register additonal
+    # options.  
     #
     # See ConfigParser#parse for more information.
     def parse(argv=ARGV, options={}, &block) # :yields: parser
@@ -61,6 +62,8 @@ module Configurable
       [parser.parse!(argv), parser.config]
     end
     
+    # Writes the value keyed by key to name for each config in source to
+    # target, recursively for nested configs.  Returns target.
     def map_by_key(source, target={})
       configs.each_value do |config|
         config.map_by_key(source, target)
@@ -68,6 +71,8 @@ module Configurable
       target
     end
     
+    # Writes the value keyed by name to key for each config in source to
+    # target, recursively for nested configs.  Returns target.
     def map_by_name(source, target={})
       configs.each_value do |config|
         config.map_by_name(source, target)
@@ -75,14 +80,17 @@ module Configurable
       target
     end
     
-    def cast(argh={})
-      argh.keys.each do |key|
+    # Casts each config in source and writes the result into target (which is
+    # by default the source itself).  Configs are identifies and written by
+    # key.  Returns target.
+    def cast(source, target=source)
+      source.keys.each do |key|
         if config = configs[key]
-          argh[key] = config.cast(configs[key])
+          target[key] = config.cast(source[key])
         end
       end
       
-      argh
+      target
     end
     
     # A hash of (key, Config) pairs representing all configs defined on this

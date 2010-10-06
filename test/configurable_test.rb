@@ -239,7 +239,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'XYZ', config.cast('xyz')
     
     config = CasterChild.configs[:two]
-    assert_equal 10, config.cast(-10)
+    assert_equal 8, config.cast(-8)
   end
   
   class CasterFloatParent
@@ -421,6 +421,55 @@ class ConfigurableTest < Test::Unit::TestCase
     }
     
     assert_equal(target, NestMapClass.map_by_name(source))
+  end
+  
+  #
+  # cast test
+  #
+  
+  class CastClass
+    include Configurable
+    config(:one, 1)
+  end
+  
+  def test_cast_casts_configs_keyed_by_key
+    source = {:one => '8'}
+    result = CastClass.cast(source)
+    
+    assert_equal source.object_id, result.object_id
+    assert_equal({:one => 8}, result)
+  end
+  
+  def test_cast_ignores_configs_keyed_by_name
+    assert_equal({'one' => '8'}, CastClass.cast('one' => '8'))
+  end
+  
+  def test_cast_allows_specification_of_an_alternate_target
+    source = {:one => '8'}
+    target = {}
+    result = CastClass.cast(source, target)
+    assert_equal target.object_id, result.object_id
+    
+    assert_equal({:one => '8'}, source)
+    assert_equal({:one => 8}, target)
+  end
+  
+  class NestCastClass
+    include Configurable
+    config(:one, 1)
+    nest(:nest) do
+      config(:two, 2)
+    end
+  end
+  
+  def test_cast_recursively_casts_configs
+    assert_equal({
+      :one => 8,
+      :nest => {:two => 8}
+    }, NestCastClass.cast(
+      :one => '8',
+      :nest => {:two => '8'}
+    ))
   end
   
   #
