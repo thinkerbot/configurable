@@ -332,30 +332,47 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # parse test
+  # parser test
   #
   
-  class ParseClass
+  class ParserClass
     include Configurable
     config(:one, 'one') {|v| v.upcase }
   end
   
-  def test_parse_parses_configs_from_argv_without_casting
-    args, config = ParseClass.parse("a b --one value c")
+  def test_parse_returns_a_parser_initialized_with_configs
+    parser = ParserClass.parser
+    args = parser.parse("a b --one value c")
+    
     assert_equal ["a", "b", "c"], args
-    assert_equal({:one => 'value'}, config)
+    assert_equal({:one => 'value'}, parser.config)
   end
   
-  def test_parse_is_non_destructive_to_argv
-    argv = ["a", "b", "--one", "value", "c"]
-    ParseClass.parse(argv)
-    assert_equal ["a", "b", "--one", "value", "c"], argv
+  def test_parse_initializes_with_args_and_is_passed_to_block
+    target = {}
+    parser = ParserClass.parser(target, :assign_defaults => false) do |psr|
+      psr.on('--two')
+    end
+    
+    assert_equal target, parser.config
+    assert_equal false, parser.assign_defaults
+    assert_equal ['--one', '--two'], parser.options.keys.sort
   end
   
-  def test_parse_bang_is_destructive_to_argv
-    argv = ["a", "b", "--one", "value", "c"]
-    ParseClass.parse!(argv)
-    assert_equal ["a", "b", "c"], argv
+  class ParserOptionClass
+    include Configurable
+    config(:one, 'one', :short => :S, :long => :LONG) {|v| v.upcase }
+  end
+  
+  def test_parser_options_use_config_attrs_as_specifed
+    parser = ParserOptionClass.parser
+    assert_equal ['--LONG', '-S'], parser.options.keys.sort
+    
+    parser.parse('-S short')
+    assert_equal({:one => 'short'}, parser.config)
+    
+    parser.parse('--LONG long')
+    assert_equal({:one => 'long'}, parser.config)
   end
   
   #
