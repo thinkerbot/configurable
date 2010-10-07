@@ -1,16 +1,15 @@
 require 'lazydoc'
 require 'config_parser'
-require 'configurable/caster'
 require 'configurable/configs'
+require 'configurable/config_type'
 require 'configurable/config_hash'
 
 module Configurable
-  DEFAULT_CASTERS = {
-    :flag    => Caster.new(FalseClass) {|value| Caster.cast_to_bool(value) },
-    :switch  => Caster.new(TrueClass)  {|value| Caster.cast_to_bool(value) },
-    :integer => Caster.new(Integer) {|value| Integer(value) },
-    :float   => Caster.new(Float)   {|value| Float(value) },
-    :string  => Caster.new(String)  {|value| String(value) }
+  DEFAULT_CONFIG_TYPES = {
+    :bool    => ConfigType.new(TrueClass, FalseClass) {|value| ConfigType.cast_to_bool(value) },
+    :integer => ConfigType.new(Integer) {|value| Integer(value) },
+    :float   => ConfigType.new(Float)   {|value| Float(value) },
+    :string  => ConfigType.new(String)  {|value| String(value) }
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
@@ -20,19 +19,20 @@ module Configurable
     # configs method for all configs declared across all ancestors.
     attr_reader :config_registry
     
-    # A hash of (key, Caster) pairs tracking casters defined on self.  See the
-    # casters method for all casters declared across all ancestors.
-    attr_reader :caster_registry
+    # A hash of (key, ConfigType) pairs tracking config_types defined on self.
+    # See the config_types method for all config_types declared across all
+    # ancestors.
+    attr_reader :config_type_registry
     
-    def self.initialize(base)  # :nodoc:
+    def self.initialize(base) # :nodoc:
       base.reset_configs
       unless base.instance_variable_defined?(:@config_registry)
         base.instance_variable_set(:@config_registry, {})
       end
       
-      base.reset_casters
-      unless base.instance_variable_defined?(:@caster_registry)
-        base.instance_variable_set(:@caster_registry, {})
+      base.reset_config_types
+      unless base.instance_variable_defined?(:@config_type_registry)
+        base.instance_variable_set(:@config_type_registry, {})
       end
     end
     
@@ -112,32 +112,32 @@ module Configurable
       @configs = nil
     end
     
-    # A hash of (key, Caster) pairs representing all casters defined on this
-    # class or inherited from ancestors.  The casters hash is memoized for
-    # performance.  Call reset_casters if casters needs to be recalculated for
-    # any reason.
-    def casters
-      @casters ||= begin
-        casters = Configurable::DEFAULT_CASTERS.dup
+    # A hash of (key, ConfigType) pairs representing all config_types defined
+    # on this class or inherited from ancestors.  The config_types hash is
+    # memoized for performance.  Call reset_config_types if config_types needs
+    # to be recalculated for any reason.
+    def config_types
+      @config_types ||= begin
+        config_types = Configurable::DEFAULT_CONFIG_TYPES.dup
       
         ancestors.reverse.each do |ancestor|
           next unless ancestor.kind_of?(ClassMethods)
-          ancestor.caster_registry.each_pair do |key, value|
+          ancestor.config_type_registry.each_pair do |key, value|
             if value.nil?
-              casters.delete(key)
+              config_types.delete(key)
             else
-              casters[key] = value
+              config_types[key] = value
             end
           end
         end
       
-        casters
+        config_types
       end
     end
     
-    # Resets casters such that they will be recalculated.
-    def reset_casters
-      @casters = nil
+    # Resets config_types such that they will be recalculated.
+    def reset_config_types
+      @config_types = nil
     end
     
     protected
@@ -145,14 +145,14 @@ module Configurable
     # Defines and registers an instance of config_class with the specified key
     # and attrs.  Unless attrs specifies a :reader or :writer, an attr_reader
     # and attr_writer will be defined for the config name (which by default is
-    # the key). Also resolves a caster from the :caster attribute.
+    # the key). Also resolves a config_type from the :type attribute.
     def define_config(key, attrs={}, config_class=Config)
       reader = attrs[:reader]
       writer = attrs[:writer]
-      caster = attrs[:caster]
+      type   = attrs[:type]
       
-      if caster = casters[caster]
-        attrs[:caster] = caster
+      if config_type = config_types[type]
+        attrs = config_type.merge(attrs)
       end
       
       config = config_class.new(key, attrs)
@@ -170,12 +170,12 @@ module Configurable
       attrs[:list] ||= default.kind_of?(Array)
       attrs[:default] = default
       
-      if caster && attrs.has_key?(:caster)
-        raise "please specify only a caster block or the :caster option"
+      unless caster.nil?
+        attrs[:caster] = caster
       end
       
-      unless attrs.has_key?(:caster)
-        attrs[:caster] = caster || guess_caster_type(default)
+      unless attrs.has_key?(:type)
+        attrs[:type] = guess_config_type(attrs)
       end
       
       define_config(key, attrs, guess_config_class(attrs))
@@ -270,33 +270,33 @@ module Configurable
       config
     end
     
-    def caster(type, matcher=nil, &block)
-      caster = Caster.new(matcher, &block)
-      caster_registry[type] = caster
-      reset_casters
+    def config_type(type, *matchers, &block)
+      config_type = ConfigType.new(*matchers, &block)
+      config_type_registry[type] = config_type
+      reset_config_types
       
-      caster
+      config_type
     end
     
-    def remove_caster(type)
-      unless caster_registry.has_key?(type)
-        raise NameError.new("#{type.inspect} is not a caster on #{self}")
+    def remove_config_type(type)
+      unless config_type_registry.has_key?(type)
+        raise NameError.new("#{type.inspect} is not a config_type on #{self}")
       end
       
-      caster = caster_registry.delete(type)
-      reset_casters
-      caster
+      config_type = config_type_registry.delete(type)
+      reset_config_types
+      config_type
     end
     
-    def undef_caster(type)
-      unless casters.has_key?(type)
-        raise NameError.new("#{type.inspect} is not a caster on #{self}")
+    def undef_config_type(type)
+      unless config_types.has_key?(type)
+        raise NameError.new("#{type.inspect} is not a config_type on #{self}")
       end
       
-      caster = caster_registry[type]
-      caster_registry[type] = nil
-      reset_casters
-      caster
+      config_type = config_type_registry[type]
+      config_type_registry[type] = nil
+      reset_config_types
+      config_type
     end
     
     private
@@ -318,18 +318,19 @@ module Configurable
       end
     end
     
-    def guess_caster_type(value) # :nodoc:
-      guess_value = value.kind_of?(Array) ? value.first : value
+    def guess_config_type(attrs) # :nodoc:
+      default = attrs[:default]
+      guess_value = default.kind_of?(Array) ? default.first : default
       
       guesses = []
-      casters.each_pair do |type, caster|
-        if caster === guess_value
+      config_types.each_pair do |type, config_type|
+        if config_type === guess_value
           guesses << type
         end
       end
       
       if guesses.length > 1
-        raise "multiple guesses for caster type: #{value.inspect} #{guesses.inspect}"
+        raise "multiple guesses for config type: #{value.inspect} #{guesses.inspect}"
       end
       
       guesses.at(0)

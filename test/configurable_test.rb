@@ -94,56 +94,58 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # casters test
+  # config_types test
   #
   
-  class CasterClass
+  class ConfigTypeClass
     include Configurable
-    caster(:upcase) {|input| input.upcase }
-    config :key, 'abc', :caster => :upcase
+    config_type(:upcase, :option_type => :option) {|input| input.upcase }
+    config :key, 'abc', :type => :upcase
   end
   
-  def test_caster_registers_a_casting_type
-    caster = CasterClass.casters[:upcase]
-    assert_equal 'XYZ', caster.call('xyz')
-    assert_equal 'XYZ', CasterClass.configs[:key].cast('xyz')
+  def test_config_type_registers_a_config_type
+    config_type = ConfigTypeClass.config_types[:upcase]
+    assert_equal 'XYZ', config_type[:caster].call('xyz')
+    assert_equal :option, config_type[:option_type]
+    
+    assert_equal 'XYZ', ConfigTypeClass.configs[:key].cast('xyz')
   end
   
-  class CasterParent
+  class ConfigTypeParent
     include Configurable
-    caster(:upcase) {|input| input.upcase }
+    config_type(:upcase) {|input| input.upcase }
   end
   
-  module CasterModule
+  module ConfigTypeModule
     include Configurable
-    caster(:negate) {|input| input * -1 }
+    config_type(:negate) {|input| input * -1 }
   end
   
-  class CasterChild < CasterParent
-    include CasterModule
-    config :one, 'abc', :caster => :upcase
-    config :two, 1, :caster => :negate
+  class ConfigTypeChild < ConfigTypeParent
+    include ConfigTypeModule
+    config :one, 'abc', :type => :upcase
+    config :two, 1, :type => :negate
   end
   
-  def test_casters_are_inherited
-    config = CasterChild.configs[:one]
+  def test_config_types_are_inherited
+    config = ConfigTypeChild.configs[:one]
     assert_equal 'XYZ', config.cast('xyz')
     
-    config = CasterChild.configs[:two]
+    config = ConfigTypeChild.configs[:two]
     assert_equal 8, config.cast(-8)
   end
   
-  class CasterFloatParent
+  class ConfigTypeFloatParent
     include Configurable
     config :one, 'aBc'
   end
   
-  class CasterFloatChild < CasterFloatParent
-    caster(:upcase) {|input| input.upcase }
+  class ConfigTypeFloatChild < ConfigTypeFloatParent
+    config_type(:upcase) {|input| input.upcase }
   end
   
-  def test_casters_do_not_float_up
-    assert_equal nil, CasterFloatParent.casters[:upcase]
+  def test_config_types_do_not_float_up
+    assert_equal nil, ConfigTypeFloatParent.config_types[:upcase]
   end
   
   #
@@ -462,14 +464,14 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer=')
   end
   
-  class DefineConfigCasterClass
+  class DefineConfigTypeClass
     include Configurable
-    caster(:upcase) {|value| value.upcase }
-    define_config :key, :caster => :upcase
+    config_type(:upcase) {|value| value.upcase }
+    define_config :key, :type => :upcase
   end
 
-  def test_define_config_resolves_caster_if_possible
-    assert_equal 'ABC', DefineConfigCasterClass.configs[:key].caster.call('abc')
+  def test_define_config_resolves_config_type_if_possible
+    assert_equal 'ABC', DefineConfigTypeClass.configs[:key].cast('abc')
   end
   
   #
@@ -494,25 +496,13 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :s, ConfigAttrsClass.configs[:key][:short]
   end
   
-  class ConfigCasterClass
+  class ConfigTypeClass
     include Configurable
     config(:key, 'XYZ') {|value| value.upcase }
   end
 
   def test_config_sets_caster_to_block_if_specified
-    assert_equal 'ABC', ConfigCasterClass.configs[:key].caster.call('abc')
-  end
-  
-  def test_config_raises_error_for_caster_block_and_option
-    err = assert_raises(RuntimeError) {
-      Class.new.class_eval %q{
-        include Configurable
-        config(:key, nil, :caster => :string) {|value| }
-      }
-    }
-    
-    msg = 'please specify only a caster block or the :caster option'
-    assert_equal true, err.message.include?(msg)
+    assert_equal 'ABC', ConfigTypeClass.configs[:key].cast('abc')
   end
   
   class SelectClass
