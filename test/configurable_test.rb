@@ -464,19 +464,19 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer=')
   end
   
-  class DefineConfigTypeClass
-    include Configurable
-    config_type(:upcase) {|value| value.upcase }
-    define_config :key, :type => :upcase
-  end
-
-  def test_define_config_resolves_config_type_if_possible
-    assert_equal 'ABC', DefineConfigTypeClass.configs[:key].cast('abc')
-  end
-  
   #
   # config test
   #
+  
+  class ConfigWithTypeClass
+    include Configurable
+    config_type(:upcase) {|value| value.upcase }
+    config :key, 'XYZ', :type => :upcase
+  end
+
+  def test_config_resolves_config_type_if_possible
+    assert_equal 'ABC', ConfigWithTypeClass.configs[:key].cast('abc')
+  end
   
   class ConfigClass
     include Configurable
@@ -496,13 +496,13 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :s, ConfigAttrsClass.configs[:key][:short]
   end
   
-  class ConfigTypeClass
+  class ConfigCasterClass
     include Configurable
     config(:key, 'XYZ') {|value| value.upcase }
   end
 
   def test_config_sets_caster_to_block_if_specified
-    assert_equal 'ABC', ConfigTypeClass.configs[:key].cast('abc')
+    assert_equal 'ABC', ConfigCasterClass.configs[:key].cast('abc')
   end
   
   class SelectClass

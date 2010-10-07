@@ -24,10 +24,6 @@ module Configurable
       default_attrs[key]
     end
     
-    def merge(attrs)
-      default_attrs.merge(attrs)
-    end
-    
     def ===(value)
       matchers.any? {|matcher| matcher === value }
     end

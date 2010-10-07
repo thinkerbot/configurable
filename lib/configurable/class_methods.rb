@@ -143,17 +143,12 @@ module Configurable
     protected
     
     # Defines and registers an instance of config_class with the specified key
-    # and attrs.  Unless attrs specifies a :reader or :writer, an attr_reader
-    # and attr_writer will be defined for the config name (which by default is
-    # the key). Also resolves a config_type from the :type attribute.
+    # and attrs. Unless attrs specifies a :reader or :writer, the
+    # corresponding attr accessors will be defined for the config name (which
+    # by default is the key). 
     def define_config(key, attrs={}, config_class=Config)
       reader = attrs[:reader]
       writer = attrs[:writer]
-      type   = attrs[:type]
-      
-      if config_type = config_types[type]
-        attrs = config_type.merge(attrs)
-      end
       
       config = config_class.new(key, attrs)
       
@@ -165,27 +160,96 @@ module Configurable
       config
     end
     
+    # Defines a config after guessing or setting some standard values into
+    # attrs. Specifically:
+    #
+    # * :default is the default
+    # * :caster is the caster block (if provided)
+    # * :desc is set using Lazydoc (unless already set)
+    # * :list is set to true for array defaults (unless already set)
+    #
+    # In addition config also guesses the type of a config (if not manually
+    # specified by :type) and merges in any attributes for the corresponding
+    # config_type.  The class of the config is guessed from the attrs, based
+    # on the :list and :options attributes using this logic:
+    #
+    #   :list  :otions   config_class
+    #   ---------------------------
+    #   false  false     Config
+    #   true   false     List
+    #   false  true      Select
+    #   true   true      ListSelect
+    #
+    # == Usage Note
+    #
+    # Config is meant to be a convenience method.  It gets most things right
+    # but if the attrs logic is too convoluted (and at times it is) then
+    # define configs manually with the define_config method.
     def config(key, default=nil, attrs={}, &caster)
+      attrs[:default] = default
+      attrs[:caster]  = caster if caster
       attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
       attrs[:list] ||= default.kind_of?(Array)
-      attrs[:default] = default
       
-      unless caster.nil?
-        attrs[:caster] = caster
-      end
-      
-      unless attrs.has_key?(:type)
-        attrs[:type] = guess_config_type(attrs)
-      end
-      
+      attrs = merge_config_type_attrs(attrs)
       define_config(key, attrs, guess_config_class(attrs))
     end
     
+    # Defines a NestConfig after guessing or setting some standard attrs.  The
+    # default (ie configurable_class) used by the nest config can be defined
+    # by the block, or specified using the :class option.  If desired the
+    # configurable_class can be specified instead of an options hash.  In all
+    # cases the configurable_class is set as a constant into self by the
+    # capitalized key.  For example these three are equivalent:
+    #
+    #   class A
+    #     include Configurable
+    #     nest :b do
+    #       config :c
+    #     end
+    #   end
+    #
+    #   class A
+    #     class B
+    #       include Configurable
+    #       config :c
+    #     end
+    #
+    #     include Configurable
+    #     nest :b, B
+    #   end
+    #
+    #   class A
+    #     class B
+    #       include Configurable
+    #       config :c
+    #     end
+    #     include Configurable
+    #     define_config(:b, {:default => B}, NestClass)
+    #   end
+    #
+    # If :class is provided with a block then the class is used as the
+    # superclass for the configurable_class defined by the block.  The
+    # constant name for the configurable_class can be manually set with
+    # :const_name.
+    #
+    # Attributes will be any leftover options. As with config, nest takes a
+    # guess at a couple attributes:
+    #
+    # * :default is the configurable_class as defined above
+    # * :desc is set using Lazydoc (unless already set)
+    #
+    # In addition, like config, nest will guesses the type of a config (if not
+    # manually specified by :type) and merges in any attributes for the
+    # corresponding config_type.
+    #
+    # == Usage Note
+    #
+    # Nest is meant to be a convenience method.  It gets most things right but
+    # if the options logic is too convoluted (and at times it is) then define
+    # configs manually with the define_config method.
     def nest(key, options={}, &block)
       options = {:class => options} unless options.kind_of?(Hash)
-      attrs = options[:attrs] || options
-      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      
       base_class = options.delete(:class)
       const_name = options.delete(:const_name) || key.to_s.capitalize
       
@@ -206,7 +270,11 @@ module Configurable
       configurable_class.class_eval(&block) if block
       check_infinite_nest(configurable_class)
       
+      attrs = options
+      attrs[:desc]  ||= Lazydoc.register_caller(Lazydoc::Trailer)
       attrs[:default] = configurable_class
+      attrs = merge_config_type_attrs(attrs)
+      
       define_config(key, options, Configs::Nest)
     end
     
@@ -270,14 +338,19 @@ module Configurable
       config
     end
     
-    def config_type(type, *matchers, &block)
-      config_type = ConfigType.new(*matchers, &block)
+    # Defines a named config type to match the specified classes. The caster
+    # block, if provided, is set as the default :caster attribute. Other
+    # default attributes may be specified with a hash given as the last
+    # matcher.
+    def config_type(type, *matchers, &caster)
+      config_type = ConfigType.new(*matchers, &caster)
       config_type_registry[type] = config_type
       reset_config_types
       
       config_type
     end
     
+    # Removes a config_type much like remove_method removes a method.
     def remove_config_type(type)
       unless config_type_registry.has_key?(type)
         raise NameError.new("#{type.inspect} is not a config_type on #{self}")
@@ -288,6 +361,17 @@ module Configurable
       config_type
     end
     
+    # Undefines a config_type much like undef_method undefines a method.
+    #
+    # ==== Implementation Note
+    #
+    # ConfigTypes are undefined by setting the key to nil in the registry.
+    # Deleting the config_type is not sufficient because the registry needs to
+    # convey to self and subclasses to not inherit the config_type from
+    # ancestors.
+    #
+    # This is unlike remove_config_type where the config_type is simply
+    # deleted from the config_type_registry.
     def undef_config_type(type)
       unless config_types.has_key?(type)
         raise NameError.new("#{type.inspect} is not a config_type on #{self}")
@@ -334,6 +418,14 @@ module Configurable
       end
       
       guesses.at(0)
+    end
+    
+    def merge_config_type_attrs(attrs) # :nodoc:
+      type = attrs.has_key?(:type) ? attrs[:type] : guess_config_type(attrs)
+      if config_type = config_types[type]
+        attrs = config_type.default_attrs.merge(attrs)
+      end
+      attrs
     end
     
     # helper to recursively check for an infinite nest
