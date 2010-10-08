@@ -8,7 +8,7 @@ module Configurable
       def initialize(key, attrs={})
         super
         
-        unless configurable_class.kind_of?(Class) && configurable_class.ancestors.include?(Configurable)
+        unless configurable_class.respond_to?(:configs)
           raise ArgumentError, "not a Configurable class: #{configurable_class}"
         end
       end
@@ -57,7 +57,7 @@ module Configurable
       # Same as super, but recursively maps the result using configurable_class.
       def map_by_key(source, target={})
         if source.has_key?(name)
-          target[key] = configurable_class.map_by_key(source[name])
+          target[key] = configurable_class.configs.map_by_key(source[name])
         end
         
         target
@@ -66,7 +66,7 @@ module Configurable
       # Same as super, but recursively maps the result using configurable_class
       def map_by_name(source, target={})
         if source.has_key?(key)
-          target[name] = configurable_class.map_by_name(source[key])
+          target[name] = configurable_class.configs.map_by_name(source[key])
         end
         
         target
@@ -74,7 +74,7 @@ module Configurable
       
       def cast(value)
         value = super(value)
-        configurable_class.cast(value)
+        configurable_class.configs.cast(value)
       end
       
       def traverse(nesting=[], &block)

@@ -1,8 +1,7 @@
 require 'lazydoc'
-require 'config_parser'
+require 'configurable/configs'
 require 'configurable/config_type'
 require 'configurable/config_hash'
-require 'configurable/config_classes'
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
@@ -38,74 +37,13 @@ module Configurable
       end
     end
     
-    # Initializes and returns a ConfigParser generated using the configs for
-    # self.  Arguments given to parser are passed to the ConfigParser
-    # initializer.  The parser is yielded to the block, if given, to register
-    # additonal options and then the options are sorted.
-    def parser(*args)
-      parser = ConfigParser.new(*args)
-      configs.each_value do |config|
-        config.traverse do |nesting, config|
-          next if config[:hidden] == true || nesting.any? {|nest| nest[:hidden] == true }
-          
-          key = config.key
-          nest_keys = nesting.collect {|nest| nest.key }
-          nest_names = nesting.collect {|nest| nest.name }.push(config.name)
-          
-          attrs = {
-            :key => key, 
-            :nest_keys => nest_keys,
-            :long => nest_names.join(':')
-          }
-          
-          parser.on(attrs.merge(config.attrs))
-        end
-      end
-      
-      yield(parser) if block_given?
-      
-      parser.sort_opts!
-      parser
-    end
-    
-    # Writes the value keyed by key to name for each config in source to
-    # target, recursively for nested configs.  Returns target.
-    def map_by_key(source, target={})
-      configs.each_value do |config|
-        config.map_by_key(source, target)
-      end
-      target
-    end
-    
-    # Writes the value keyed by name to key for each config in source to
-    # target, recursively for nested configs.  Returns target.
-    def map_by_name(source, target={})
-      configs.each_value do |config|
-        config.map_by_name(source, target)
-      end
-      target
-    end
-    
-    # Casts each config in source and writes the result into target (which is
-    # by default the source itself).  ConfigClasses are identifies and written by
-    # key.  Returns target.
-    def cast(source, target=source)
-      source.keys.each do |key|
-        if config = configs[key]
-          target[key] = config.cast(source[key])
-        end
-      end
-      
-      target
-    end
-    
     # A hash of (key, Config) pairs representing all configs defined on this
     # class or inherited from ancestors.  The configs hash is memoized for
     # performance.  Call reset_configs if configs needs to be recalculated for
     # any reason.
     def configs
       @configs ||= begin
-        configs = {}
+        configs = Configs.new
       
         ancestors.reverse.each do |ancestor|
           next unless ancestor.kind_of?(ClassMethods)
