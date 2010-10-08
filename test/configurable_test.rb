@@ -267,7 +267,8 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class ParserOptionClass
     include Configurable
-    config(:one, 'one', :short => :S, :long => :LONG) {|v| v.upcase }
+    config(:one, 'one', :short => :S, :long => :LONG)
+    config(:two, 'two', :short => nil, :long => nil)
   end
   
   def test_parser_options_use_config_attrs_as_specifed
@@ -275,10 +276,10 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal ['--LONG', '-S'], parser.options.keys.sort
     
     parser.parse('-S short')
-    assert_equal({:one => 'short'}, parser.config)
+    assert_equal({:one => 'short', :two => 'two'}, parser.config)
     
     parser.parse('--LONG long')
-    assert_equal({:one => 'long'}, parser.config)
+    assert_equal({:one => 'long', :two => 'two'}, parser.config)
   end
   
   class ParserNestClass
