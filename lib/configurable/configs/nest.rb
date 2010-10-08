@@ -22,7 +22,7 @@ module Configurable
       # configurable_class.
       def default
         default = {}
-        configurable_class.configurations.each_pair do |key, config|
+        configurable_class.configs.each_pair do |key, config|
           default[key] = config.default
         end
         default
@@ -75,6 +75,15 @@ module Configurable
       def cast(value)
         value = super(value)
         configurable_class.cast(value)
+      end
+      
+      def traverse(nesting=[], &block)
+        nesting.push key
+        configurable_class.configs.each_value do |config|
+          config.traverse(nesting, &block)
+        end
+        nesting.pop
+        self
       end
     
       # Returns an inspection string.

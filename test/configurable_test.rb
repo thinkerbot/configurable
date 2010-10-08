@@ -268,6 +268,42 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal({:one => 'long'}, parser.config)
   end
   
+  class ParserNestClass
+    include Configurable
+    config :a
+    nest :b do
+      config :c
+      nest :d do
+        config :e
+      end
+    end
+  end
+  
+  def test_parser_handles_nested_configs
+    parser = ParserNestClass.parser
+    parser.parse []
+    assert_equal({
+      :a => nil,
+      :b => {
+        :c => nil,
+        :d => {
+          :e => nil
+        }
+      }
+    }, parser.config)
+
+    parser.parse %w{--a 1 --b:c 2 --b:d:e 3}
+    assert_equal({
+      :a => '1',
+      :b => {
+        :c => '2',
+        :d => {
+          :e => '3'
+        }
+      }
+    }, parser.config)
+  end
+  
   #
   # map_by_key, map_by_name test
   #

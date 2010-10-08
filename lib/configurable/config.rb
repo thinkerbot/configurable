@@ -76,6 +76,11 @@ module Configurable
       target
     end
     
+    def traverse(nesting=[])
+      yield(nesting, self)
+      self
+    end
+    
     # Returns an inspect string.
     def inspect
       "#<#{self.class}:#{object_id} key=#{key} name=#{name} default=#{default.inspect} reader=#{reader} writer=#{writer} >"

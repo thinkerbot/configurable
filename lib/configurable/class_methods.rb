@@ -42,9 +42,13 @@ module Configurable
     # additonal options and then the options are sorted.
     def parser(*args)
       parser = ConfigParser.new(*args)
-      
       configs.each_value do |config|
-        parser.add(config.key, config.default, config.attrs)
+        config.traverse do |nesting, config|
+          long = nesting.dup
+          long << config.name
+          attrs = {:key => config.key, :nest_keys => nesting.dup, :long => "--#{long.join(':')}"}
+          parser.on(attrs.merge(config.attrs))
+        end
       end
       
       yield(parser) if block_given?
