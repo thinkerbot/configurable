@@ -44,9 +44,16 @@ module Configurable
       parser = ConfigParser.new(*args)
       configs.each_value do |config|
         config.traverse do |nesting, config|
-          long = nesting.dup
-          long << config.name
-          attrs = {:key => config.key, :nest_keys => nesting.dup, :long => "--#{long.join(':')}"}
+          key = config.key
+          nest_keys = nesting.collect {|nest| nest.key }
+          nest_names = nesting.collect {|nest| nest.name }.push(config.name)
+          
+          attrs = {
+            :key => key, 
+            :nest_keys => nest_keys,
+            :long => nest_names.join(':')
+          }
+          
           parser.on(attrs.merge(config.attrs))
         end
       end

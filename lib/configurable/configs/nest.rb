@@ -78,7 +78,7 @@ module Configurable
       end
       
       def traverse(nesting=[], &block)
-        nesting.push key
+        nesting.push self
         configurable_class.configs.each_value do |config|
           config.traverse(nesting, &block)
         end

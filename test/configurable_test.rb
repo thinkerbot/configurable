@@ -252,6 +252,19 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal ['--one', '--two'], parser.options.keys.sort
   end
   
+  class ParserNameClass
+    include Configurable
+    config(:one, 'one', :name => 'ONE')
+    nest :two, :name => 'TWO' do
+      config :three, 'three', :name => 'THREE'
+    end
+  end
+  
+  def test_parser_guesses_long_by_name
+    parser = ParserNameClass.parser
+    assert_equal ['--ONE', '--TWO:THREE'], parser.options.keys.sort
+  end
+  
   class ParserOptionClass
     include Configurable
     config(:one, 'one', :short => :S, :long => :LONG) {|v| v.upcase }
