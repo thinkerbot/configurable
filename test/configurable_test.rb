@@ -268,7 +268,6 @@ class ConfigurableTest < Test::Unit::TestCase
   class ParserOptionClass
     include Configurable
     config(:one, 'one', :short => :S, :long => :LONG)
-    config(:two, 'two', :short => nil, :long => nil)
   end
   
   def test_parser_options_use_config_attrs_as_specifed
@@ -276,10 +275,10 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal ['--LONG', '-S'], parser.options.keys.sort
     
     parser.parse('-S short')
-    assert_equal({:one => 'short', :two => 'two'}, parser.config)
+    assert_equal({:one => 'short'}, parser.config)
     
     parser.parse('--LONG long')
-    assert_equal({:one => 'long', :two => 'two'}, parser.config)
+    assert_equal({:one => 'long'}, parser.config)
   end
   
   class ParserNestClass
@@ -316,6 +315,27 @@ class ConfigurableTest < Test::Unit::TestCase
         }
       }
     }, parser.config)
+  end
+  
+  class ParserHiddenClass
+    include Configurable
+    config :a, 'a', :hidden => true
+    
+    nest :b, :hidden => true do
+      config :c, 'c'
+    end
+    
+    nest :d do
+      config :e, 'e', :hidden => true
+    end
+  end
+  
+  def test_parser_can_prevent_options_from_being_created_using_hidden
+    parser = ParserHiddenClass.parser
+    assert_equal [], parser.options.keys.sort
+    
+    parser.parse
+    assert_equal({}, parser.config)
   end
   
   #

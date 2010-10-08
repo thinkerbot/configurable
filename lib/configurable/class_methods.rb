@@ -44,6 +44,8 @@ module Configurable
       parser = ConfigParser.new(*args)
       configs.each_value do |config|
         config.traverse do |nesting, config|
+          next if config[:hidden] == true || nesting.any? {|nest| nest[:hidden] == true }
+          
           key = config.key
           nest_keys = nesting.collect {|nest| nest.key }
           nest_names = nesting.collect {|nest| nest.name }.push(config.name)
