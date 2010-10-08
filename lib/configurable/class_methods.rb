@@ -1,8 +1,8 @@
 require 'lazydoc'
 require 'config_parser'
-require 'configurable/configs'
 require 'configurable/config_type'
 require 'configurable/config_hash'
+require 'configurable/config_classes'
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
@@ -15,6 +15,8 @@ module Configurable
   # ClassMethods extends classes that include Configurable and provides methods
   # for declaring configurations.
   module ClassMethods
+    include ConfigClasses
+    
     # A hash of (key, Config) pairs tracking configs defined on self.  See the
     # configs method for all configs declared across all ancestors.
     attr_reader :config_registry
@@ -85,7 +87,7 @@ module Configurable
     end
     
     # Casts each config in source and writes the result into target (which is
-    # by default the source itself).  Configs are identifies and written by
+    # by default the source itself).  ConfigClasses are identifies and written by
     # key.  Returns target.
     def cast(source, target=source)
       source.keys.each do |key|
@@ -288,7 +290,7 @@ module Configurable
       attrs[:default] = configurable_class
       attrs = merge_config_type_attrs(attrs)
       
-      define_config(key, options, Configs::Nest)
+      define_config(key, options, Nest)
     end
     
     # Removes a config much like remove_method removes a method.  The reader
@@ -408,9 +410,9 @@ module Configurable
       options = attrs[:options]
       
       case
-      when list && options then Configs::ListSelect
-      when list    then Configs::List
-      when options then Configs::Select
+      when list && options then ListSelect
+      when list    then List
+      when options then Select
       else Config
       end
     end
@@ -446,7 +448,7 @@ module Configurable
       raise "infinite nest detected" if klass == self
       
       klass.configs.each_value do |config|
-        if config.kind_of?(Configs::Nest)
+        if config.kind_of?(Nest)
           check_infinite_nest(config.configurable_class)
         end
       end

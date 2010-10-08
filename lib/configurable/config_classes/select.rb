@@ -1,5 +1,5 @@
 module Configurable
-  module Configs
+  module ConfigClasses
     
     # Represents a config where the input is in a specified whitelist.
     class Select < Config

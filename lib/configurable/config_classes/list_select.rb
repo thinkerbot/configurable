@@ -1,5 +1,5 @@
 module Configurable
-  module Configs
+  module ConfigClasses
     
     # Represents a list style config where the input is expected to be an
     # Array, and each value is in a specified whitelist.

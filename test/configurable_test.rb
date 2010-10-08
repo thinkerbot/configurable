@@ -3,8 +3,7 @@ require 'configurable'
 require 'tempfile'
 
 class ConfigurableTest < Test::Unit::TestCase
-  Config = Configurable::Config
-  Configs = Configurable::Configs
+  include Configurable::ConfigClasses
   ConfigHash = Configurable::ConfigHash
   
   #
@@ -18,7 +17,12 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_include_extends_class_with_ClassMethods
     assert IncludeClass.kind_of?(Configurable::ClassMethods)
   end
-   
+  
+  def test_include_does_not_pollute_namespaces
+    assert_equal false, IncludeClass.const_defined?(:Config)
+    assert_equal false, IncludeClass.class.const_defined?(:Config)
+  end
+  
   def test_extend_initializes_class_configs
     assert_equal({}, IncludeClass.configs)
   end
@@ -582,7 +586,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_options_option_generates_select_config
     config = SelectClass.configs[:key]
-    assert_equal Configs::Select, config.class
+    assert_equal Select, config.class
   end
   
   class ListClass
@@ -592,7 +596,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_array_default_generates_a_list_config
     config = ListClass.configs[:key]
-    assert_equal Configs::List, config.class
+    assert_equal List, config.class
   end
   
   class ListSelectClass
@@ -602,7 +606,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_array_default_and_options_option_generates_a_list_select_config
     config = ListSelectClass.configs[:key]
-    assert_equal Configs::ListSelect, config.class
+    assert_equal ListSelect, config.class
   end
   
   #

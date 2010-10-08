@@ -1,8 +1,8 @@
 require File.expand_path('../../../test_helper', __FILE__) 
-require 'configurable/configs'
+require 'configurable/config_classes'
 
 class SelectTest < Test::Unit::TestCase
-  Select = Configurable::Configs::Select
+  include Configurable::ConfigClasses
   
   attr_reader :c
   

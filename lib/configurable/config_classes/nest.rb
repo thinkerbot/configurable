@@ -1,5 +1,5 @@
 module Configurable
-  module Configs
+  module ConfigClasses
     
     # Represents a config where the input is expected to be Configurable.
     class Nest < Config

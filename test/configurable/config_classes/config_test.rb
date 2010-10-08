@@ -1,8 +1,8 @@
-require File.expand_path('../../test_helper', __FILE__) 
-require 'configurable/config'
+require File.expand_path('../../../test_helper', __FILE__) 
+require 'configurable/config_classes/config'
 
 class ConfigTest < Test::Unit::TestCase
-  Config = Configurable::Config
+  include Configurable::ConfigClasses
   
   attr_reader :c
   

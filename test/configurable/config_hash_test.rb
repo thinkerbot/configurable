@@ -1,12 +1,14 @@
 require File.expand_path('../../test_helper', __FILE__)
 require 'configurable/config_hash'
-require 'configurable/config'
+require 'configurable/config_classes'
 
 class ConfigHashTest < Test::Unit::TestCase
-  Config = Configurable::Config
+  include Configurable::ConfigClasses
   ConfigHash = Configurable::ConfigHash
   
   class Receiver
+    include Configurable::ConfigClasses
+    
     def self.configs
       @configs ||= {:key => Config.new(:key)}
     end
