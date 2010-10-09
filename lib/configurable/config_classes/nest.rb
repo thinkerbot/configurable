@@ -17,15 +17,15 @@ module Configurable
       def configurable_class
         @default
       end
+      
+      def configs
+        @default.configs
+      end
     
       # Returns a hash of the default configuration values for
       # configurable_class.
       def default
-        default = {}
-        configurable_class.configs.each_pair do |key, config|
-          default[key] = config.default
-        end
-        default
+        configs.to_default_hash
       end
   
       # Calls the reader on the reciever to retreive an instance of the
@@ -55,18 +55,18 @@ module Configurable
       end
       
       # Same as super, but recursively maps the result using configurable_class.
-      def map_by_key(source, target={})
+      def keyify(source, target={})
         if source.has_key?(name)
-          target[key] = configurable_class.configs.map_by_key(source[name])
+          target[key] = configs.keyify(source[name])
         end
         
         target
       end
       
       # Same as super, but recursively maps the result using configurable_class
-      def map_by_name(source, target={})
+      def nameify(source, target={})
         if source.has_key?(key)
-          target[name] = configurable_class.configs.map_by_name(source[key])
+          target[name] = configs.nameify(source[key])
         end
         
         target
@@ -74,12 +74,12 @@ module Configurable
       
       def cast(value)
         value = super(value)
-        configurable_class.configs.cast(value)
+        configs.cast(value)
       end
       
       def traverse(nesting=[], &block)
         nesting.push self
-        configurable_class.configs.each_value do |config|
+        configs.each_value do |config|
           config.traverse(nesting, &block)
         end
         nesting.pop
@@ -88,7 +88,7 @@ module Configurable
     
       # Returns an inspection string.
       def inspect
-        "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} configurable_class=#{configurable_class.inspect} >"
+        "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} configurable_class=#{configurable_class.to_s} >"
       end
     end
   end

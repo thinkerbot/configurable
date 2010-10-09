@@ -8,7 +8,7 @@ module Configurable
     # self.  Arguments given to parser are passed to the ConfigParser
     # initializer.  The parser is yielded to the block, if given, to register
     # additonal options and then the options are sorted.
-    def parser(*args)
+    def to_parser(*args)
       parser = ConfigParser.new(*args)
       each_value do |config|
         config.traverse do |nesting, config|
@@ -34,20 +34,28 @@ module Configurable
       parser
     end
     
+    def to_default
+      default = {}
+      each_pair do |key, config|
+        default[key] = config.default
+      end
+      default
+    end
+    
     # Writes the value keyed by key to name for each config in source to
     # target, recursively for nested configs.  Returns target.
-    def map_by_key(source, target={})
+    def keyify(source, target={})
       each_value do |config|
-        config.map_by_key(source, target)
+        config.keyify(source, target)
       end
       target
     end
     
     # Writes the value keyed by name to key for each config in source to
     # target, recursively for nested configs.  Returns target.
-    def map_by_name(source, target={})
+    def nameify(source, target={})
       each_value do |config|
-        config.map_by_name(source, target)
+        config.nameify(source, target)
       end
       target
     end

@@ -31,35 +31,35 @@ class ConfigsTest < Test::Unit::TestCase
   end
   
   #
-  # parser test
+  # to_parser test
   #
   
-  def test_parse_returns_a_parser_initialized_with_configs
-    parser = configs.parser
+  def test_to_parser_returns_a_parser_initialized_with_configs
+    parser = configs.to_parser
     args = parser.parse("a b --one value c")
     
     assert_equal ["a", "b", "c"], args
     assert_equal({:one => 'value'}, parser.config)
   end
   
-  def test_parse_initializes_with_args_and_is_passed_to_block
+  def test_to_parser_initializes_with_args_and_is_passed_to_block
     target = {}
-    parser = configs.parser(target, :assign_defaults => false) {|psr| psr.on('--two') }
+    parser = configs.to_parser(target, :assign_defaults => false) {|psr| psr.on('--two') }
     
     assert_equal target, parser.config
     assert_equal false, parser.assign_defaults
     assert_equal ['--one', '--two'], parser.options.keys.sort
   end
   
-  def test_parser_guesses_long_by_name
+  def test_to_parser_guesses_long_by_name
     configs[:one] = Config.new(:one, :name => 'ONE')
-    assert_equal ['--ONE'], configs.parser.options.keys
+    assert_equal ['--ONE'], configs.to_parser.options.keys
   end
   
-  def test_parser_options_use_config_attrs_as_specifed
+  def test_to_parser_options_use_config_attrs_as_specifed
     configs[:one] = Config.new(:one, :short => :S, :long => :LONG)
     
-    parser = configs.parser
+    parser = configs.to_parser
     assert_equal ['--LONG', '-S'], parser.options.keys.sort
     
     parser.parse('-S short')
@@ -69,78 +69,80 @@ class ConfigsTest < Test::Unit::TestCase
     assert_equal({:one => 'long'}, parser.config)
   end
   
-  # class ParserNestClass
-  #   include Configurable
-  #   config :a
-  #   nest :b do
-  #     config :c
-  #     nest :d do
-  #       config :e
-  #     end
-  #   end
-  # end
-  # 
-  # def test_parser_handles_nested_configs
-  #   parser = ParserNestClass.parser
-  #   parser.parse []
-  #   assert_equal({
-  #     :a => nil,
-  #     :b => {
-  #       :c => nil,
-  #       :d => {
-  #         :e => nil
-  #       }
-  #     }
-  #   }, parser.config)
-  # 
-  #   parser.parse %w{--a 1 --b:c 2 --b:d:e 3}
-  #   assert_equal({
-  #     :a => '1',
-  #     :b => {
-  #       :c => '2',
-  #       :d => {
-  #         :e => '3'
-  #       }
-  #     }
-  #   }, parser.config)
-  # end
-  # 
-  # class ParserHiddenClass
-  #   include Configurable
-  #   config :a, 'a', :hidden => true
-  #   
-  #   nest :b, :hidden => true do
-  #     config :c, 'c'
-  #   end
-  #   
-  #   nest :d do
-  #     config :e, 'e', :hidden => true
-  #   end
-  # end
-  # 
-  # def test_parser_can_prevent_options_from_being_created_using_hidden
-  #   parser = ParserHiddenClass.parser
-  #   assert_equal [], parser.options.keys.sort
-  #   
-  #   parser.parse
-  #   assert_equal({}, parser.config)
-  # end
+  def test_to_parser_handles_nested_configs
+    configs.clear
+    configs[:a] = Config.new(:a)
+    configs[:b] = nest_config(:b, :configs => {
+      :c => Config.new(:c),
+      :d => nest_config(:d, :configs => {
+        :e => Config.new(:e)
+      })
+    })
+    
+    parser = configs.to_parser
+    parser.parse []
+    assert_equal({
+      :a => nil,
+      :b => {
+        :c => nil,
+        :d => {
+          :e => nil
+        }
+      }
+    }, parser.config)
+  
+    parser.parse %w{--a 1 --b:c 2 --b:d:e 3}
+    assert_equal({
+      :a => '1',
+      :b => {
+        :c => '2',
+        :d => {
+          :e => '3'
+        }
+      }
+    }, parser.config)
+  end
+  
+  def test_to_parser_can_prevent_options_from_being_created_using_hidden
+    configs.clear
+    configs[:a] = Config.new(:one, :hidden => true)
+    configs[:b] = nest_config(:b, :hidden => true, :configs => {
+      :c => Config.new(:c)
+    })
+    configs[:d] = nest_config(:d, :configs => {
+      :e => Config.new(:e, :hidden => true)
+    })
+    
+    parser = configs.to_parser
+    assert_equal [], parser.options.keys.sort
+    
+    parser.parse
+    assert_equal({}, parser.config)
+  end
   
   #
-  # map_by_key test
+  # to_default test
   #
   
-  def test_map_by_key_maps_config_names_to_config_keys
+  def test_to_default_returns_default_hash
+    assert_equal({:one => nil}, configs.to_default)
+  end
+  
+  #
+  # keyify test
+  #
+  
+  def test_keyify_maps_config_names_to_config_keys
     assert_equal({
       :one => 'NAME'
-    }, configs.map_by_key(:one => 'KEY', 'one' => 'NAME'))
+    }, configs.keyify(:one => 'KEY', 'one' => 'NAME'))
   end
   
-  def test_map_by_key_maps_ignores_unknown_names
-    assert_equal({}, configs.map_by_key('unknown' => 'value'))
+  def test_keyify_maps_ignores_unknown_names
+    assert_equal({}, configs.keyify('unknown' => 'value'))
   end
   
-  def test_map_by_key_recursively_maps_nested_configs
+  def test_keyify_recursively_maps_nested_configs
     configs[:one] = Config.new(:one)
     configs[:nest] = nest_config(:nest, :configs => {
       :two => Config.new(:two)
@@ -156,24 +158,24 @@ class ConfigsTest < Test::Unit::TestCase
       :nest => {:two => 'TWO'}
     }
     
-    assert_equal(target, configs.map_by_key(source))
+    assert_equal(target, configs.keyify(source))
   end
   
   #
-  # map_by_name test
+  # nameify test
   #
   
-  def test_map_by_name_maps_config_keys_to_config_names
+  def test_nameify_maps_config_keys_to_config_names
     assert_equal({
       'one' => 'KEY'
-    }, configs.map_by_name(:one => 'KEY', 'one' => 'NAME'))
+    }, configs.nameify(:one => 'KEY', 'one' => 'NAME'))
   end
   
-  def test_map_by_name_maps_ignores_unknown_keys
-    assert_equal({}, configs.map_by_name(:unknown => 'value'))
+  def test_nameify_maps_ignores_unknown_keys
+    assert_equal({}, configs.nameify(:unknown => 'value'))
   end
   
-  def test_map_by_name_recursively_maps_nested_configs
+  def test_nameify_recursively_maps_nested_configs
     configs[:one] = Config.new(:one)
     configs[:nest] = nest_config(:nest, :configs => {
       :two => Config.new(:two)
@@ -189,7 +191,7 @@ class ConfigsTest < Test::Unit::TestCase
       'nest' => {'two' => 'TWO'}
     }
     
-    assert_equal(target, configs.map_by_name(source))
+    assert_equal(target, configs.nameify(source))
   end
   
   #

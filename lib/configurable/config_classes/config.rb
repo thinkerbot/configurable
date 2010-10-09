@@ -65,13 +65,13 @@ module Configurable
       end
     
       # Writes the value keyed by name in source into target by key.
-      def map_by_key(source, target={})
+      def keyify(source, target={})
         target[key] = source[name] if source.has_key?(name)
         target
       end
     
       # Writes the value keyed by key in source into target by name.
-      def map_by_name(source, target={})
+      def nameify(source, target={})
         target[name] = source[key] if source.has_key?(key)
         target
       end
