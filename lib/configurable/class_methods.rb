@@ -5,10 +5,10 @@ require 'configurable/config_hash'
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
-    :bool    => ConfigType.new(TrueClass, FalseClass) {|value| ConfigType.cast_to_bool(value) },
-    :integer => ConfigType.new(Integer) {|value| Integer(value) },
-    :float   => ConfigType.new(Float)   {|value| Float(value) },
-    :string  => ConfigType.new(String)  {|value| String(value) }
+    :bool    => ConfigType.new(TrueClass, FalseClass).cast {|value| ConfigType.cast_to_bool(value) },
+    :integer => ConfigType.new(Integer).cast {|value| Integer(value) },
+    :float   => ConfigType.new(Float).cast   {|value| Float(value) },
+    :string  => ConfigType.new(String).cast  {|value| String(value) }
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
@@ -296,7 +296,7 @@ module Configurable
     # default attributes may be specified with a hash given as the last
     # matcher.
     def config_type(type, *matchers, &caster)
-      config_type = ConfigType.new(*matchers, &caster)
+      config_type = ConfigType.new(*matchers).cast(&caster)
       config_type_registry[type] = config_type
       reset_config_types
       

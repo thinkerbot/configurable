@@ -109,8 +109,8 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_config_type_registers_a_config_type
     config_type = ConfigTypeClass.config_types[:upcase]
-    assert_equal 'XYZ', config_type[:caster].call('xyz')
-    assert_equal :option, config_type[:option_type]
+    assert_equal 'XYZ', config_type.default_attrs[:caster].call('xyz')
+    assert_equal :option, config_type.default_attrs[:option_type]
     
     assert_equal 'XYZ', ConfigTypeClass.configs[:key].cast('xyz')
   end

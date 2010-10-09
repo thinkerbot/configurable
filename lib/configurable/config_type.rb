@@ -14,14 +14,19 @@ module Configurable
     attr_reader :matchers
     attr_reader :default_attrs
     
-    def initialize(*matchers, &caster)
+    def initialize(*matchers)
       @matchers = matchers
       @default_attrs = matchers.last.kind_of?(Hash) ? matchers.pop : {}
-      @default_attrs[:caster] = caster
     end
     
-    def [](key)
-      default_attrs[key]
+    def cast(&caster)
+      @default_attrs[:caster] = caster
+      self
+    end
+    
+    def uncast(&uncaster)
+      @default_attrs[:uncaster] = uncaster
+      self
     end
     
     def ===(value)

@@ -63,16 +63,26 @@ module Configurable
       def cast(value)
         caster ? caster.call(value) : value
       end
+      
+      def uncast(value)
+        uncaster ? uncaster.call(value) : value.to_s
+      end
     
       # Writes the value keyed by name in source into target by key.
       def keyify(source, target={})
-        target[key] = source[name] if source.has_key?(name)
+        if source.has_key?(name)
+          target[key] = source[name]
+        end
+        
         target
       end
     
       # Writes the value keyed by key in source into target by name.
       def nameify(source, target={})
-        target[name] = source[key] if source.has_key?(key)
+        if source.has_key?(key)
+          target[name] = source[key]
+        end
+        
         target
       end
     

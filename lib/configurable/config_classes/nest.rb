@@ -77,6 +77,11 @@ module Configurable
         configs.cast(value)
       end
       
+      def uncast(value)
+        value = super(value)
+        configs.uncast(value)
+      end
+      
       def traverse(nesting=[], &block)
         nesting.push self
         configs.traverse(nesting, &block)

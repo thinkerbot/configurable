@@ -73,6 +73,16 @@ module Configurable
       target
     end
     
+    def uncast(source, target=source)
+      source.keys.each do |key|
+        if config = self[key]
+          target[key] = config.uncast(source[key])
+        end
+      end
+      
+      target
+    end
+    
     def traverse(nesting=[], &block)
       each_value do |config|
         config.traverse(nesting, &block)
