@@ -72,5 +72,12 @@ module Configurable
       
       target
     end
+    
+    def traverse(nesting=[], &block)
+      each_value do |config|
+        config.traverse(nesting, &block)
+      end
+      self
+    end
   end
 end
