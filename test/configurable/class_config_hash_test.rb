@@ -1,14 +1,14 @@
 require File.expand_path('../../test_helper', __FILE__)
-require 'configurable/configs'
+require 'configurable/configs_hash'
 
-class ConfigsTest < Test::Unit::TestCase
+class ConfigsHashTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  Configs = Configurable::Configs
+  ConfigsHash = Configurable::ConfigsHash
   
   attr_accessor :configs
   
   def setup
-    @configs = Configs.new
+    @configs = ConfigsHash.new
     @configs[:one] = Config.new(:one)
   end
   
@@ -20,7 +20,7 @@ class ConfigsTest < Test::Unit::TestCase
   class ConfiguableClass
     attr_reader :configs
     def initialize(configs)
-      @configs = Configs.new
+      @configs = ConfigsHash.new
       @configs.merge!(configs)
     end
   end

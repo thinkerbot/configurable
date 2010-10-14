@@ -2,7 +2,7 @@ require 'config_parser'
 require 'configurable/config_classes'
 
 module Configurable
-  class Configs < Hash
+  class ConfigsHash < Hash
     
     # Initializes and returns a ConfigParser generated using the configs for
     # self.  Arguments given to parser are passed to the ConfigParser
