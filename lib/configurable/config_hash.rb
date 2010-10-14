@@ -125,6 +125,14 @@ module Configurable
       hash
     end
     
+    def export(overrides={})
+      configs.export(to_hash.merge(overrides))
+    end
+    
+    def import(another)
+      merge! configs.import(another)
+    end
+    
     # Returns an inspection string.
     def inspect
       "#<#{self.class}:#{object_id} to_hash=#{to_hash.inspect}>"

@@ -83,6 +83,16 @@ module Configurable
       target
     end
     
+    def import(source, target=source)
+      keyify(source, target)
+      cast(target)
+    end
+    
+    def export(source, target=source)
+      uncast(source, target)
+      nameify(target)
+    end
+    
     def traverse(nesting=[], &block)
       each_value do |config|
         config.traverse(nesting, &block)
