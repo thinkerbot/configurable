@@ -104,23 +104,14 @@ module Configurable
     
     # Returns self as a hash.  Any ConfigHash values are recursively
     # hashified, to account for nesting.
-    def to_hash(scrub=false, &block)
+    def to_hash
       hash = {}
       each_pair do |key, value|
         if value.kind_of?(ConfigHash)
-          value = value.to_hash(scrub, &block)
+          value = value.to_hash
         end
         
-        if scrub
-          config = configs[key]
-          next if config && config.default == value
-        end
-        
-        if block_given?
-          yield(hash, key, value)
-        else
-          hash[key] = value
-        end
+        hash[key] = value
       end
       hash
     end

@@ -211,48 +211,6 @@ class ConfigHashTest < Test::Unit::TestCase
     }, c.to_hash)
   end
   
-  def test_to_hash_accepts_a_block_to_transform_keys_and_values
-    a = ConfigHash.new(:a => 'value').bind(Receiver.new)
-    b = ConfigHash.new(:b => a).bind(Receiver.new)
-    c = ConfigHash.new(:c => b).bind(Receiver.new)
-    
-    result = c.to_hash do |hash, key, value|
-      hash[key.to_s] = value.kind_of?(String) ? value.upcase : value
-    end
-    
-    assert_equal({
-      'key' => nil,
-      'c' => {
-        'key' => nil,
-        'b' => {
-          'key' => nil,
-          'a' => 'VALUE'
-        }
-      }
-    }, result)
-  end
-  
-  def test_to_hash_scrubs_configs_set_to_default_value_if_specified
-    config_hash.store[:alt] = nil
-    config_hash.receiver.key = nil
-  
-    assert_equal({:alt => nil, :key => nil}, config_hash.to_hash)
-    assert_equal({:alt => nil}, config_hash.to_hash(true))
-    
-    config_hash.receiver.key = :value
-    assert_equal({:alt => nil, :key => :value}, config_hash.to_hash(true))
-  end
-  
-  def test_to_hash_scrubs_configs_recursively
-    a = ConfigHash.new(:a => 'value').bind(Receiver.new)
-    b = ConfigHash.new(:b => a).bind(Receiver.new)
-    c = ConfigHash.new(:c => b).bind(Receiver.new)
-    
-    assert_equal({
-      :c => {:b => {:a => 'value'}}
-    }, c.to_hash(true))
-  end
-  
   #
   # == test
   #
