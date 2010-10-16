@@ -1,13 +1,12 @@
 = Configurable[http://tap.rubyforge.org/configurable]
 
-Class configurations that map to the command line.
+Class configurations for the command line and web.
 
 == Description
 
 Configurable allows the declaration of class configurations.  Configurations
 are inheritable, delegate to methods, and have hash-like access. Configurable
-maps configurations to the command line through ConfigParser and is used by
-the Tap[http://tap.rubyforge.org] framework.
+constructs configs such that they easily map to config files, web forms, and the command line.
 
 Check out these links for development and bug tracking.
 
@@ -15,184 +14,84 @@ Check out these links for development and bug tracking.
 * Github[http://github.com/bahuvrihi/configurable/tree/master]
 * {Google Group}[http://groups.google.com/group/ruby-on-tap]
 
-==== Minimal Example
+==== Usage
 
 Include Configurable and declare configurations using the config method.
-Configs now have accessors and initialize with the default value.
+Configs have accessors and initialize with the default value.  Casters
+are guessed for common types (true/false, numbers, strings).
 
   class ConfigClass
     include Configurable
-    config :key, 'default', :short => 'k'   # a sample config
+    config :flag, false                    # a flag
+    config :switch, true                   # an on/off switch
+    config :num, 3.14                      # a number
+    config :str, 'value', :short => :s     # a string, with a short
   end
 
   c = ConfigClass.new
-  c.key                   # => 'default'
-  c.key = 'new value'
-  c.config[:key]          # => 'new value'
+  c.num                   # => 3.14
 
-Use a ConfigParser to parse configurations from the command line. Non-class
-options may be defined with (mostly) the same syntax as {OptionParser}[http://www.ruby-doc.org/core/classes/OptionParser.html]:
+Configs may be set through config (a kind of delegating hash):
 
-  parser = ConfigParser.new
-  
-  # add class configurations
-  parser.add(ConfigClass.configurations)
-  
-  # define an option a-la OptionParser
-  parser.on '-s', '--long ARGUMENT', 'description' do |value|
-    parser[:long] = value
-  end
-  
-  parser.parse "one two --key value -s VALUE three"  
-  # => ['one', 'two', 'three']
-  
-  parser.config                             
+  c.num = 6.022
+  c.config[:num]          # => 6.022
+  c.config[:num] = 1.61
+  c.num                   # => 1.61
+
+Configs may be exported and imported in a format easily translated to user interfaces, be they config files, web forms, or the command line.
+
+  c.config.export
   # => {
-  # :key => 'value',
-  # :long => 'VALUE'
+  # 'flag' => 'false', 
+  # 'switch' => 'true',
+  # 'num' => '1.61', 
+  # 'str' => 'value'
   # }
   
-  "\n" + parser.to_s
-  # => %Q{
-  #    -k, --key KEY                    a sample config
-  #    -s, --long ARGUMENT              description
-  # }
-
-== Usage
-
-The config method is used to declare class configurations. A block may be
-provided to validate/transform inputs; many standard validations are available
-through the 'c' method (an alias for the
-{Validation}[link:classes/Configurable/Validation.html] module).
-
-  class ConfigClass
-    include Configurable
-    
-    # basic #
-    
-    config :key, 'default'                    # a simple config
-    config :flag, false, &c.flag              # a flag config
-    config :switch, false, &c.switch          # a --[no-]switch config
-    config :num, 10, &c.integer               # integer only
-    
-    # fancy #
-    
-    config :range, 1..10, &c.range            # specifies a range
-    config :select, 'a', &c.select('a','b')   # value must be 'a' or 'b'
-    config :list, [], &c.list                 # allows a list of entries
-    
-    # custom #
-    
-    config :upcase, 'default' do |value|      # custom transformation
-      value.upcase
-    end
-    
-    config :alt, 'default',                   # alternative flags
-      :short => 's',
-      :long => 'long',
-      :arg_name => 'CUSTOM'
-    
-    # Initializes a new instance, setting the overriding configs.
-    def initialize(config={})
-      initialize_config(config)
-    end
-  end
-  
-ConfigParser uses the config declarations to parse configurations and to make
-a documented help string:
-
-  parser = ConfigParser.new
-  parser.add(ConfigClass.configurations)
-  
-  parser.parse "a b --key=value --flag --no-switch --num 8 c"  
-  # => ['a', 'b', 'c']
-  
-  parser.config  
-  # => {
-  # :key => 'value',
-  # :flag => true,
-  # :switch => false,
-  # :num => '8',
-  # :range => 1..10,
-  # :select => 'a',
-  # :list => [],
-  # :upcase => 'default',
-  # :alt => 'default'
-  # }
-  
-  "\n" + parser.to_s
-  # => %Q{
-  #        --key KEY                    a simple config
-  #        --flag                       a flag config
-  #        --[no-]switch                a --[no-]switch config
-  #        --num NUM                    integer only
-  #        --range RANGE                specifies a range
-  #        --select SELECT              value must be 'a' or 'b'
-  #        --list LIST                  allows a list of entries
-  #        --upcase UPCASE              custom transformation
-  #    -s, --long CUSTOM                alternative flags
-  # }
-
-Configurable classes typically call initialize_config to set configurations
-during initialization. The validation/transformation blocks are called as
-configurations are set. Notice how the :num and :upcase configs are translated
-on the instance:
-  
-  c = ConfigClass.new(parser.config)
-  c.config.to_hash      
-  # => {
-  # :key => 'value',
-  # :flag => true,
-  # :switch => false,
-  # :num => 8,                    # no longer a string
-  # :range => 1..10,
-  # :select => 'a',
-  # :list => [],
-  # :upcase => 'DEFAULT',         # no longer downcase
-  # :alt => 'default'
-  # }
-
-Configurations automatically generate accessors (the blocks are basically
-writer methods), and may be accessed through the config object. Configurations
-are validated every time they are set, regardless of whether they are set
-through an accessor or config.
-  
-  c.upcase                    # => 'DEFAULT'
-  
-  c.config[:upcase] = 'neW valuE'
-  c.upcase                    # => 'NEW VALUE'
-
-  c.upcase = 'fiNal Value'
-  c.config[:upcase]           # => 'FINAL VALUE'
-  
-  c.select = 'b'              # ok
-  c.select = 'c'              # !> ValidationError
-  c.config[:select] = 'c'     # !> ValidationError
-
-By default config treats string and symbol keys identically, making YAML an
-obvious choice for configuration files.
-
-  yaml_str = %Q{
-  key: a new value
-  flag: false
-  range: 1..100
-  }
-  
-  c.reconfigure(YAML.load(yaml_str))
+  c.config.import('flag' => 'true', 'num' => '2.71')
   c.config.to_hash
   # => {
-  # :key => 'a new value',
-  # :flag => false,
-  # :switch => false,
-  # :num => 8,
-  # :range => 1..100,
-  # :select => 'b',
-  # :list => [],
-  # :upcase => 'FINAL VALUE',
-  # :alt => 'default'
+  # :flag => true, 
+  # :switch => true,
+  # :num => 2.71, 
+  # :str => 'value'
   # }
 
-See the Configurable module for more details.
+Use a {ConfigParser}[http://tap.rubyforge.org/config_parser] to parse
+configurations from the command line. Non-class options may be defined with
+(mostly) the same syntax as
+{OptionParser}[http://www.ruby-doc.org/core/classes/OptionParser.html]:
+
+  # define other options a-la OptionParser
+  parser = ConfigClass.configs.to_parser do |psr|
+    psr.on '-h', '--help', 'print help' do |value|
+      puts "ConfigClass options:"
+      puts parser
+    end
+  end
+  
+  parser.class            # => ConfigParser
+  parser.parse "one two --flag --no-switch --num=-1 -s val three"
+  # => ['one', 'two', 'three']
+  
+  parser.config
+  # => {
+  # :flag => true,
+  # :switch => false,
+  # :num => -1,
+  # :str => 'val'
+  # }
+  
+  "\n" + parser.to_s
+  # => %Q{
+  #        --flag                       a flag
+  #    -h, --help                       print help
+  #        --num NUM                    a number
+  #    -s, --str STR                    a string, with a short
+  #        --[no-]switch                an on/off switch
+  # }
+
+See the examples and documentation for details.
 
 == Installation
 
