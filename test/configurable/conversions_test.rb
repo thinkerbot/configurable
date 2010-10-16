@@ -35,13 +35,13 @@ class ConversionsTest < Test::Unit::TestCase
   #
   
   def test_to_parser_returns_a_parser_initialized_with_configs
-    configs[:one] = config(:one)
+    configs[:one] = config(:one) {|value| value.to_i }
     
     parser = configs.to_parser
-    args = parser.parse("a b --one value c")
+    args = parser.parse("a b --one 1 c")
     
     assert_equal ["a", "b", "c"], args
-    assert_equal({:one => 'value'}, parser.config)
+    assert_equal({:one => 1}, parser.config)
   end
   
   def test_to_parser_initializes_with_args_and_is_passed_to_block

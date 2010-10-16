@@ -14,14 +14,14 @@ module Configurable
         config.traverse do |nesting, config|
           next if config[:hidden] == true || nesting.any? {|nest| nest[:hidden] == true }
           
-          key = config.key
-          nest_keys = nesting.collect {|nest| nest.key }
+          nest_keys  = nesting.collect {|nest| nest.key }
           nest_names = nesting.collect {|nest| nest.name }.push(config.name)
           
           attrs = {
-            :key => key, 
+            :key       => config.key, 
             :nest_keys => nest_keys,
-            :long => nest_names.join(':')
+            :long      => nest_names.join(':'),
+            :callback  => config.caster
           }
           
           parser.on(attrs.merge(config.attrs))
