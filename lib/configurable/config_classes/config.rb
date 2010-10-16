@@ -23,6 +23,9 @@ module Configurable
       # The caster, which must respond to call or be nil.
       attr_reader :caster
     
+      # The uncaster, which must respond to call or be nil.
+      attr_reader :uncaster
+    
       # The default config value.
       attr_reader :default
     
@@ -32,15 +35,16 @@ module Configurable
     
       # Initializes a new Config.
       def initialize(key, attrs={})
-        @key     = key
-        @name    = attrs[:name] || @key.to_s
+        @key      = key
+        @name     = attrs[:name] || @key.to_s
         check_name(@name)
       
-        @default = attrs[:default] ||= nil
-        @reader  = (attrs[:reader] ||= name).to_sym
-        @writer  = (attrs[:writer] ||= "#{name}=").to_sym
-        @caster  = attrs[:caster]
-        @attrs   = attrs
+        @default  = attrs[:default] ||= nil
+        @reader   = (attrs[:reader] ||= name).to_sym
+        @writer   = (attrs[:writer] ||= "#{name}=").to_sym
+        @caster   = attrs[:caster]
+        @uncaster = attrs[:uncaster]
+        @attrs    = attrs.freeze
       end
     
       # Get the specified attribute from attrs.
@@ -68,19 +72,21 @@ module Configurable
         uncaster ? uncaster.call(value) : value.to_s
       end
     
-      # Writes the value keyed by name in source into target by key.
-      def keyify(source, target={})
+      # Imports a config from source into target by casting the value keyed by
+      # name in source and setting it into target by key.
+      def import(source, target={})
         if source.has_key?(name)
-          target[key] = source[name]
+          target[key] = cast(source[name])
         end
         
         target
       end
     
-      # Writes the value keyed by key in source into target by name.
-      def nameify(source, target={})
+      # Exports a config from source into target by uncasting the value keyed
+      # by key in source and setting it into target by name.
+      def export(source, target={})
         if source.has_key?(key)
-          target[name] = source[key]
+          target[name] = uncast(source[key])
         end
         
         target

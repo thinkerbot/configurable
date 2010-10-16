@@ -4,6 +4,8 @@ require 'configurable/config_hash'
 require 'configurable/conversions'
 
 module Configurable
+  
+  # Hash of default config types (bool, integer, float, string).
   DEFAULT_CONFIG_TYPES = {
     :bool    => ConfigType.new(TrueClass, FalseClass).cast {|value| ConfigType.cast_to_bool(value) },
     :integer => ConfigType.new(Integer).cast {|value| Integer(value) },
@@ -41,6 +43,8 @@ module Configurable
     # class or inherited from ancestors.  The configs hash is memoized for
     # performance.  Call reset_configs if configs needs to be recalculated for
     # any reason.
+    #
+    # Configs is extended with the Conversions module.
     def configs
       @configs ||= begin
         configs = {}

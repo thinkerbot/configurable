@@ -42,62 +42,18 @@ module Configurable
       default
     end
     
-    # Writes the value keyed by key to name for each config in source to
-    # target, recursively for nested configs.  Returns target.
-    def keyify(source, target={})
+    def import(source, target={})
       each_value do |config|
-        config.keyify(source, target)
+        config.import(source, target)
       end
       target
     end
     
-    # Writes the value keyed by name to key for each config in source to
-    # target, recursively for nested configs.  Returns target.
-    def nameify(source, target={})
+    def export(source, target={})
       each_value do |config|
-        config.nameify(source, target)
+        config.export(source, target)
       end
       target
-    end
-    
-    # Casts each config in source and writes the result into target (which is
-    # by default the source itself).  ConfigClasses are identifies and written by
-    # key.  Returns target.
-    def cast(source, target=source)
-      source.keys.each do |key|
-        if config = self[key]
-          target[key] = config.cast(source[key])
-        end
-      end
-      
-      target
-    end
-    
-    def uncast(source, target=source)
-      source.keys.each do |key|
-        if config = self[key]
-          target[key] = config.uncast(source[key])
-        end
-      end
-      
-      target
-    end
-    
-    def import(source, target=source)
-      keyify(source, target)
-      cast(target)
-    end
-    
-    def export(source, target=source)
-      uncast(source, target)
-      nameify(target)
-    end
-    
-    def traverse(nesting=[], &block)
-      each_value do |config|
-        config.traverse(nesting, &block)
-      end
-      self
     end
   end
 end

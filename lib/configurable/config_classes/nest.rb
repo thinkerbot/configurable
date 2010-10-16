@@ -54,37 +54,36 @@ module Configurable
         end
       end
       
-      # Same as super, but recursively maps the result using configurable_class.
-      def keyify(source, target={})
+      # Same as super, but imports the casted value using configs.
+      def import(source, target={})
         if source.has_key?(name)
-          target[key] = configs.keyify(source[name])
+          value = cast(source[name])
+          target[key] = configs.import(value)
         end
         
         target
-      end
-      
-      # Same as super, but recursively maps the result using configurable_class
-      def nameify(source, target={})
-        if source.has_key?(key)
-          target[name] = configs.nameify(source[key])
-        end
-        
-        target
-      end
-      
-      def cast(value)
-        value = super(value)
-        configs.cast(value)
       end
       
       def uncast(value)
-        value = super(value)
-        configs.uncast(value)
+        uncaster ? uncaster.call(value) : value
+      end
+      
+      # Same as super, but exports the source value using configs before
+      # uncast.
+      def export(source, target={})
+        if source.has_key?(key)
+          value = configs.export(source[key])
+          target[name] = uncast(value)
+        end
+        
+        target
       end
       
       def traverse(nesting=[], &block)
         nesting.push self
-        configs.traverse(nesting, &block)
+        configs.each_value do |config|
+          config.traverse(nesting, &block)
+        end
         nesting.pop
         self
       end

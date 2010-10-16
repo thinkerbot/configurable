@@ -16,13 +16,15 @@ class ConfigTest < Test::Unit::TestCase
   
   def test_sets_attributes_from_attrs
     caster = lambda {}
+    uncaster = lambda {}
     
     c = Config.new(:KEY,
-     :name => 'NAME', 
-     :reader => :READER, 
-     :writer => :WRITER, 
-     :default => :DEFAULT,
-     :caster => caster
+      :name     => 'NAME', 
+      :reader   => :READER, 
+      :writer   => :WRITER, 
+      :default  => :DEFAULT,
+      :caster   => caster,
+      :uncaster => uncaster
     )
     
     assert_equal :KEY, c.key
@@ -31,6 +33,8 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal :WRITER, c.writer
     assert_equal :DEFAULT, c.default
     assert_equal caster, c.caster
+    assert_equal uncaster, c.uncaster
+    assert_equal true, c.attrs.frozen?
   end
   
   def test_initialize_determines_name_reader_and_writer_from_key
@@ -78,40 +82,6 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   #
-  # keyify test
-  #
-  
-  def test_keyify_writes_the_value_keyed_by_name_in_source_to_target_by_key
-    source = {:key => 'KEY', 'key' => 'NAME'}
-    target = {}
-    assert_equal target, c.keyify(source, target)
-    
-    assert_equal({:key => 'NAME'}, target)
-    assert_equal({:key => 'KEY', 'key' => 'NAME'}, source)
-  end
-  
-  def test_keyify_writes_nothing_if_source_does_not_have_a_value_keyed_by_name
-    assert_equal({}, c.keyify({:key => 'KEY'}))
-  end
-  
-  #
-  # nameify test
-  #
-  
-  def test_nameify_writes_the_value_keyed_by_key_in_source_to_target_by_name
-    source = {:key => 'KEY', 'key' => 'NAME'}
-    target = {}
-    assert_equal target, c.nameify(source, target)
-    
-    assert_equal({'key' => 'KEY'}, target)
-    assert_equal({:key => 'KEY', 'key' => 'NAME'}, source)
-  end
-  
-  def test_nameify_writes_nothing_if_source_does_not_have_a_value_keyed_by_key
-    assert_equal({}, c.nameify({'key' => 'KEY'}))
-  end
-  
-  #
   # cast test
   #
   
@@ -120,5 +90,39 @@ class ConfigTest < Test::Unit::TestCase
     
     c = Config.new(:key, :caster => upcase)
     assert_equal 'ABC', c.cast('aBc')
+  end
+  
+  #
+  # import test
+  #
+  
+  def test_import_writes_the_value_keyed_by_name_in_source_to_target_by_key
+    source = {:key => 'KEY', 'key' => 'NAME'}
+    target = {}
+    assert_equal target, c.import(source, target)
+    
+    assert_equal({:key => 'NAME'}, target)
+    assert_equal({:key => 'KEY', 'key' => 'NAME'}, source)
+  end
+  
+  def test_import_writes_nothing_if_source_does_not_have_a_value_keyed_by_name
+    assert_equal({}, c.import({:key => 'KEY'}))
+  end
+  
+  #
+  # export test
+  #
+  
+  def test_export_writes_the_value_keyed_by_key_in_source_to_target_by_name
+    source = {:key => 'KEY', 'key' => 'NAME'}
+    target = {}
+    assert_equal target, c.export(source, target)
+    
+    assert_equal({'key' => 'KEY'}, target)
+    assert_equal({:key => 'KEY', 'key' => 'NAME'}, source)
+  end
+  
+  def test_export_writes_nothing_if_source_does_not_have_a_value_keyed_by_key
+    assert_equal({}, c.export({'key' => 'KEY'}))
   end
 end
