@@ -29,4 +29,19 @@ class ListTest < Test::Unit::TestCase
     err = assert_raises(ArgumentError) { c.cast(1) }
     assert_equal "invalid value for config: 1 (key)", err.message
   end
+  
+  #
+  # uncast test
+  #
+  
+  def test_uncast_uncasts_each_value_of_the_input
+    caster = lambda {|value| value.to_i }
+    c = List.new(:key, :caster => caster)
+    
+    input = [1,2,3]
+    output = c.uncast(input)
+    
+    assert_equal ['1','2','3'], output
+    assert input.object_id != output.object_id
+  end
 end

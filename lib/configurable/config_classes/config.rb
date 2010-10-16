@@ -1,17 +1,18 @@
 module Configurable
   module ConfigClasses
-    # ConfigClasses are used by ConfigHash to delegate get/set configs on a receiver.
-    # They also track metadata for displaying configs in user interfaces, and a
-    # caster for casting configs from user inputs (normally strings) to the
-    # expected config type.
+    # ConfigClasses are used by ConfigHash to delegate get/set configs on a
+    # receiver. They also track metadata for interacting with configs from
+    # user interfaces.  In particular configs allow the specification of a
+    # word-based name as well as a caster/uncaster pair to translate string
+    # inputs from config files, web forms, or command-line options to an
+    # appropriate object and back again.
     class Config
     
       # The config key, used as a hash key for access.
       attr_reader :key
     
-      # The config name, used where an arbitrary key is not appropriate (ex: in
-      # user interfaces, and when defining the default reader/writer). Valid
-      # names are strings consisting of word characters.
+      # The config name used in interfaces where only word-based names are
+      # appropriate. Names are strings consisting of only word characters.
       attr_reader :name
     
       # The reader method called on a receiver during get.
@@ -20,20 +21,24 @@ module Configurable
       # The writer method called on a receiver during set.
       attr_reader :writer
     
-      # The caster, which must respond to call or be nil.
+      # The caster, which translates a serialized user input (typically a
+      # string) to a valid config value.  Must respond to call if specified.
       attr_reader :caster
     
-      # The uncaster, which must respond to call or be nil.
+      # The uncaster, which translates a config value to a serializable user
+      # input (typically a string).  Must respond to call if specified.
       attr_reader :uncaster
     
       # The default config value.
       attr_reader :default
     
-      # A hash of any other attributes (typically attributes like long and short
-      # used to format self in user interfaces).
+      # A hash of any other attributes used to format self in user interfaces
+      # (ex :long and :short for command-line options).  Attributes are frozen
+      # during initialization.
       attr_reader :attrs
     
-      # Initializes a new Config.
+      # Initializes a new Config.  Specify attributes like default, reader,
+      # writer, caster, etc. within attrs.
       def initialize(key, attrs={})
         @key      = key
         @name     = attrs[:name] || @key.to_s
@@ -62,12 +67,14 @@ module Configurable
         receiver.send(writer, value)
       end
     
-      # Calls the caster with value and returns the result. Returns the value if
+      # Calls caster with value and returns the result. Returns the value if
       # no caster is set.
       def cast(value)
         caster ? caster.call(value) : value
       end
       
+      # Calls uncaster with value and returns the result. Returns value.to_s
+      # if not uncaster is set.
       def uncast(value)
         uncaster ? uncaster.call(value) : value.to_s
       end
@@ -92,6 +99,8 @@ module Configurable
         target
       end
     
+      # Used to traverse nested configs while tracking the nesting.  Yields
+      # the nesting and self to the block.
       def traverse(nesting=[])
         yield(nesting, self)
         self

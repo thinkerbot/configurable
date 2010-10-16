@@ -14,6 +14,11 @@ module Configurable
         
         values.collect {|value| super(value) } 
       end
+      
+      # Uncasts each value using uncaster.
+      def uncast(values)
+        values.collect {|value| super(value) } 
+      end
     end
   end
 end

@@ -4,6 +4,8 @@ module Configurable
   # in by a receiver's class configurations. Non-configuration keys are sent
   # to an underlying data store.
   class ConfigHash
+    # A frozen empty hash returned by configs for unbound config hashes.
+    EMPTY_HASH =  {}.freeze
     
     # The bound receiver
     attr_reader :receiver
@@ -18,8 +20,12 @@ module Configurable
       @receiver = receiver
     end
     
+    # Binds the configs in store to the receiver by setting each on the
+    # receiver (via config.set).  Bound configs are removed from store.
+    #
+    # Unbinds self from the current receiver, if needed.
     def bind(receiver)
-      unbind if @receiver
+      unbind if bound?
       
       @receiver = receiver
       configs.each_pair do |key, config|
@@ -30,18 +36,35 @@ module Configurable
       self
     end
     
+    # Unbinds the configs set on receiver by getting each value (via
+    # config.get) and setting the result into store. Does nothing if no
+    # receiver is set.
     def unbind
-      configs.each_pair do |key, config|
-        store[key] = config.get(receiver)
+      if bound?
+        configs.each_pair do |key, config|
+          store[key] = config.get(receiver)
+        end
+        @receiver = nil
       end
-      @receiver = nil
       self
     end
     
+    # Returns true if bound to a receiver.
     def bound?
       @receiver ? true : false
     end
     
+    # Returns the class configs for the bound receiver, or an empty hash if
+    # unbound (specifically EMPTY_HASH).
+    def configs
+      # Caching here is not necessary or preferred as configurations are
+      # cached on the class (which allows late inclusion of configurable
+      # modules to work properly).
+      bound? ? receiver.class.configs : EMPTY_HASH
+    end
+    
+    # Returns true if bound to a receiver and no configs values are set in
+    # store (ie all config values are stored on the receiver).
     def consistent?
       bound? && (store.keys & configs.keys).empty?
     end
@@ -116,10 +139,14 @@ module Configurable
       hash
     end
     
-    def export(overrides={})
-      configs.export(to_hash.merge(overrides))
+    # Returns self exported as a hash of raw configs (ie name keys and uncast
+    # values).
+    def export
+      configs.export(to_hash)
     end
     
+    # Imports a hash of raw configs (ie name keys and uncast values) and
+    # merges the result with self.
     def import(another)
       merge! configs.import(another)
     end
@@ -127,15 +154,6 @@ module Configurable
     # Returns an inspection string.
     def inspect
       "#<#{self.class}:#{object_id} to_hash=#{to_hash.inspect}>"
-    end
-    
-    protected
-    
-    # Returns receiver.class.configs.  Caching here is not necessary or
-    # preferred as configurations are cached on the class (which allows late
-    # inclusion of configurable modules to work properly).
-    def configs
-      receiver ? receiver.class.configs : {}
     end
   end
 end

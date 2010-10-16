@@ -13,19 +13,19 @@ module Configurable
         end
       end
     
-      # The nested configurable class
+      # The nested configurable class.
       def configurable_class
         @default
       end
       
+      # Returns the configs for the configurable class.
       def configs
         @default.configs
       end
     
-      # Returns a hash of the default configuration values for
-      # configurable_class.
+      # Returns a hash of the default config values for configurable_class.
       def default
-        configs.to_default_hash
+        configs.to_default
       end
   
       # Calls the reader on the reciever to retreive an instance of the
@@ -64,6 +64,8 @@ module Configurable
         target
       end
       
+      # Same as super but returns value (not value.to_s) if no uncaster is
+      # specified.
       def uncast(value)
         uncaster ? uncaster.call(value) : value
       end
@@ -79,6 +81,8 @@ module Configurable
         target
       end
       
+      # Yields each config in configs to the block with nesting, after appened
+      # self to nesting.
       def traverse(nesting=[], &block)
         nesting.push self
         configs.each_value do |config|

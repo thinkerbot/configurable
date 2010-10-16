@@ -2,6 +2,9 @@ require 'config_parser'
 require 'configurable/config_classes'
 
 module Configurable
+  
+  # A set of methods used to convert various inputs based on a hash of (key,
+  # Config) pairs.  Extend the hash and then use the methods.
   module Conversions
     
     # Initializes and returns a ConfigParser generated using the configs for
@@ -34,6 +37,7 @@ module Configurable
       parser
     end
     
+    # Returns a hash of the default values for each config in self.
     def to_default
       default = {}
       each_pair do |key, config|
@@ -42,6 +46,7 @@ module Configurable
       default
     end
     
+    # Import (ie map names to keys and cast values) from source to target.
     def import(source, target={})
       each_value do |config|
         config.import(source, target)
@@ -49,6 +54,7 @@ module Configurable
       target
     end
     
+    # Export (ie map keys to names and uncast values) from source to target.
     def export(source, target={})
       each_value do |config|
         config.export(source, target)
