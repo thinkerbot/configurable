@@ -50,6 +50,17 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal 1, Config.new(1, :name => 'one').key
   end
   
+  def test_initialize_sets_default_attr_if_not_set
+    config = Config.new(:key)
+    assert_equal true, config.attrs.has_key?(:default)
+    assert_equal nil, config.attrs[:default]
+  end
+  
+  def test_initialize_respects_boolean_defaults
+    assert_equal true, Config.new(:key, :default => true).default
+    assert_equal false, Config.new(:key, :default => false).default
+  end
+  
   def test_initialize_raises_error_for_non_string_names
     err = assert_raises(RuntimeError) { Config.new(:key, :name => :sym) }
     assert_equal 'invalid name: :sym (not a String)', err.message

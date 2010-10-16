@@ -43,8 +43,9 @@ module Configurable
         @key      = key
         @name     = attrs[:name] || @key.to_s
         check_name(@name)
-      
-        @default  = attrs[:default] ||= nil
+        
+        attrs[:default] = nil unless attrs.has_key?(:default)
+        @default  = attrs[:default]
         @reader   = (attrs[:reader] ||= name).to_sym
         @writer   = (attrs[:writer] ||= "#{name}=").to_sym
         @caster   = attrs[:caster]
