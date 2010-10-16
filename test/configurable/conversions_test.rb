@@ -1,15 +1,15 @@
 require File.expand_path('../../test_helper', __FILE__)
-require 'configurable/configs_hash'
+require 'configurable/conversions'
 
-class ConfigsHashTest < Test::Unit::TestCase
+class ConversionsTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  ConfigsHash = Configurable::ConfigsHash
+  Conversions = Configurable::Conversions
   
   attr_accessor :configs
   
   def setup
-    @configs = ConfigsHash.new
-    @configs[:one] = Config.new(:one)
+    @configs = {:one => Config.new(:one)}
+    @configs.extend Conversions
   end
   
   def cast_config(key, attrs={}, &caster)
@@ -20,8 +20,8 @@ class ConfigsHashTest < Test::Unit::TestCase
   class ConfiguableClass
     attr_reader :configs
     def initialize(configs)
-      @configs = ConfigsHash.new
-      @configs.merge!(configs)
+      @configs = configs
+      @configs.extend Conversions
     end
   end
   

@@ -1,7 +1,7 @@
 require 'lazydoc'
 require 'configurable/config_type'
 require 'configurable/config_hash'
-require 'configurable/configs_hash'
+require 'configurable/conversions'
 
 module Configurable
   DEFAULT_CONFIG_TYPES = {
@@ -43,7 +43,7 @@ module Configurable
     # any reason.
     def configs
       @configs ||= begin
-        configs = ConfigsHash.new
+        configs = {}
       
         ancestors.reverse.each do |ancestor|
           next unless ancestor.kind_of?(ClassMethods)
@@ -56,6 +56,7 @@ module Configurable
           end
         end
         
+        configs.extend Conversions
         configs
       end
     end
