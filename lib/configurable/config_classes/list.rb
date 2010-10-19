@@ -7,12 +7,16 @@ module Configurable
       
       # Validates the input is an array and casts each value using caster.
       def cast(values)
-        values.collect {|value| super(value) } 
+        results = []
+        values.each {|value| results << super(value) } 
+        results
       end
       
       # Uncasts each value using uncaster.
       def uncast(values)
-        values.collect {|value| super(value) } 
+        results = []
+        values.each {|value| results << super(value) } 
+        results
       end
       
       def check(values)
