@@ -78,8 +78,8 @@ module Configurable
         caster ? caster.call(value) : value
       end
       
-      # Calls uncaster with value and returns the result. Returns value.to_s
-      # if not uncaster is set.
+      # Calls uncaster with value and returns the result. Returns value if not
+      # uncaster is set.
       def uncast(value)
         uncaster ? uncaster.call(value) : value.to_s
       end
@@ -98,11 +98,15 @@ module Configurable
     
       # Imports a config from source into target by casting the value keyed by
       # name in source and setting it into target by key.
-      def import(source, target={}, &block)
+      def import(source, target={})
         if source.has_key?(name)
           value = source[name]
-          value = yield(self, value) if block_given?
-          target[key] = value
+          
+          if block_given?
+            value = yield(self, value)
+          end
+          
+          target[key] = check(cast(value))
         end
         
         target
@@ -110,11 +114,15 @@ module Configurable
     
       # Exports a config from source into target by uncasting the value keyed
       # by key in source and setting it into target by name.
-      def export(source, target={}, &block)
+      def export(source, target={})
         if source.has_key?(key)
           value = source[key]
-          value = yield(self, value) if block_given?
-          target[name] = value
+          
+          if block_given?
+            value = yield(self, value)
+          end
+          
+          target[name] = uncast(value)
         end
         
         target

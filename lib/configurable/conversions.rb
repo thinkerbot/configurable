@@ -6,8 +6,6 @@ module Configurable
   # A set of methods used to convert various inputs based on a hash of (key,
   # Config) pairs.  Extend the hash and then use the methods.
   module Conversions
-    DEFAULT_IMPORT = lambda {|config, value| config.check(config.cast(value)) }
-    DEFAULT_EXPORT = lambda {|config, value| config.uncast(value) }
     
     # Initializes and returns a ConfigParser generated using the configs for
     # self.  Arguments given to parser are passed to the ConfigParser
@@ -50,7 +48,6 @@ module Configurable
     
     # Import (ie map names to keys and cast values) from source to target.
     def import(source, target={}, &block)
-      block ||= DEFAULT_IMPORT
       each_value do |config|
         config.import(source, target, &block)
       end
@@ -59,7 +56,6 @@ module Configurable
     
     # Export (ie map keys to names and uncast values) from source to target.
     def export(source, target={}, &block)
-      block ||= DEFAULT_EXPORT
       each_value do |config|
         config.export(source, target, &block)
       end

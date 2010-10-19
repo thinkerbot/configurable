@@ -62,25 +62,21 @@ module Configurable
       
       # Same as super, but imports the casted value using configs.
       def import(source, target={}, &block)
-        if source.has_key?(name)
-          value = configs.import(source[name], &block)
-          value = yield(self, value) if block_given?
-          target[key] = value
+        super do |config, value|
+          value = configs.import(value, &block)
+          value = yield(self, value) if block
+          value
         end
-        
-        target
       end
       
       # Same as super, but exports the source value using configs before
       # uncast.
       def export(source, target={}, &block)
-        if source.has_key?(key)
-          value = configs.export(source[key], &block)
-          value = yield(self, value) if block_given?
-          target[name] = value
+        super do |config, value|
+          value = configs.export(value, &block)
+          value = yield(self, value) if block
+          value
         end
-        
-        target
       end
       
       # Yields each config in configs to the block with nesting, after appened
