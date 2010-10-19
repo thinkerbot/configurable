@@ -7,16 +7,16 @@ module Configurable
       
       # Validates the input is an array and casts each value using caster.
       def cast(values)
-        unless values.kind_of?(Array)
-          raise ArgumentError, "invalid value for config: #{values.inspect} (#{name})"
-        end
-        
         values.collect {|value| super(value) } 
       end
       
       # Uncasts each value using uncaster.
       def uncast(values)
         values.collect {|value| super(value) } 
+      end
+      
+      def check(values)
+        values.each {|value| super(value) } 
       end
     end
   end

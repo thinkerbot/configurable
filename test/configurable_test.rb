@@ -351,16 +351,6 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'ABC', ConfigCasterClass.configs[:key].cast('abc')
   end
   
-  class SelectClass
-    include Configurable
-    config :key, 'a', :options => %w{a b c}
-  end
-  
-  def test_options_option_generates_select_config
-    config = SelectClass.configs[:key]
-    assert_equal Select, config.class
-  end
-  
   class ListClass
     include Configurable
     config :key, []
@@ -369,16 +359,6 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_array_default_generates_a_list_config
     config = ListClass.configs[:key]
     assert_equal List, config.class
-  end
-  
-  class ListSelectClass
-    include Configurable
-    config :key, [], :options => %w{a b c}
-  end
-  
-  def test_array_default_and_options_option_generates_a_list_select_config
-    config = ListSelectClass.configs[:key]
-    assert_equal ListSelect, config.class
   end
   
   #

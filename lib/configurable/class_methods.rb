@@ -349,15 +349,7 @@ module Configurable
     end
     
     def guess_config_class(attrs) # :nodoc:
-      list    = attrs[:list]
-      options = attrs[:options]
-      
-      case
-      when list && options then ListSelect
-      when list    then List
-      when options then Select
-      else Config
-      end
+      attrs[:list] ? List : Config
     end
     
     def guess_config_type(attrs) # :nodoc:

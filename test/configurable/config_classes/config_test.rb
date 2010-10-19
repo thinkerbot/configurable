@@ -104,6 +104,18 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   #
+  # check test
+  #
+  
+  def test_check_validates_input_is_included_in_options
+    c = Config.new(:key, :options => [1,2,3])
+    assert_equal 1, c.check(1)
+    
+    err = assert_raises(ArgumentError) { c.check(10) }
+    assert_equal "invalid value for config: 10 (key)", err.message
+  end
+  
+  #
   # import test
   #
   

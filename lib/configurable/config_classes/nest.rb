@@ -54,28 +54,30 @@ module Configurable
         end
       end
       
-      # Same as super, but imports the casted value using configs.
-      def import(source, target={})
-        if source.has_key?(name)
-          value = cast(source[name])
-          target[key] = configs.import(value)
-        end
-        
-        target
-      end
-      
       # Same as super but returns value (not value.to_s) if no uncaster is
       # specified.
       def uncast(value)
         uncaster ? uncaster.call(value) : value
       end
       
+      # Same as super, but imports the casted value using configs.
+      def import(source, target={}, &block)
+        if source.has_key?(name)
+          value = configs.import(source[name], &block)
+          value = yield(self, value) if block_given?
+          target[key] = value
+        end
+        
+        target
+      end
+      
       # Same as super, but exports the source value using configs before
       # uncast.
-      def export(source, target={})
+      def export(source, target={}, &block)
         if source.has_key?(key)
-          value = configs.export(source[key])
-          target[name] = uncast(value)
+          value = configs.export(source[key], &block)
+          value = yield(self, value) if block_given?
+          target[name] = value
         end
         
         target

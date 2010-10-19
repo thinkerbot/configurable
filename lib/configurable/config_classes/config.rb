@@ -37,6 +37,9 @@ module Configurable
       # during initialization.
       attr_reader :attrs
     
+      # A validator for the config.  Must respond to include if present.
+      attr_reader :options
+      
       # Initializes a new Config.  Specify attributes like default, reader,
       # writer, caster, etc. within attrs.
       def initialize(key, attrs={})
@@ -50,6 +53,7 @@ module Configurable
         @writer   = (attrs[:writer] ||= "#{name}=").to_sym
         @caster   = attrs[:caster]
         @uncaster = attrs[:uncaster]
+        @options  = attrs[:options]
         @attrs    = attrs.freeze
       end
     
@@ -79,12 +83,26 @@ module Configurable
       def uncast(value)
         uncaster ? uncaster.call(value) : value.to_s
       end
+      
+      def valid?(value)
+        options ? options.include?(value) : true
+      end
+      
+      def check(value)
+        if !valid?(value)
+          raise ArgumentError, "invalid value for config: #{value.inspect} (#{name})"
+        end
+        
+        value
+      end
     
       # Imports a config from source into target by casting the value keyed by
       # name in source and setting it into target by key.
-      def import(source, target={})
+      def import(source, target={}, &block)
         if source.has_key?(name)
-          target[key] = cast(source[name])
+          value = source[name]
+          value = yield(self, value) if block_given?
+          target[key] = value
         end
         
         target
@@ -92,9 +110,11 @@ module Configurable
     
       # Exports a config from source into target by uncasting the value keyed
       # by key in source and setting it into target by name.
-      def export(source, target={})
+      def export(source, target={}, &block)
         if source.has_key?(key)
-          target[name] = uncast(source[key])
+          value = source[key]
+          value = yield(self, value) if block_given?
+          target[name] = value
         end
         
         target
