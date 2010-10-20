@@ -19,11 +19,13 @@ module Configurable
           
           nest_keys  = nesting.collect {|nest| nest.key }
           nest_names = nesting.collect {|nest| nest.name }.push(config.name)
+          hint = guess_hint(config)
           
           attrs = {
             :key       => config.key, 
             :nest_keys => nest_keys,
             :long      => nest_names.join(':'),
+            :hint      => hint,
             :callback  => config.caster
           }
           
@@ -60,6 +62,22 @@ module Configurable
         config.export(source, target, &block)
       end
       target
+    end
+    
+    protected
+    
+    def guess_hint(config)
+      default = config.default
+      
+      case default
+      when true, false, nil
+        nil
+      when Array
+        delimiter = config[:delimiter] || ','
+        config.uncast(config.default).join(delimiter)
+      else
+        default.to_s
+      end
     end
   end
 end

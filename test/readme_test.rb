@@ -8,6 +8,7 @@ class ReadmeTest < Test::Unit::TestCase
     config :flag, false                    # a flag
     config :switch, true                   # an on/off switch
     config :num, 3.14                      # a number
+    config :lst, [1,2,3]                   # a list of integers
     config :str, 'value', :short => :s     # a string, with a short
   end
   
@@ -23,16 +24,18 @@ class ReadmeTest < Test::Unit::TestCase
     expected = {
     'flag' => 'false',
     'switch' => 'true',
-    'num' => '1.61', 
+    'num' => '1.61',
+    'lst' => ['1', '2', '3'], 
     'str' => 'value'
     }
     assert_equal expected, c.config.export
   
-    c.config.import('flag' => 'true', 'num' => '2.71')
+    c.config.import('flag' => 'true', 'num' => '2.71', 'lst' => ['8', '9'])
     expected = {
     :flag => true, 
     :switch => true,
     :num => 2.71, 
+    :lst => [8,9],
     :str => 'value'
     }
     assert_equal expected, c.config.to_hash
@@ -48,12 +51,13 @@ class ReadmeTest < Test::Unit::TestCase
     assert_equal ConfigParser, parser.class
   
     expected = ['one', 'two', 'three']
-    assert_equal expected, (parser.parse "one two --flag --no-switch --num=-1 -s val three")
+    assert_equal expected, (parser.parse "one two --flag --no-switch --num=-1 --lst 3,6,9 -s val three")
     
     expected = {
     :flag => true,
     :switch => false,
     :num => -1.0,
+    :lst => [3, 6, 9],
     :str => 'val'
     }
     assert_equal expected, parser.config
@@ -61,8 +65,9 @@ class ReadmeTest < Test::Unit::TestCase
     expected = %Q{
         --flag                       a flag
     -h, --help                       print help
-        --num NUM                    a number
-    -s, --str STR                    a string, with a short
+        --lst LST                    a list of integers (1,2,3)
+        --num NUM                    a number (3.14)
+    -s, --str STR                    a string, with a short (value)
         --[no-]switch                an on/off switch
 }
     assert_equal expected, "\n" + parser.to_s

@@ -35,13 +35,13 @@ module Configurable
       # The default config value.
       attr_reader :default
     
+      # A validator for the config.  Must respond to include if present.
+      attr_reader :options
+      
       # A hash of any other attributes used to format self in user interfaces
       # (ex :long and :short for command-line options).  Attributes are frozen
       # during initialization.
       attr_reader :attrs
-    
-      # A validator for the config.  Must respond to include if present.
-      attr_reader :options
       
       # Initializes a new Config.  Specify attributes like default, reader,
       # writer, caster, etc. within attrs.
@@ -98,7 +98,7 @@ module Configurable
         
         value
       end
-    
+      
       # Imports a config from source into target by casting the string keyed
       # by name in source and setting the result into target by key.
       def import(source, target={})

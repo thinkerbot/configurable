@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.rdoc_options.concat %w{--main README -S -N --title Configurable}
   
   s.add_dependency('lazydoc', "~> 1.0")
-  s.add_dependency('config_parser', "= 0.3.2")
+  s.add_dependency('config_parser', "= 0.3.3")
   s.add_development_dependency('bundler', '~> 1.0')
 
   # list extra rdoc files here.
