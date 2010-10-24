@@ -51,6 +51,12 @@ module Configurable
       self
     end
     
+    # Merges default attrs with attrs (and otherwise modifies attrs as
+    # dictated by the config type).
+    def merge(attrs)
+      default_attrs.merge(attrs)
+    end
+    
     # Returns true if any of the matchers matches the value via case equality
     # (===).
     def ===(value)

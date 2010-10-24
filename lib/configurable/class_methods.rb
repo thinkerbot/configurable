@@ -373,7 +373,7 @@ module Configurable
     def merge_config_type_attrs(attrs) # :nodoc:
       type = attrs.has_key?(:type) ? attrs[:type] : guess_config_type(attrs)
       if config_type = config_types[type]
-        attrs = config_type.default_attrs.merge(attrs)
+        attrs = config_type.merge(attrs)
       end
       attrs
     end
