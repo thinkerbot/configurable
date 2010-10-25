@@ -25,6 +25,7 @@ are guessed for common types (true/false, numbers, strings).
     config :flag, false                    # a flag
     config :switch, true                   # an on/off switch
     config :num, 3.14                      # a number
+    config :lst, [1,2,3]                   # a list of integers
     config :str, 'value', :short => :s     # a string, with a short
   end
 
@@ -45,15 +46,17 @@ Configs may be exported and imported in a format easily translated to user inter
   # 'flag' => 'false', 
   # 'switch' => 'true',
   # 'num' => '1.61', 
+  # 'lst' => ['1', '2', '3'], 
   # 'str' => 'value'
   # }
   
-  c.config.import('flag' => 'true', 'num' => '2.71')
+  c.config.import('flag' => 'true', 'num' => '2.71', 'lst' => ['8', '9'])
   c.config.to_hash
   # => {
   # :flag => true, 
   # :switch => true,
   # :num => 2.71, 
+  # :lst => [8,9],
   # :str => 'value'
   # }
 
@@ -71,7 +74,7 @@ configurations from the command line. Non-class options may be defined with
   end
   
   parser.class            # => ConfigParser
-  parser.parse "one two --flag --no-switch --num=-1 -s val three"
+  parser.parse "one two --flag --no-switch --num=-1 --lst 3,6,9 -s val three"
   # => ['one', 'two', 'three']
   
   parser.config
@@ -79,16 +82,18 @@ configurations from the command line. Non-class options may be defined with
   # :flag => true,
   # :switch => false,
   # :num => -1,
+  # :lst => [3, 6, 9],
   # :str => 'val'
   # }
   
   "\n" + parser.to_s
   # => %Q{
-  #        --flag                       a flag
-  #    -h, --help                       print help
-  #        --num NUM                    a number
-  #    -s, --str STR                    a string, with a short
-  #        --[no-]switch                an on/off switch
+  #         --flag                       a flag
+  #     -h, --help                       print help
+  #         --lst LST                    a list of integers (1,2,3)
+  #         --num NUM                    a number (3.14)
+  #     -s, --str STR                    a string, with a short (value)
+  #         --[no-]switch                an on/off switch
   # }
 
 See the examples and documentation for details.
