@@ -9,10 +9,9 @@ module Configurable
     
     # Initializes and returns a ConfigParser generated using the configs for
     # self.  Arguments given to parser are passed to the ConfigParser
-    # initializer.  The parser is yielded to the block, if given, to register
-    # additonal options and then the options are sorted.
-    def to_parser(*args)
-      parser = ConfigParser.new(*args)
+    # initializer.
+    def to_parser(*args, &block)
+      parser = ConfigParser.new(*args, &block)
       traverse do |nesting, config|
         next if config[:hidden] == true || nesting.any? {|nest| nest[:hidden] == true }
         
@@ -30,8 +29,6 @@ module Configurable
         
         parser.on(attrs.merge(config.attrs))
       end
-      
-      yield(parser) if block_given?
       
       parser.sort_opts!
       parser
