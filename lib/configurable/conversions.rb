@@ -13,24 +13,22 @@ module Configurable
     # additonal options and then the options are sorted.
     def to_parser(*args)
       parser = ConfigParser.new(*args)
-      each_value do |config|
-        config.traverse do |nesting, config|
-          next if config[:hidden] == true || nesting.any? {|nest| nest[:hidden] == true }
-          
-          nest_keys  = nesting.collect {|nest| nest.key }
-          nest_names = nesting.collect {|nest| nest.name }.push(config.name)
-          hint = guess_hint(config)
-          
-          attrs = {
-            :key       => config.key, 
-            :nest_keys => nest_keys,
-            :long      => nest_names.join(':'),
-            :hint      => hint,
-            :callback  => config.caster
-          }
-          
-          parser.on(attrs.merge(config.attrs))
-        end
+      traverse do |nesting, config|
+        next if config[:hidden] == true || nesting.any? {|nest| nest[:hidden] == true }
+        
+        nest_keys  = nesting.collect {|nest| nest.key }
+        nest_names = nesting.collect {|nest| nest.name }.push(config.name)
+        hint = guess_hint(config)
+        
+        attrs = {
+          :key       => config.key, 
+          :nest_keys => nest_keys,
+          :long      => nest_names.join(':'),
+          :hint      => hint,
+          :callback  => config.caster
+        }
+        
+        parser.on(attrs.merge(config.attrs))
       end
       
       yield(parser) if block_given?
@@ -62,6 +60,20 @@ module Configurable
         config.export(source, target, &block)
       end
       target
+    end
+    
+    # Yields each config in configs to the block with nesting, after appened
+    # self to nesting.
+    def traverse(nesting=[], &block)
+      each_value do |config|
+        if config.respond_to?(:configs)
+          nesting.push config
+          config.configs.traverse(nesting, &block)
+          nesting.pop
+        else
+          yield(nesting, config)
+        end
+      end
     end
     
     protected

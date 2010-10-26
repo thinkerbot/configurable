@@ -131,13 +131,6 @@ module Configurable
         target
       end
     
-      # Used to traverse nested configs while tracking the nesting.  Yields
-      # the nesting and self to the block.
-      def traverse(nesting=[])
-        yield(nesting, self)
-        self
-      end
-    
       # Returns an inspect string.
       def inspect
         "#<#{self.class}:#{object_id} key=#{key} name=#{name} default=#{default.inspect} reader=#{reader} writer=#{writer} >"

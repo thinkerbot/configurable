@@ -79,17 +79,6 @@ module Configurable
         end
       end
       
-      # Yields each config in configs to the block with nesting, after appened
-      # self to nesting.
-      def traverse(nesting=[], &block)
-        nesting.push self
-        configs.each_value do |config|
-          config.traverse(nesting, &block)
-        end
-        nesting.pop
-        self
-      end
-    
       # Returns an inspection string.
       def inspect
         "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} configurable_class=#{configurable_class.to_s} >"
