@@ -13,7 +13,8 @@ class ConversionsTest < Test::Unit::TestCase
   end
   
   def config(key, attrs={}, &caster)
-    attrs[:caster] = caster
+    attrs[:caster]   = caster
+    attrs[:uncaster] = lambda {|value| value.to_s }
     Config.new(key, attrs)
   end
   

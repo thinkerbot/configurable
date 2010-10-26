@@ -30,8 +30,8 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_uncast_uncasts_each_value_of_the_input
-    caster = lambda {|value| value.to_i }
-    c = List.new(:key, :caster => caster)
+    uncaster = lambda {|value| value.to_s }
+    c = List.new(:key, :uncaster => uncaster)
     
     input = [1,2,3]
     output = c.uncast(input)

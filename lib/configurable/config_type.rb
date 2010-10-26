@@ -25,6 +25,8 @@ module Configurable
       end
     end
     
+    DEFAULT_UNCASTER = lambda {|value| value.to_s }
+    
     # An array of matchers (typically classes) used to identify defaults that
     # should be mapped to self.  Comparison to matchers is via case equality
     # (===).
@@ -37,6 +39,7 @@ module Configurable
     def initialize(*matchers)
       @matchers = matchers
       @default_attrs = matchers.last.kind_of?(Hash) ? matchers.pop : {}
+      @default_attrs[:uncaster] ||= DEFAULT_UNCASTER
     end
     
     # Sets the :caster attribute in default_attrs to the block.

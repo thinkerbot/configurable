@@ -54,31 +54,14 @@ module Configurable
         end
       end
       
-      # Same as super but returns value (not value.to_s) if no uncaster is
-      # specified.
+      def cast(input)
+        configs.import(super(input))
+      end
+      
       def uncast(value)
-        uncaster ? uncaster.call(value) : value
+        super(configs.export(value))
       end
-      
-      # Same as super, but imports the casted value using configs.
-      def import(source, target={}, &block)
-        super do |config, value|
-          value = configs.import(value, &block)
-          value = yield(self, value) if block
-          value
-        end
-      end
-      
-      # Same as super, but exports the source value using configs before
-      # uncast.
-      def export(source, target={}, &block)
-        super do |config, value|
-          value = configs.export(value, &block)
-          value = yield(self, value) if block
-          value
-        end
-      end
-      
+    
       # Returns an inspection string.
       def inspect
         "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} configurable_class=#{configurable_class.to_s} >"

@@ -21,15 +21,12 @@ module Configurable
       # The writer method called on a receiver during set.
       attr_reader :writer
     
-      # The caster which translates a string input or a simple data structure
-      # composed of strings (hash or array) to a valid config value. The
-      # caster can be designed to handle still more complicated data types if
-      # desired, but strings are required.  Must respond to call if specified.
+      # The caster which translates an input to a config value.  Must respond
+      # to call if specified.
       attr_reader :caster
     
-      # The uncaster which translates a config value to a string or simple
-      # data structure composed of strings (hash or array).  Must respond to
-      # call if specified.
+      # The uncaster which translates a config value to an input. Must respond
+      # to call if specified.
       attr_reader :uncaster
     
       # The default config value.
@@ -75,16 +72,16 @@ module Configurable
         receiver.send(writer, value)
       end
     
-      # Calls caster with the input (which should be a string) and returns the
-      # result. Returns the input if no caster is set.
-      def cast(value)
-        caster ? caster.call(value) : value
+      # Calls caster with the input and returns the result. Returns the input
+      # if no caster is set.
+      def cast(input)
+        caster ? caster.call(input) : input
       end
       
-      # Calls uncaster with value and returns the result, which should be a
-      # string. Returns value.to_s if not uncaster is set.
+      # Calls uncaster with value and returns the result. Returns value if no
+      # uncaster is set.
       def uncast(value)
-        uncaster ? uncaster.call(value) : value.to_s
+        uncaster ? uncaster.call(value) : value
       end
       
       def valid?(value)
@@ -99,32 +96,22 @@ module Configurable
         value
       end
       
-      # Imports a config from source into target by casting the string keyed
+      # Imports a config from source into target by casting the input keyed
       # by name in source and setting the result into target by key.
       def import(source, target={})
         if source.has_key?(name)
-          str = source[name]
-          
-          if block_given?
-            str = yield(self, str)
-          end
-          
-          target[key] = check(cast(str))
+          input = source[name]
+          target[key] = cast(input)
         end
         
         target
       end
     
       # Exports a config from source into target by uncasting the value keyed
-      # by key in source and setting the resulting string into target by name.
+      # by key in source and setting the resulting output into target by name.
       def export(source, target={})
         if source.has_key?(key)
           value = source[key]
-          
-          if block_given?
-            value = yield(self, value)
-          end
-          
           target[name] = uncast(value)
         end
         
