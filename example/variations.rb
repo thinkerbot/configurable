@@ -75,16 +75,17 @@ class ConfigClass
   # for non-wordy keys.
   config 0, 'value', :name => 'non_word_symbol_as_key'
   
-  # Alternate accessor methods.  If specified (even with the default
-  # name/name=) then you must define these methods yourself.
-  config :alt_reader_writer, 'value', :reader => :get_three, :writer => :set_three
+  # Alternate accessor methods.  If specified (even with the default accesors)
+  # then you must define these methods yourself.  Dynamic defaults can be
+  # specified in this manner, using memoization on the reader.
+  config :alt_reader_writer, nil, :reader => :get_time, :writer => :set_time
   
-  def get_three
-    @iv_three
+  def get_time
+    @time ||= Time.now
   end
   
-  def set_three(value)
-    @iv_three = value
+  def set_time(value)
+    @time = value
   end
   
   # You can set the desc/hint/summary yourself
@@ -99,13 +100,11 @@ parser = ConfigClass.configs.to_parser do |psr|
     puts psr
     exit
   end
-  
-  # psr.on_error do |arg, err|
-  #   puts "error parsing #{arg} (#{err.message})"
-  #   exit
-  # end
 end
-args = parser.parse(ARGV)
 
-pp args
-pp parser.config
+begin
+  pp parser.parse(ARGV)
+  pp parser.config
+rescue
+  puts $!.message
+end
