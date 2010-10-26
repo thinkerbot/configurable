@@ -88,12 +88,24 @@ module Configurable
         options ? options.include?(value) : true
       end
       
-      def check(value)
+      def errors(value)
         if !valid?(value)
-          raise ArgumentError, "invalid value for config: #{value.inspect} (#{name})"
+          ["invalid: #{value.inspect}"]
+        else
+          nil
+        end
+      end
+      
+      def validate(source, errors={})
+        if source.has_key?(key)
+          value = source[key]
+          
+          if results = errors(value)
+            errors[key] = results
+          end
         end
         
-        value
+        errors
       end
       
       # Imports a config from source into target by casting the input keyed

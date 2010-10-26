@@ -19,8 +19,16 @@ module Configurable
         results
       end
       
-      def check(values)
-        values.each {|value| super(value) } 
+      def errors(values)
+        results = []
+        
+        values.each do |value|
+          if error = super(value)
+            results << error
+          end
+        end
+        
+        results.empty? ? nil : results
       end
     end
   end

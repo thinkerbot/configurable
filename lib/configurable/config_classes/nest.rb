@@ -61,6 +61,11 @@ module Configurable
       def uncast(value)
         super(configs.export(value))
       end
+      
+      def errors(value)
+        errors = configs.validate(value)
+        errors.empty? ? nil : errors
+      end
     
       # Returns an inspection string.
       def inspect

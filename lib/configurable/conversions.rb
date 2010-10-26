@@ -59,6 +59,13 @@ module Configurable
       target
     end
     
+    def validate(source, errors={})
+      each_value do |config|
+        config.validate(source, errors)
+      end
+      errors
+    end
+    
     # Yields each config in configs to the block with nesting, after appened
     # self to nesting.
     def traverse(nesting=[], &block)

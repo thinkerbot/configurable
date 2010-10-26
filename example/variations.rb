@@ -104,7 +104,14 @@ end
 
 begin
   pp parser.parse(ARGV)
-  pp parser.config
+  errs = ConfigClass.configs.validate(parser.config)
+  if errs.empty?
+    pp parser.config
+  else
+    pp errs
+  end
+  
+  
 rescue
   puts $!.message
 end
