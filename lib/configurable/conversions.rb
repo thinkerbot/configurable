@@ -44,17 +44,17 @@ module Configurable
     end
     
     # Import (ie map names to keys and cast values) from source to target.
-    def import(source, target={}, &block)
+    def import(source, target={})
       each_value do |config|
-        config.import(source, target, &block)
+        config.import(source, target)
       end
       target
     end
     
     # Export (ie map keys to names and uncast values) from source to target.
-    def export(source, target={}, &block)
+    def export(source, target={})
       each_value do |config|
-        config.export(source, target, &block)
+        config.export(source, target)
       end
       target
     end
