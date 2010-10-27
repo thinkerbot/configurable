@@ -26,8 +26,8 @@ class ConversionsTest < Test::Unit::TestCase
     end
   end
   
-  def nest_config(key, attrs={})
-    attrs[:default] = ConfiguableClass.new(attrs.delete(:configs))
+  def nest(key, configs={}, attrs={})
+    attrs[:default] = ConfiguableClass.new(configs)
     Nest.new(key, attrs)
   end
   
@@ -75,46 +75,27 @@ class ConversionsTest < Test::Unit::TestCase
   end
   
   def test_to_parser_handles_nested_configs
-    configs[:a] = config(:a)
-    configs[:b] = nest_config(:b, :configs => {
-      :c => config(:c),
-      :d => nest_config(:d, :configs => {
-        :e => config(:e)
-      })
-    })
+    configs[:one]  = config(:one)
+    configs[:nest] = nest(:nest, :two => config(:two))
     
     parser = configs.to_parser
     parser.parse []
     assert_equal({
-      :a => nil,
-      :b => {
-        :c => nil,
-        :d => {
-          :e => nil
-        }
-      }
+      :one  => nil,
+      :nest => {:two => nil}
     }, parser.config)
   
-    parser.parse %w{--a 1 --b:c 2 --b:d:e 3}
+    parser.parse %w{--one 1 --nest:two 2}
     assert_equal({
-      :a => '1',
-      :b => {
-        :c => '2',
-        :d => {
-          :e => '3'
-        }
-      }
+      :one  => '1',
+      :nest => {:two => '2'}
     }, parser.config)
   end
   
   def test_to_parser_can_prevent_options_from_being_created_using_hidden
-    configs[:a] = config(:one, :hidden => true)
-    configs[:b] = nest_config(:b, :hidden => true, :configs => {
-      :c => config(:c)
-    })
-    configs[:d] = nest_config(:d, :configs => {
-      :e => config(:e, :hidden => true)
-    })
+    configs[:a] = config(:a, :hidden => true)
+    configs[:b] = nest(:b, {:c => config(:c)}, :hidden => true)
+    configs[:d] = nest(:d, {:e => config(:e, :hidden => true)})
     
     parser = configs.to_parser
     assert_equal [], parser.options.keys.sort
@@ -157,18 +138,16 @@ class ConversionsTest < Test::Unit::TestCase
   end
   
   def test_import_recursively_maps_nested_configs
-    configs[:one] = config(:one) {|value| value.to_i }
-    configs[:nest] = nest_config(:nest, :configs => {
-      :two => config(:two) {|value| value.to_i }
-    })
+    configs[:one]  = config(:one) {|value| value.to_i }
+    configs[:nest] = nest(:nest, :two => config(:two) {|value| value.to_i })
     
     source = {
-      'one' => '1',
+      'one'  => '1',
       'nest' => {'two' => '2'}
     }
     
     target = {
-      :one => 1,
+      :one  => 1,
       :nest => {:two => 2}
     }
     
@@ -200,18 +179,16 @@ class ConversionsTest < Test::Unit::TestCase
   end
   
   def test_export_recursively_maps_nested_configs
-    configs[:one] = config(:one)
-    configs[:nest] = nest_config(:nest, :configs => {
-      :two => config(:two)
-    })
+    configs[:one]  = config(:one)
+    configs[:nest] = nest(:nest, :two => config(:two))
     
     source = {
-      :one => 1,
+      :one  => 1,
       :nest => {:two => 2}
     }
     
     target = {
-      'one' => '1',
+      'one'  => '1',
       'nest' => {'two' => '2'}
     }
     
@@ -236,10 +213,8 @@ class ConversionsTest < Test::Unit::TestCase
   end
   
   def test_validate_checks_nested_configs
-    configs[:one] = config(:one, :options => ['a', 'b', 'c'])
-    configs[:nest] = nest_config(:nest, :configs => {
-      :two => config(:two, :options => [1, 2, 3])
-    })
+    configs[:one]  = config(:one, :options => ['a', 'b', 'c'])
+    configs[:nest] = nest(:nest, :two => config(:two, :options => [1, 2, 3]))
     
     assert_equal({
     }, configs.validate(:one => 'a', :nest => {:two => 3}))
