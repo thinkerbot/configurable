@@ -20,15 +20,15 @@ module Configurable
       end
       
       def errors(values)
-        results = []
+        output = []
         
         values.each do |value|
-          if error = super(value)
-            results << error
+          if errors = super(value)
+            output.concat(errors)
           end
         end
         
-        results.empty? ? nil : results
+        output.empty? ? nil : output
       end
     end
   end

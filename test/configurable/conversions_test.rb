@@ -217,4 +217,38 @@ class ConversionsTest < Test::Unit::TestCase
     
     assert_equal(target, configs.export(source))
   end
+  
+  #
+  # validate test
+  #
+  
+  def test_validate_returns_a_hash_of_all_errors_for_the_input
+    configs[:one] = config(:one, :options => ['a', 'b', 'c'])
+    configs[:two] = config(:two, :options => [1, 2, 3])
+    
+    assert_equal({
+    }, configs.validate(:one => 'a', :two => 3))
+    
+    assert_equal({
+      :one => ['invalid value: "x"'],
+      :two => ['invalid value: 6']
+    }, configs.validate(:one => 'x', :two => 6))
+  end
+  
+  def test_validate_checks_nested_configs
+    configs[:one] = config(:one, :options => ['a', 'b', 'c'])
+    configs[:nest] = nest_config(:nest, :configs => {
+      :two => config(:two, :options => [1, 2, 3])
+    })
+    
+    assert_equal({
+    }, configs.validate(:one => 'a', :nest => {:two => 3}))
+    
+    assert_equal({
+      :one  => ['invalid value: "x"'],
+      :nest => {
+        :two => ['invalid value: 6']
+      }
+    }, configs.validate(:one => 'x', :nest => {:two => 6}))
+  end
 end

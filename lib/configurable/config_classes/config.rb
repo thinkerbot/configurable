@@ -84,28 +84,11 @@ module Configurable
         uncaster ? uncaster.call(value) : value
       end
       
-      def valid?(value)
-        options ? options.include?(value) : true
-      end
-      
+      # Returns an array of errors associated with the value, or nil if the
+      # value is valid for self.  By default errors checks if the value is in
+      # options, if options are specified.
       def errors(value)
-        if !valid?(value)
-          ["invalid: #{value.inspect}"]
-        else
-          nil
-        end
-      end
-      
-      def validate(source, errors={})
-        if source.has_key?(key)
-          value = source[key]
-          
-          if results = errors(value)
-            errors[key] = results
-          end
-        end
-        
-        errors
+        options && !options.include?(value) ? ["invalid value: #{value.inspect}"] : nil
       end
       
       # Imports a config from source into target by casting the input keyed
@@ -128,6 +111,18 @@ module Configurable
         end
         
         target
+      end
+      
+      def validate(source, errors={})
+        if source.has_key?(key)
+          value = source[key]
+          
+          if output = errors(value)
+            errors[key] = output
+          end
+        end
+        
+        errors
       end
     
       # Returns an inspect string.

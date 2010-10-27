@@ -104,6 +104,23 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   #
+  # errors test
+  #
+  
+  def test_errors_returns_nil_if_the_value_is_valid
+    c = Config.new(:key)
+    assert_equal nil, c.errors(2)
+    
+    c = Config.new(:key, :options => [1,2,3])
+    assert_equal nil, c.errors(2)
+  end
+  
+  def test_errors_returns_an_array_of_error_messages_for_invalid_values
+    c = Config.new(:key, :options => [1,2,3])
+    assert_equal ['invalid value: 100'], c.errors(100)
+  end
+  
+  #
   # import test
   #
   
