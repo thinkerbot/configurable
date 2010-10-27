@@ -26,7 +26,7 @@ end
 helpers do
   def input_for(config)
     case 
-    when config.class == Configurable::ConfigClasses::Select
+    when config.options
       select_input(config)
     else
       text_input(config)
