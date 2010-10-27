@@ -84,6 +84,10 @@ module Configurable
         uncaster ? uncaster.call(value) : value
       end
       
+      def valid?(value)
+        errors(value).nil?
+      end
+      
       # Returns an array of errors associated with the value, or nil if the
       # value is valid for self.  By default errors checks if the value is in
       # options, if options are specified.
