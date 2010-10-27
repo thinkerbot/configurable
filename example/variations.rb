@@ -95,23 +95,18 @@ class ConfigClass
     :summary => 'doc example'
 end
 
-parser = ConfigClass.configs.to_parser do |psr|
+ConfigClass.configs.to_parser do |psr|
   psr.on('--help') do 
     puts psr
     exit
   end
-end
-
-begin
-  pp parser.parse(ARGV)
-  errs = ConfigClass.configs.validate(parser.config)
-  if errs.empty?
-    pp parser.config
+end.parse(ARGV) do |args, config|
+  errors = ConfigClass.configs.validate(config)
+  
+  if errors.empty?
+    pp args
+    pp config
   else
-    pp errs
+    pp errors
   end
-  
-  
-rescue
-  puts $!.message
 end
