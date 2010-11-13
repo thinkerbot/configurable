@@ -23,12 +23,12 @@ class ConfigClass
   config :list_of_str, ['a', 'b', 'c']
   
   # Nest configs create a configurable class; the config value is a hash.
-  nest :outer do
+  config :outer do
     config :a
     config :b
     config :c
     
-    nest :inner do
+    config :inner do
       config :x
       config :y
       config :z

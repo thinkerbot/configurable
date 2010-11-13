@@ -342,15 +342,6 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :s, ConfigAttrsClass.configs[:key][:short]
   end
   
-  class ConfigCasterClass
-    include Configurable
-    config(:key, 'XYZ') {|value| value.upcase }
-  end
-
-  def test_config_sets_caster_to_block_if_specified
-    assert_equal 'ABC', ConfigCasterClass.configs[:key].cast('abc')
-  end
-  
   class ListClass
     include Configurable
     config :key, []

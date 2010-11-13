@@ -143,97 +143,24 @@ module Configurable
     # Config is meant to be a convenience method.  It gets most things right
     # but if the attrs logic is too convoluted (and at times it is) then
     # define configs manually with the define_config method.
-    def config(key, default=nil, attrs={}, &caster)
-      attrs[:default] = default
-      attrs[:caster]  = caster if caster
-      attrs[:desc] ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      attrs[:list] ||= default.kind_of?(Array)
+    def config(key, default=nil, attrs={}, &block)
+      nest_class = guess_nest_class(default, block)
       
-      attrs = merge_config_type_attrs(attrs)
-      define_config(key, attrs, guess_config_class(attrs))
-    end
-    
-    # Defines a NestConfig after guessing or setting some standard attrs.  The
-    # default (ie configurable_class) used by the nest config can be defined
-    # by the block, or specified using the :class option.  If desired the
-    # configurable_class can be specified instead of an options hash.  In all
-    # cases the configurable_class is set as a constant into self by the
-    # capitalized key.  For example these three are equivalent:
-    #
-    #   class A
-    #     include Configurable
-    #     nest :b do
-    #       config :c
-    #     end
-    #   end
-    #
-    #   class A
-    #     class B
-    #       include Configurable
-    #       config :c
-    #     end
-    #
-    #     include Configurable
-    #     nest :b, B
-    #   end
-    #
-    #   class A
-    #     class B
-    #       include Configurable
-    #       config :c
-    #     end
-    #     include Configurable
-    #     define_config(:b, {:default => B}, NestClass)
-    #   end
-    #
-    # If :class is provided with a block then the class is used as the
-    # superclass for the configurable_class defined by the block.  The
-    # constant name for the configurable_class can be manually set with
-    # :const_name.
-    #
-    # Attributes will be any leftover options. As with config, nest takes a
-    # guess at a couple attributes:
-    #
-    # * :default is the configurable_class as defined above
-    # * :desc is set using Lazydoc (unless already set)
-    #
-    # In addition, like config, nest will guesses the type of a config (if not
-    # manually specified by :type) and merges in any attributes for the
-    # corresponding config_type.
-    #
-    # == Usage Note
-    #
-    # Nest is meant to be a convenience method.  It gets most things right but
-    # if the options logic is too convoluted (and at times it is) then define
-    # configs manually with the define_config method.
-    def nest(key, options={}, &block)
-      options = {:class => options} unless options.kind_of?(Hash)
-      base_class = options.delete(:class)
-      const_name = options.delete(:const_name) || key.to_s.capitalize
-      
-      configurable_class = begin
-        case
-        when base_class.nil? then Class.new { include Configurable }
-        when block           then Class.new(base_class)
-        else base_class
-        end
-      end
-      
-      if const_name
-        unless const_defined?(const_name) && const_get(const_name) == configurable_class
-          const_set(const_name, configurable_class)
-        end
-      end
-      
-      configurable_class.class_eval(&block) if block
-      check_infinite_nest(configurable_class)
-      
-      attrs = options
+      attrs[:default] = nest_class ? nest_class : default
       attrs[:desc]  ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      attrs[:default] = configurable_class
       attrs = merge_config_type_attrs(attrs)
       
-      define_config(key, options, Nest)
+      config_class = attrs[:class] || guess_config_class(attrs)
+      config = define_config(key, attrs, config_class)
+      
+      if nest_class
+        const_name = attrs[:const_name] || config.name.upcase
+        unless const_defined?(const_name) && const_get(const_name) == nest_class
+          const_set(const_name, nest_class)
+        end
+      end
+      
+      config
     end
     
     # Removes a config much like remove_method removes a method.  The reader
@@ -348,26 +275,56 @@ module Configurable
       super
     end
     
-    def guess_config_class(attrs) # :nodoc:
-      attrs[:list] ? List : Config
+    def guess_nest_class(base, block) # :nodoc:
+      unless base.kind_of?(Hash) || block
+        return nil
+      end
+      
+      nest_class = base.kind_of?(Class) ? 
+        Class.new(base) :
+        Class.new { include Configurable }
+       
+      if base.kind_of?(Hash)
+        configs.each_pair do |key, value|
+          nest_class.send(:config, key, value)
+        end
+      end
+      
+      if block
+        nest_class.class_eval(&block)
+      end
+      
+      check_infinite_nest(nest_class)
+      nest_class
     end
-    
+
     def guess_config_type(attrs) # :nodoc:
       default = attrs[:default]
       guess_value = default.kind_of?(Array) ? default.first : default
-      
+
       guesses = []
       config_types.each_pair do |type, config_type|
         if config_type === guess_value
           guesses << type
         end
       end
-      
+
       if guesses.length > 1
         raise "multiple guesses for config type: #{value.inspect} #{guesses.inspect}"
       end
-      
+
       guesses.at(0)
+    end
+    
+    def guess_config_class(attrs) # :nodoc:
+      case attrs[:default]
+      when Array
+        List
+      when ClassMethods
+        Nest
+      else 
+        Config
+      end
     end
     
     def merge_config_type_attrs(attrs) # :nodoc:
