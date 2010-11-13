@@ -24,7 +24,7 @@ module Configurable
           :nest_keys => nest_keys,
           :long      => nest_names.join(':'),
           :hint      => hint,
-          :callback  => config.caster
+          :callback  => lambda {|value| config.type.cast(value) }
         }
         
         parser.on(attrs.merge(config.attrs))

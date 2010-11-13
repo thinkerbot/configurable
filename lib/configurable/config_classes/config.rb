@@ -1,3 +1,5 @@
+require 'configurable/config_types'
+
 module Configurable
   module ConfigClasses
     # ConfigClasses are used by ConfigHash to delegate get/set configs on a
@@ -7,7 +9,8 @@ module Configurable
     # inputs from config files, web forms, or command-line options to an
     # appropriate object and back again.
     class Config
-    
+      include ConfigTypes
+      
       # The config key, used as a hash key for access.
       attr_reader :key
     
@@ -40,6 +43,9 @@ module Configurable
       # during initialization.
       attr_reader :attrs
       
+      # The config type for self (defaults to an ObjectType)
+      attr_reader :type
+      
       # Initializes a new Config.  Specify attributes like default, reader,
       # writer, caster, etc. within attrs.
       def initialize(key, attrs={})
@@ -49,11 +55,10 @@ module Configurable
         
         attrs[:default] = nil unless attrs.has_key?(:default)
         @default  = attrs[:default]
+        @type     = attrs[:type] || ObjectType.new(attrs)
+         
         @reader   = (attrs[:reader] ||= name).to_sym
         @writer   = (attrs[:writer] ||= "#{name}=").to_sym
-        @caster   = attrs[:caster]
-        @uncaster = attrs[:uncaster]
-        @options  = attrs[:options]
         @attrs    = attrs.freeze
       end
     
@@ -72,27 +77,20 @@ module Configurable
         receiver.send(writer, value)
       end
     
-      # Calls caster with the input and returns the result. Returns the input
-      # if no caster is set.
       def cast(input)
-        caster ? caster.call(input) : input
+        type.cast(input)
       end
       
-      # Calls uncaster with value and returns the result. Returns value if no
-      # uncaster is set.
       def uncast(value)
-        uncaster ? uncaster.call(value) : value
+        type.uncast(value)
       end
       
       def valid?(value)
         errors(value).nil?
       end
       
-      # Returns an array of errors associated with the value, or nil if the
-      # value is valid for self.  By default errors checks if the value is in
-      # options, if options are specified.
       def errors(value)
-        options && !options.include?(value) ? ["invalid value: #{value.inspect}"] : nil
+        type.errors(value)
       end
       
       # Imports a config from source into target by casting the input keyed

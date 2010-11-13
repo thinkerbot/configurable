@@ -1,8 +1,10 @@
 require File.expand_path('../../test_helper', __FILE__)
 require 'configurable/conversions'
+require 'configurable/config_types'
 
 class ConversionsTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
+  include Configurable::ConfigTypes
   Conversions = Configurable::Conversions
   
   attr_accessor :configs
@@ -13,8 +15,7 @@ class ConversionsTest < Test::Unit::TestCase
   end
   
   def config(key, attrs={}, &caster)
-    attrs[:caster]   = caster
-    attrs[:uncaster] = lambda {|value| value.to_s }
+    attrs[:type] = StringType.subclass(&caster).new(attrs)
     Config.new(key, attrs)
   end
   

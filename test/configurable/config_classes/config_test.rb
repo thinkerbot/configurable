@@ -3,6 +3,7 @@ require 'configurable/config_classes/config'
 
 class ConfigTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
+  include Configurable::ConfigTypes
   
   attr_reader :c
   
@@ -22,9 +23,7 @@ class ConfigTest < Test::Unit::TestCase
       :name     => 'NAME', 
       :reader   => :READER, 
       :writer   => :WRITER, 
-      :default  => :DEFAULT,
-      :caster   => caster,
-      :uncaster => uncaster
+      :default  => :DEFAULT
     )
     
     assert_equal :KEY, c.key
@@ -32,8 +31,6 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal :READER, c.reader
     assert_equal :WRITER, c.writer
     assert_equal :DEFAULT, c.default
-    assert_equal caster, c.caster
-    assert_equal uncaster, c.uncaster
     assert_equal true, c.attrs.frozen?
   end
   
@@ -96,10 +93,10 @@ class ConfigTest < Test::Unit::TestCase
   # cast test
   #
   
-  def test_cast_calls_caster_with_input_and_returns_the_result
-    upcase = lambda {|value| value.upcase }
+  def test_cast_casts_with_type_using_input_and_returns_the_result
+    type = StringType.subclass {|value| value.upcase }.new
     
-    c = Config.new(:key, :caster => upcase)
+    c = Config.new(:key, :type => type)
     assert_equal 'ABC', c.cast('aBc')
   end
   
@@ -107,16 +104,18 @@ class ConfigTest < Test::Unit::TestCase
   # errors test
   #
   
-  def test_errors_returns_nil_if_the_value_is_valid
+  def test_errors_returns_type_errors
     c = Config.new(:key)
     assert_equal nil, c.errors(2)
     
-    c = Config.new(:key, :options => [1,2,3])
+    type = ObjectType.new(:options => [1,2,3])
+    c = Config.new(:key, :type => type)
     assert_equal nil, c.errors(2)
   end
   
   def test_errors_returns_an_array_of_error_messages_for_invalid_values
-    c = Config.new(:key, :options => [1,2,3])
+    type = ObjectType.new(:options => [1,2,3])
+    c = Config.new(:key, :type => type)
     assert_equal ['invalid value: 100'], c.errors(100)
   end
   

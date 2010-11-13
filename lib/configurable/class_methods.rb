@@ -1,5 +1,4 @@
 require 'lazydoc'
-require 'configurable/config_type'
 require 'configurable/config_hash'
 require 'configurable/conversions'
 
@@ -7,16 +6,17 @@ module Configurable
   
   # Hash of default config types (bool, integer, float, string).
   DEFAULT_CONFIG_TYPES = {
-    :bool    => ConfigType.new(TrueClass, FalseClass).cast {|value| ConfigType.cast_to_bool(value) },
-    :integer => ConfigType.new(Integer).cast {|value| Integer(value) },
-    :float   => ConfigType.new(Float).cast   {|value| Float(value) },
-    :string  => ConfigType.new(String).cast  {|value| String(value) }
+    :bool    => ConfigTypes::BooleanType,
+    :integer => ConfigTypes::IntegerType,
+    :float   => ConfigTypes::FloatType,
+    :string  => ConfigTypes::StringType
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
   # for declaring configurations.
   module ClassMethods
     include ConfigClasses
+    include ConfigTypes
     
     # A hash of (key, Config) pairs tracking configs defined on self.  See the
     # configs method for all configs declared across all ancestors.
@@ -147,8 +147,8 @@ module Configurable
       nest_class = guess_nest_class(default, block)
       
       attrs[:default] = nest_class ? nest_class : default
+      attrs[:type]    = guess_config_type(attrs)
       attrs[:desc]  ||= Lazydoc.register_caller(Lazydoc::Trailer)
-      attrs = merge_config_type_attrs(attrs)
       
       config_class = attrs[:class] || guess_config_class(attrs)
       config = define_config(key, attrs, config_class)
@@ -223,16 +223,15 @@ module Configurable
       config
     end
     
-    # Defines a named config type to match the specified classes. The caster
-    # block, if provided, is set as the default :caster attribute. Other
-    # default attributes may be specified with a hash given as the last
-    # matcher.
-    def config_type(type, *matchers, &caster)
-      config_type = ConfigType.new(*matchers).cast(&caster)
+    def define_config_type(type, config_type)
       config_type_registry[type] = config_type
       reset_config_types
-      
       config_type
+    end
+    
+    def config_type(type, *matchers, &caster)
+      config_type = StringType.subclass(*matchers).cast(&caster)
+      define_config_type(type, config_type)
     end
     
     # Removes a config_type much like remove_method removes a method.
@@ -299,21 +298,21 @@ module Configurable
     end
 
     def guess_config_type(attrs) # :nodoc:
-      default = attrs[:default]
-      guess_value = default.kind_of?(Array) ? default.first : default
-
-      guesses = []
-      config_types.each_pair do |type, config_type|
-        if config_type === guess_value
-          guesses << type
-        end
+      if type = attrs[:type]
+        config_type = config_types[type]
+        return config_type.new(attrs)
       end
+      
+      default = attrs[:default]
+      value   = default.kind_of?(Array) ? default.first : default
+
+      guesses = config_types.values.select {|config_type| config_type.matches?(value) }
 
       if guesses.length > 1
-        raise "multiple guesses for config type: #{value.inspect} #{guesses.inspect}"
+        raise "multiple guesses for config type: #{default.inspect} #{guesses.inspect}"
       end
 
-      guesses.at(0)
+      (guesses.at(0) || ObjectType).new(attrs)
     end
     
     def guess_config_class(attrs) # :nodoc:
@@ -325,14 +324,6 @@ module Configurable
       else 
         Config
       end
-    end
-    
-    def merge_config_type_attrs(attrs) # :nodoc:
-      type = attrs.has_key?(:type) ? attrs[:type] : guess_config_type(attrs)
-      if config_type = config_types[type]
-        attrs = config_type.merge(attrs)
-      end
-      attrs
     end
     
     # helper to recursively check for an infinite nest
