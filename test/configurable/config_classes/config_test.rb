@@ -16,14 +16,12 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_sets_attributes_from_attrs
-    caster = lambda {}
-    uncaster = lambda {}
-    
     c = Config.new(:KEY,
-      :name     => 'NAME', 
-      :reader   => :READER, 
-      :writer   => :WRITER, 
-      :default  => :DEFAULT
+      :name    => 'NAME', 
+      :reader  => :READER, 
+      :writer  => :WRITER, 
+      :default => :DEFAULT,
+      :desc    => {:long => 'LONG'}
     )
     
     assert_equal :KEY, c.key
@@ -31,7 +29,7 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal :READER, c.reader
     assert_equal :WRITER, c.writer
     assert_equal :DEFAULT, c.default
-    assert_equal true, c.attrs.frozen?
+    assert_equal({:long => 'LONG'}, c.desc)
   end
   
   def test_initialize_determines_name_reader_and_writer_from_key
@@ -47,10 +45,9 @@ class ConfigTest < Test::Unit::TestCase
     assert_equal 1, Config.new(1, :name => 'one').key
   end
   
-  def test_initialize_sets_default_attr_if_not_set
-    config = Config.new(:key)
-    assert_equal true, config.attrs.has_key?(:default)
-    assert_equal nil, config.attrs[:default]
+  def test_initialize_sets_default_to_nil_if_unspecified
+    c = Config.new(:key)
+    assert_equal nil, c.default
   end
   
   def test_initialize_respects_boolean_defaults
@@ -65,7 +62,7 @@ class ConfigTest < Test::Unit::TestCase
   
   def test_config_raises_error_for_non_word_characters_in_name
     err = assert_raises(NameError) { Config.new(:key, :name => 'k,ey') }
-    assert_equal 'invalid characters in name: "k,ey"', err.message
+    assert_equal 'invalid name: "k,ey" (includes non-word characters)', err.message
   end
   
   #
@@ -94,10 +91,8 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_cast_casts_with_type_using_input_and_returns_the_result
-    type = StringType.subclass {|value| value.upcase }.new
-    
-    c = Config.new(:key, :type => type)
-    assert_equal 'ABC', c.cast('aBc')
+    c = Config.new(:key, :type => IntegerType.new)
+    assert_equal 1, c.cast('1')
   end
   
   #
@@ -105,17 +100,10 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_errors_returns_type_errors
-    c = Config.new(:key)
-    assert_equal nil, c.errors(2)
+    type = ObjectType.new(:options => [1,2,3])
+    c = Config.new(:key, :default => 1, :type => type)
     
-    type = ObjectType.new(:options => [1,2,3])
-    c = Config.new(:key, :type => type)
     assert_equal nil, c.errors(2)
-  end
-  
-  def test_errors_returns_an_array_of_error_messages_for_invalid_values
-    type = ObjectType.new(:options => [1,2,3])
-    c = Config.new(:key, :type => type)
     assert_equal ['invalid value: 100'], c.errors(100)
   end
   

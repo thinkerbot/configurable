@@ -3,11 +3,7 @@ require 'configurable/config_types'
 module Configurable
   module ConfigClasses
     # ConfigClasses are used by ConfigHash to delegate get/set configs on a
-    # receiver. They also track metadata for interacting with configs from
-    # user interfaces.  In particular configs allow the specification of a
-    # word-based name as well as a caster/uncaster pair to translate string
-    # inputs from config files, web forms, or command-line options to an
-    # appropriate object and back again.
+    # receiver and to map configs between user interfaces.
     class Config
       include ConfigTypes
       
@@ -24,47 +20,29 @@ module Configurable
       # The writer method called on a receiver during set.
       attr_reader :writer
     
-      # The caster which translates an input to a config value.  Must respond
-      # to call if specified.
-      attr_reader :caster
-    
-      # The uncaster which translates a config value to an input. Must respond
-      # to call if specified.
-      attr_reader :uncaster
-    
       # The default config value.
       attr_reader :default
-    
-      # A validator for the config.  Must respond to include if present.
-      attr_reader :options
-      
-      # A hash of any other attributes used to format self in user interfaces
-      # (ex :long and :short for command-line options).  Attributes are frozen
-      # during initialization.
-      attr_reader :attrs
       
       # The config type for self (defaults to an ObjectType)
       attr_reader :type
       
+      # A hash of information used to render self in various contexts.
+      attr_reader :desc
+      
       # Initializes a new Config.  Specify attributes like default, reader,
-      # writer, caster, etc. within attrs.
+      # writer, type, etc. within attrs.
       def initialize(key, attrs={})
         @key      = key
         @name     = attrs[:name] || @key.to_s
         check_name(@name)
         
-        attrs[:default] = nil unless attrs.has_key?(:default)
         @default  = attrs[:default]
-        @type     = attrs[:type] || ObjectType.new(attrs)
-         
-        @reader   = (attrs[:reader] ||= name).to_sym
-        @writer   = (attrs[:writer] ||= "#{name}=").to_sym
-        @attrs    = attrs.freeze
-      end
-    
-      # Get the specified attribute from attrs.
-      def [](key)
-        attrs[key]
+        @type     = attrs[:type] || ObjectType.new
+        check_default(@default)
+        
+        @reader   = (attrs[:reader] || name).to_sym
+        @writer   = (attrs[:writer] || "#{name}=").to_sym
+        @desc     = attrs[:desc] || {}
       end
     
       # Calls reader on the receiver and returns the result.
@@ -140,8 +118,12 @@ module Configurable
         end
 
         unless name =~ /\A\w+\z/
-          raise NameError.new("invalid characters in name: #{name.inspect}")
+          raise NameError.new("invalid name: #{name.inspect} (includes non-word characters)")
         end
+      end
+      
+      def check_default(default) # :nodoc:
+        valid?(default) or raise "invalid default: #{default.inspect} (does not validate by type)"
       end
     end
   end
