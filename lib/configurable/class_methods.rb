@@ -147,7 +147,7 @@ module Configurable
       nest_class = guess_nest_class(default, block)
       
       attrs[:default] = nest_class ? nest_class : default
-      attrs[:type]    = guess_config_type(attrs)
+      attrs[:type]    = guess_config_type(attrs).new(attrs)
       attrs[:desc]  ||= Lazydoc.register_caller(Lazydoc::Trailer)
       
       config_class = attrs[:class] || guess_config_class(attrs)
@@ -297,22 +297,37 @@ module Configurable
       nest_class
     end
 
+    # helper to recursively check for an infinite nest
+    def check_infinite_nest(klass) # :nodoc:
+      raise "infinite nest detected" if klass == self
+      
+      klass.configs.each_value do |config|
+        if config.kind_of?(Nest)
+          check_infinite_nest(config.configurable_class)
+        end
+      end
+    end
+
     def guess_config_type(attrs) # :nodoc:
       if type = attrs[:type]
-        config_type = config_types[type]
-        return config_type.new(attrs)
+        return(config_types[type] or raise "no such config type: #{type.inspect}")
       end
       
       default = attrs[:default]
       value   = default.kind_of?(Array) ? default.first : default
 
-      guesses = config_types.values.select {|config_type| config_type.matches?(value) }
-
-      if guesses.length > 1
-        raise "multiple guesses for config type: #{default.inspect} #{guesses.inspect}"
+      guesses = []
+      config_types.each_pair do |type, config_type|
+        if config_type.matches?(value)
+          guesses << type
+        end
       end
 
-      (guesses.at(0) || ObjectType).new(attrs)
+      case guesses.length
+      when 0 then ObjectType
+      when 1 then config_types[guesses.at(0)]
+      else raise "multiple guesses for config type: #{guesses.inspect} (default: #{default.inspect})"
+      end
     end
     
     def guess_config_class(attrs) # :nodoc:
@@ -323,17 +338,6 @@ module Configurable
         Nest
       else 
         Config
-      end
-    end
-    
-    # helper to recursively check for an infinite nest
-    def check_infinite_nest(klass) # :nodoc:
-      raise "infinite nest detected" if klass == self
-      
-      klass.configs.each_value do |config|
-        if config.kind_of?(Nest)
-          check_infinite_nest(config.configurable_class)
-        end
       end
     end
   end
