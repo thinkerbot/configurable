@@ -9,7 +9,8 @@ module Configurable
     :bool    => ConfigTypes::BooleanType,
     :integer => ConfigTypes::IntegerType,
     :float   => ConfigTypes::FloatType,
-    :string  => ConfigTypes::StringType
+    :string  => ConfigTypes::StringType,
+    :nest    => ConfigTypes::NestType
   }
   
   # ClassMethods extends classes that include Configurable and provides methods

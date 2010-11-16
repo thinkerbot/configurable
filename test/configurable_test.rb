@@ -437,7 +437,10 @@ class ConfigurableTest < Test::Unit::TestCase
     config = NestClass.configs[:outer]
     assert_equal Nest, config.class
     assert_equal NestClass::Outer, config.configurable_class
-    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
+    
+    configurable = config.cast({'inner' => '1'})
+    assert_equal NestClass::Outer, configurable.class
+    assert_equal({:inner => 1}, configurable.config.to_hash)
   end
   
   class HashNestClass
@@ -449,14 +452,10 @@ class ConfigurableTest < Test::Unit::TestCase
     config = HashNestClass.configs[:outer]
     assert_equal Nest, config.class
     assert_equal HashNestClass::Outer, config.configurable_class
-  end
-  
-  def test_config_guesses_type_for_nested_configs
-    outer = HashNestClass.configs[:outer]
-    assert_equal({:inner => 1}, outer.cast({'inner' => '1'}))
     
-    inner = outer.configs[:inner]
-    assert_equal 1, inner.cast('1')
+    configurable = config.cast({'inner' => '1'})
+    assert_equal HashNestClass::Outer, configurable.class
+    assert_equal({:inner => 1}, configurable.config.to_hash)
   end
   
   class BlockNestClass
@@ -470,14 +469,39 @@ class ConfigurableTest < Test::Unit::TestCase
     config = BlockNestClass.configs[:outer]
     assert_equal Nest, config.class
     assert_equal BlockNestClass::Outer, config.configurable_class
+    
+    configurable = config.cast({'inner' => '1'})
+    assert_equal BlockNestClass::Outer, configurable.class
+    assert_equal({:inner => 1}, configurable.config.to_hash)
   end
   
-  def test_config_generates_configs_as_defined_in_block
-    outer = BlockNestClass.configs[:outer]
-    assert_equal({:inner => 1}, outer.cast({'inner' => '1'}))
+  #
+  # config combinations test
+  #
+  
+  class ScalarNestClass
+    include Configurable
     
-    inner = outer.configs[:inner]
-    assert_equal 1, inner.cast('1')
+    class Outer
+      include Configurable
+      config :inner, 1
+    end
+    
+    config :outer, Outer.new, :class => Configurable::ConfigClasses::Config
+  end
+  
+  def test_nest_config_type_works_as_a_scalar_config
+    config = ScalarNestClass.configs[:outer]
+    assert_equal Config, config.class
+    
+    outer = config.cast({'inner' => '1'})
+    assert_equal ScalarNestClass::Outer, outer.class
+    
+    configurable = ScalarNestClass.new
+    assert_equal 1, configurable.config[:outer].config[:inner]
+    
+    configs = ScalarNestClass.configs.export(configurable.config)
+    assert_equal({'outer' => {'inner' => '1'}}, configs)
   end
   
   #
