@@ -491,9 +491,9 @@ class ConfigurableTest < Test::Unit::TestCase
   class DocClass
     include Configurable
   
-    config :one, 'value'                      # one
+    config :one, 'value'                   # one
     config :two, 'value', :desc => "TWO"   # two
-    config :three, 'value',                   # three
+    config :three, 'value',                # three
       :a => 'a',
       :b => 'b'
   end
@@ -507,14 +507,14 @@ class ConfigurableTest < Test::Unit::TestCase
   module DocConfigModule
     include Configurable
 
-    config :one, 'value'                    # one
+    config :one, 'value'                 # one
     config :two, 'value', :desc => "TWO" # two
   end
   
   class DocIncludeClass
     include DocConfigModule
     
-    config :three, 'value'                    # three
+    config :three, 'value'                 # three
     config :four, 'value', :desc => "FOUR" # four
   end
   
@@ -532,9 +532,9 @@ class ConfigurableTest < Test::Unit::TestCase
     include Configurable
   
     config :a  # none
-    config :b  # -t, --two   : short and long
-    config :c  #     --three : long only
-    config :d  # -f          : short only
+    config :b  # -t, --two       : short and long
+    config :c  #     --three     : long only
+    config :d  # -f              : short only
     config :e  #     --five FIVE : argname
     config :f  # --no-desc, -s   :
   end
