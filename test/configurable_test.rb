@@ -337,7 +337,7 @@ class ConfigurableTest < Test::Unit::TestCase
   end
 
   def test_config_sets_desc_using_attrs
-    assert_equal :s, ConfigAttrsClass.configs[:key].desc[:short]
+    assert_equal :s, ConfigAttrsClass.configs[:key][:short]
   end
   
   class ListClass
@@ -415,48 +415,78 @@ class ConfigurableTest < Test::Unit::TestCase
   class DocClass
     include Configurable
   
-    config :one, 'value'                                  # one with documentation
-    config :two, 'value', :summary => "two description"   # two ignored documentation
-    config :three, 'value',                               # three with offset documentation
+    config :one, 'value'                      # one
+    config :two, 'value', :desc => "TWO"   # two
+    config :three, 'value',                   # three
       :a => 'a',
       :b => 'b'
   end
   
-  def test_configurable_extracts_desc_from_documentation_unless_specified
-    summary = DocClass.configs[:one].desc[:summary]
-    assert_equal "one with documentation", summary
-    
-    summary = DocClass.configs[:two].desc[:summary]
-    assert_equal "two description", summary
-    
-    summary = DocClass.configs[:three].desc[:summary]
-    assert_equal "three with offset documentation", summary
+  def test_configurable_extracts_summary_from_documentation_unless_specified
+    assert_equal "one", DocClass.configs[:one][:desc]
+    assert_equal "TWO", DocClass.configs[:two][:desc]
+    assert_equal "three", DocClass.configs[:three][:desc]
   end
   
   module DocConfigModule
     include Configurable
 
-    config :one, 'value'                                # one with documentation
-    config :two, 'value', :summary => "two description" # two ignored documentation
+    config :one, 'value'                    # one
+    config :two, 'value', :desc => "TWO" # two
   end
   
   class DocIncludeClass
     include DocConfigModule
     
-    config :three, 'value'                                # three with documentation
-    config :four, 'value', :summary => "four description" # four ignored documentation
+    config :three, 'value'                    # three
+    config :four, 'value', :desc => "FOUR" # four
   end
   
   def test_configurable_registers_documentation_for_configs_in_modules
     [:one, :three].each do |name|
-      summary = DocIncludeClass.configs[name].desc[:summary]
-      assert_equal "#{name} with documentation", summary
+      assert_equal name.to_s, DocIncludeClass.configs[name][:desc]
     end
     
     [:two, :four].each do |name|
-      summary = DocIncludeClass.configs[name].desc[:summary]
-      assert_equal "#{name} description", summary
+      assert_equal name.to_s.upcase, DocIncludeClass.configs[name][:desc]
     end
+  end
+  
+  class DocSyntaxClass
+    include Configurable
+  
+    config :a  # none
+    config :b  # -t, --two   : short and long
+    config :c  #     --three : long only
+    config :d  # -f          : short only
+    config :e  #     --five FIVE : argname
+    config :f  # --no-desc, -s   :
+  end
+  
+  def test_configurable_extracts_long_and_short_from_documentation
+    assert_equal nil, DocSyntaxClass.configs[:a][:short]
+    assert_equal nil, DocSyntaxClass.configs[:a][:long]
+    assert_equal nil, DocSyntaxClass.configs[:a][:arg_name]
+    
+    assert_equal '-t',    DocSyntaxClass.configs[:b][:short]
+    assert_equal '--two', DocSyntaxClass.configs[:b][:long]
+    assert_equal nil,     DocSyntaxClass.configs[:b][:arg_name]
+    
+    assert_equal nil,       DocSyntaxClass.configs[:c][:short]
+    assert_equal '--three', DocSyntaxClass.configs[:c][:long]
+    assert_equal nil,       DocSyntaxClass.configs[:c][:arg_name]
+    
+    assert_equal '-f', DocSyntaxClass.configs[:d][:short]
+    assert_equal nil,  DocSyntaxClass.configs[:d][:long]
+    assert_equal nil,  DocSyntaxClass.configs[:d][:arg_name]
+    
+    assert_equal  nil,     DocSyntaxClass.configs[:e][:short]
+    assert_equal '--five', DocSyntaxClass.configs[:e][:long]
+    assert_equal 'FIVE',   DocSyntaxClass.configs[:e][:arg_name]
+    
+    assert_equal '-s',        DocSyntaxClass.configs[:f][:short]
+    assert_equal '--no-desc', DocSyntaxClass.configs[:f][:long]
+    assert_equal nil,         DocSyntaxClass.configs[:f][:arg_name]
   end
   
   #

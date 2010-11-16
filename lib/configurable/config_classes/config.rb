@@ -44,6 +44,10 @@ module Configurable
         @desc     = attrs[:desc] || {}
       end
     
+      def [](key)
+        desc[key]
+      end
+      
       # Calls reader on the receiver and returns the result.
       def get(receiver)
         receiver.send(reader)

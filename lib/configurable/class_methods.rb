@@ -1,5 +1,6 @@
 require 'lazydoc'
 require 'configurable/config_hash'
+require 'config_parser/utils'
 
 module Configurable
   
@@ -292,20 +293,31 @@ module Configurable
       end
     end
     
-    def guess_config_desc(attrs, comment) # :nodoc:
+    def guess_config_desc(base_attrs, comment) # :nodoc:
       Hash.new do |hash, key|
         comment.resolve
         
-        unless hash.has_key?(:summary)
-          hash[:summary] = comment.trailer
+        if trailer = comment.trailer
+          flags, desc = trailer.split(':', 2)
+          flags, desc = '', flags unless desc
+        
+          argv = flags.split(',').collect! {|arg| arg.strip }
+          argv << desc
+        
+          comment_attrs = ConfigParser::Utils.parse_attrs(argv)
+          comment_attrs.each_pair do |attr_key, attr_value|
+            unless hash.has_key?(attr_key)
+              hash[attr_key] = attr_value
+            end
+          end
         end
         
-        unless hash.has_key?(:description)
-          hash[:description] = comment.content
+        unless hash.has_key?(:help)
+          hash[:help] = comment.content
         end
         
         hash.has_key?(key) ? hash[key] : (hash[key] = nil)
-      end.merge!(attrs)
+      end.merge!(base_attrs)
     end
   end
 end
