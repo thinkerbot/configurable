@@ -424,17 +424,35 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class NestClass
     include Configurable
+    
+    class Outer
+      include Configurable
+      config :inner, 1
+    end
+    
+    config :outer, Outer.new
+  end
+  
+  def test_config_generates_a_nest_config_for_configurable_default
+    config = NestClass.configs[:outer]
+    assert_equal Nest, config.class
+    assert_equal NestClass::Outer, config.configurable_class
+    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
+  end
+  
+  class HashNestClass
+    include Configurable
     config :outer, {:inner => 1}
   end
   
   def test_config_generates_a_nest_config_and_configurable_class_for_hash_default
-    config = NestClass.configs[:outer]
+    config = HashNestClass.configs[:outer]
     assert_equal Nest, config.class
-    assert_equal NestClass::OUTER, config.configurable_class
+    assert_equal HashNestClass::Outer, config.configurable_class
   end
   
   def test_config_guesses_type_for_nested_configs
-    outer = NestClass.configs[:outer]
+    outer = HashNestClass.configs[:outer]
     assert_equal({:inner => 1}, outer.cast({'inner' => '1'}))
     
     inner = outer.configs[:inner]
@@ -451,7 +469,7 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_config_generates_a_nest_config_and_configurable_class_for_block
     config = BlockNestClass.configs[:outer]
     assert_equal Nest, config.class
-    assert_equal BlockNestClass::OUTER, config.configurable_class
+    assert_equal BlockNestClass::Outer, config.configurable_class
   end
   
   def test_config_generates_configs_as_defined_in_block

@@ -154,7 +154,7 @@ module Configurable
       config = define_config(key, attrs, config_class)
 
       if nest_class
-        const_name = attrs[:const_name] || config.name.upcase
+        const_name = attrs[:const_name] || guess_const_name(config)
         unless const_defined?(const_name) && const_get(const_name) == nest_class
           const_set(const_name, nest_class)
         end
@@ -366,6 +366,10 @@ module Configurable
         
         hash.has_key?(key) ? hash[key] : nil
       end.merge!(base_attrs)
+    end
+    
+    def guess_const_name(config) # :nodoc:
+      config.name.gsub(/(?:^|_)(.)/) { $1.upcase }
     end
   end
 end
