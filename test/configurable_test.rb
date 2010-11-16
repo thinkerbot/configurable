@@ -103,15 +103,13 @@ class ConfigurableTest < Test::Unit::TestCase
   
   class ConfigTypeClass
     include Configurable
-    config_type(:upcase, :option_type => :option) {|input| input.upcase }
+    config_type(:upcase) {|input| input.upcase }
     config :key, 'abc', :type => :upcase
   end
   
   def test_config_type_registers_a_config_type
     config_type = ConfigTypeClass.config_types[:upcase]
     assert_equal 'XYZ', config_type.new.cast('xyz')
-    assert_equal :option, config_type.default_attrs[:option_type]
-    
     assert_equal 'XYZ', ConfigTypeClass.configs[:key].cast('xyz')
   end
   
@@ -338,8 +336,8 @@ class ConfigurableTest < Test::Unit::TestCase
     config :key, :default, :short => :s
   end
 
-  def test_config_sets_attrs_as_specified
-    assert_equal :s, ConfigAttrsClass.configs[:key][:short]
+  def test_config_sets_desc_using_attrs
+    assert_equal :s, ConfigAttrsClass.configs[:key].desc[:short]
   end
   
   class ListClass
@@ -347,7 +345,7 @@ class ConfigurableTest < Test::Unit::TestCase
     config :key, []
   end
   
-  def test_array_default_generates_a_list_config
+  def test_config_generates_a_list_config_for_array_default
     config = ListClass.configs[:key]
     assert_equal List, config.class
   end
@@ -407,57 +405,57 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # lazydoc test
+  # documentation test
   #
   
-  class LazydocNestClass
+  class DocNestClass
     include Configurable
   end
   
-  class LazydocClass
+  class DocClass
     include Configurable
   
     config :one, 'value'                                  # one with documentation
-    config :two, 'value', :desc => "two description"      # two ignored documentation
+    config :two, 'value', :summary => "two description"   # two ignored documentation
     config :three, 'value',                               # three with offset documentation
       :a => 'a',
       :b => 'b'
   end
   
-  def test_configurable_registers_configs_with_lazydoc_unless_desc_is_specified
-    desc = LazydocClass.configs[:one][:desc]
-    assert_equal "one with documentation", desc.to_s
+  def test_configurable_extracts_desc_from_documentation_unless_specified
+    summary = DocClass.configs[:one].desc[:summary]
+    assert_equal "one with documentation", summary
     
-    desc = LazydocClass.configs[:two][:desc]
-    assert_equal "two description", desc.to_s
+    summary = DocClass.configs[:two].desc[:summary]
+    assert_equal "two description", summary
     
-    desc = LazydocClass.configs[:three][:desc]
-    assert_equal "three with offset documentation", desc.to_s
+    summary = DocClass.configs[:three].desc[:summary]
+    assert_equal "three with offset documentation", summary
   end
   
-  module LazydocConfigModule
+  module DocConfigModule
     include Configurable
 
-    config :one, 'value'                             # one with documentation
-    config :two, 'value', :desc => "two description" # two ignored documentation
+    config :one, 'value'                                # one with documentation
+    config :two, 'value', :summary => "two description" # two ignored documentation
   end
   
-  class LazydocIncludeClass
-    include LazydocConfigModule
+  class DocIncludeClass
+    include DocConfigModule
     
     config :three, 'value'                                # three with documentation
-    config :four, 'value', :desc => "four description"    # four ignored documentation
+    config :four, 'value', :summary => "four description" # four ignored documentation
   end
   
   def test_configurable_registers_documentation_for_configs_in_modules
     [:one, :three].each do |name|
-      desc = LazydocIncludeClass.configs[name][:desc]
-      assert_equal "#{name} with documentation", desc.to_s
+      summary = DocIncludeClass.configs[name].desc[:summary]
+      assert_equal "#{name} with documentation", summary
     end
     
     [:two, :four].each do |name|
-      desc = LazydocIncludeClass.configs[name][:desc]
-      assert_equal "#{name} description", desc.to_s
+      summary = DocIncludeClass.configs[name].desc[:summary]
+      assert_equal "#{name} description", summary
     end
   end
   

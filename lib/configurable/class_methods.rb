@@ -1,6 +1,5 @@
 require 'lazydoc'
 require 'configurable/config_hash'
-require 'configurable/conversions'
 
 module Configurable
   
@@ -60,7 +59,6 @@ module Configurable
           end
         end
         
-        configs.extend Conversions
         configs
       end
     end
@@ -144,23 +142,12 @@ module Configurable
     # but if the attrs logic is too convoluted (and at times it is) then
     # define configs manually with the define_config method.
     def config(key, default=nil, attrs={}, &block)
-      nest_class = guess_nest_class(default, block)
-      
-      attrs[:default] = nest_class ? nest_class : default
+      attrs[:default] = default
       attrs[:type]    = guess_config_type(attrs).new(attrs)
-      attrs[:desc]  ||= Lazydoc.register_caller(Lazydoc::Trailer)
+      attrs[:desc]    = guess_config_desc(attrs, Lazydoc.register_caller)
       
       config_class = attrs[:class] || guess_config_class(attrs)
-      config = define_config(key, attrs, config_class)
-      
-      if nest_class
-        const_name = attrs[:const_name] || config.name.upcase
-        unless const_defined?(const_name) && const_get(const_name) == nest_class
-          const_set(const_name, nest_class)
-        end
-      end
-      
-      config
+      define_config(key, attrs, config_class)
     end
     
     # Removes a config much like remove_method removes a method.  The reader
@@ -273,40 +260,6 @@ module Configurable
       ClassMethods.initialize(base)
       super
     end
-    
-    def guess_nest_class(base, block) # :nodoc:
-      unless base.kind_of?(Hash) || block
-        return nil
-      end
-      
-      nest_class = base.kind_of?(Class) ? 
-        Class.new(base) :
-        Class.new { include Configurable }
-       
-      if base.kind_of?(Hash)
-        configs.each_pair do |key, value|
-          nest_class.send(:config, key, value)
-        end
-      end
-      
-      if block
-        nest_class.class_eval(&block)
-      end
-      
-      check_infinite_nest(nest_class)
-      nest_class
-    end
-
-    # helper to recursively check for an infinite nest
-    def check_infinite_nest(klass) # :nodoc:
-      raise "infinite nest detected" if klass == self
-      
-      klass.configs.each_value do |config|
-        if config.kind_of?(Nest)
-          check_infinite_nest(config.configurable_class)
-        end
-      end
-    end
 
     def guess_config_type(attrs) # :nodoc:
       if type = attrs[:type]
@@ -334,11 +287,25 @@ module Configurable
       case attrs[:default]
       when Array
         List
-      when ClassMethods
-        Nest
       else 
         Config
       end
+    end
+    
+    def guess_config_desc(attrs, comment) # :nodoc:
+      Hash.new do |hash, key|
+        comment.resolve
+        
+        unless hash.has_key?(:summary)
+          hash[:summary] = comment.trailer
+        end
+        
+        unless hash.has_key?(:description)
+          hash[:description] = comment.content
+        end
+        
+        hash.has_key?(key) ? hash[key] : (hash[key] = nil)
+      end.merge!(attrs)
     end
   end
 end

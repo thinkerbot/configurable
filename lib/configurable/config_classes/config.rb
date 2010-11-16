@@ -38,7 +38,6 @@ module Configurable
         
         @default  = attrs[:default]
         @type     = attrs[:type] || ObjectType.new
-        check_default(@default)
         
         @reader   = (attrs[:reader] || name).to_sym
         @writer   = (attrs[:writer] || "#{name}=").to_sym
@@ -63,48 +62,6 @@ module Configurable
         type.uncast(value)
       end
       
-      def valid?(value)
-        errors(value).nil?
-      end
-      
-      def errors(value)
-        type.errors(value)
-      end
-      
-      # Imports a config from source into target by casting the input keyed
-      # by name in source and setting the result into target by key.
-      def import(source, target={})
-        if source.has_key?(name)
-          input = source[name]
-          target[key] = cast(input)
-        end
-        
-        target
-      end
-    
-      # Exports a config from source into target by uncasting the value keyed
-      # by key in source and setting the resulting output into target by name.
-      def export(source, target={})
-        if source.has_key?(key)
-          value = source[key]
-          target[name] = uncast(value)
-        end
-        
-        target
-      end
-      
-      def validate(source, errors={})
-        if source.has_key?(key)
-          value = source[key]
-          
-          if output = errors(value)
-            errors[key] = output
-          end
-        end
-        
-        errors
-      end
-    
       # Returns an inspect string.
       def inspect
         "#<#{self.class}:#{object_id} key=#{key} name=#{name} default=#{default.inspect} reader=#{reader} writer=#{writer} >"
@@ -120,10 +77,6 @@ module Configurable
         unless name =~ /\A\w+\z/
           raise NameError.new("invalid name: #{name.inspect} (includes non-word characters)")
         end
-      end
-      
-      def check_default(default) # :nodoc:
-        valid?(default) or raise "invalid default: #{default.inspect} (does not validate by type)"
       end
     end
   end
