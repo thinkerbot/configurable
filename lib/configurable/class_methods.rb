@@ -1,6 +1,6 @@
 require 'lazydoc'
 require 'configurable/config_hash'
-require 'config_parser/utils'
+require 'configurable/conversions'
 
 module Configurable
   
@@ -60,6 +60,7 @@ module Configurable
           end
         end
         
+        configs.extend Conversions
         configs
       end
     end
@@ -316,7 +317,7 @@ module Configurable
           hash[:help] = comment.content
         end
         
-        hash.has_key?(key) ? hash[key] : (hash[key] = nil)
+        hash.has_key?(key) ? hash[key] : nil
       end.merge!(base_attrs)
     end
   end
