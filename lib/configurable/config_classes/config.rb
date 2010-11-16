@@ -38,6 +38,7 @@ module Configurable
         
         @default  = attrs[:default]
         @type     = attrs[:type] || ObjectType.new
+        check_default(@default)
         
         @reader   = (attrs[:reader] || name).to_sym
         @writer   = (attrs[:writer] || "#{name}=").to_sym
@@ -81,6 +82,9 @@ module Configurable
         unless name =~ /\A\w+\z/
           raise NameError.new("invalid name: #{name.inspect} (includes non-word characters)")
         end
+      end
+      
+      def check_default(default) # :nodoc:
       end
     end
   end
