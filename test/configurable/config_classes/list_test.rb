@@ -5,10 +5,10 @@ class ListTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
   include Configurable::ConfigTypes
   
-  attr_reader :config
+  attr_reader :list
   
   def setup
-    @config = List.new(:key)
+    @list = List.new(:key)
   end
   
   #
@@ -16,10 +16,10 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_cast_casts_each_value_of_the_input
-    config = List.new(:key, :type => IntegerType.new)
+    list = List.new(:key, :type => IntegerType.new)
     
     input = [1,'2',3]
-    output = config.cast(input)
+    output = list.cast(input)
     
     assert_equal [1,2,3], output
     assert input.object_id != output.object_id
@@ -30,10 +30,10 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_uncast_uncasts_each_value_of_the_input
-    config = List.new(:key, :type => IntegerType.new)
+    list = List.new(:key, :type => IntegerType.new)
     
     input = [1,'2',3]
-    output = config.uncast(input)
+    output = list.uncast(input)
     
     assert_equal ['1','2','3'], output
     assert input.object_id != output.object_id
