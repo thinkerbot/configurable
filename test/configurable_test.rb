@@ -340,16 +340,6 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal :s, ConfigAttrsClass.configs[:key][:short]
   end
   
-  class ListClass
-    include Configurable
-    config :key, []
-  end
-  
-  def test_config_generates_a_list_config_for_array_default
-    config = ListClass.configs[:key]
-    assert_equal List, config.class
-  end
-  
   #
   # config cast test
   #
@@ -402,6 +392,74 @@ class ConfigurableTest < Test::Unit::TestCase
   
     err = assert_raises(ArgumentError) { config.cast('abc') }
     assert_equal 'invalid value for boolean: "abc"', err.message
+  end
+  
+  #
+  # list config test
+  #
+  
+  class ListClass
+    include Configurable
+    config :key, []
+  end
+  
+  def test_config_generates_a_list_config_for_array_default
+    config = ListClass.configs[:key]
+    assert_equal List, config.class
+  end
+  
+  class ListOfIntegersClass
+    include Configurable
+    config :key, [1,2,3]
+  end
+  
+  def test_list_configs_guess_type_from_array_entries
+    config = ListOfIntegersClass.configs[:key]
+    assert_equal [8, 9, 10], config.cast(['8', 9, '10'])
+  end
+  
+  #
+  # nest config test
+  #
+  
+  class NestClass
+    include Configurable
+    config :outer, {:inner => 1}
+  end
+  
+  def test_config_generates_a_nest_config_and_configurable_class_for_hash_default
+    config = NestClass.configs[:outer]
+    assert_equal Nest, config.class
+    assert_equal NestClass::OUTER, config.configurable_class
+  end
+  
+  def test_config_guesses_type_for_nested_configs
+    outer = NestClass.configs[:outer]
+    assert_equal({:inner => 1}, outer.cast({'inner' => '1'}))
+    
+    inner = outer.configs[:inner]
+    assert_equal 1, inner.cast('1')
+  end
+  
+  class BlockNestClass
+    include Configurable
+    config :outer do 
+      config :inner, 1
+    end
+  end
+  
+  def test_config_generates_a_nest_config_and_configurable_class_for_block
+    config = BlockNestClass.configs[:outer]
+    assert_equal Nest, config.class
+    assert_equal BlockNestClass::OUTER, config.configurable_class
+  end
+  
+  def test_config_generates_configs_as_defined_in_block
+    outer = BlockNestClass.configs[:outer]
+    assert_equal({:inner => 1}, outer.cast({'inner' => '1'}))
+    
+    inner = outer.configs[:inner]
+    assert_equal 1, inner.cast('1')
   end
   
   #

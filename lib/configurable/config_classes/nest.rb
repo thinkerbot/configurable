@@ -38,6 +38,14 @@ module Configurable
         end
       end
       
+      def cast(input)
+        configs.import(super(input))
+      end
+      
+      def uncast(value)
+        super(configs.export(value))
+      end
+      
       # Returns an inspection string.
       def inspect
         "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} configurable_class=#{configurable_class.to_s} >"

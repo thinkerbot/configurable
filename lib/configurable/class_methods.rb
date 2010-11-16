@@ -144,12 +144,23 @@ module Configurable
     # but if the attrs logic is too convoluted (and at times it is) then
     # define configs manually with the define_config method.
     def config(key, default=nil, attrs={}, &block)
-      attrs[:default] = default
+      nest_class = guess_nest_class(default, block)
+      
+      attrs[:default] = nest_class ? nest_class.new : default
       attrs[:type]    = guess_config_type(attrs).new(attrs)
       attrs[:desc]    = guess_config_desc(attrs, Lazydoc.register_caller)
-      
+
       config_class = attrs[:class] || guess_config_class(attrs)
-      define_config(key, attrs, config_class)
+      config = define_config(key, attrs, config_class)
+
+      if nest_class
+        const_name = attrs[:const_name] || config.name.upcase
+        unless const_defined?(const_name) && const_get(const_name) == nest_class
+          const_set(const_name, nest_class)
+        end
+      end
+
+      config
     end
     
     # Removes a config much like remove_method removes a method.  The reader
@@ -263,6 +274,40 @@ module Configurable
       super
     end
 
+    def guess_nest_class(base, block) # :nodoc:
+      unless base.kind_of?(Hash) || block
+        return nil
+      end
+
+      nest_class = base.kind_of?(Class) ? 
+        Class.new(base) :
+        Class.new { include Configurable }
+
+      if base.kind_of?(Hash)
+        base.each_pair do |key, value|
+          nest_class.send(:config, key, value)
+        end
+      end
+
+      if block
+        nest_class.class_eval(&block)
+      end
+
+      check_infinite_nest(nest_class)
+      nest_class
+    end
+
+    # helper to recursively check for an infinite nest
+    def check_infinite_nest(klass) # :nodoc:
+      raise "infinite nest detected" if klass == self
+
+      klass.configs.each_value do |config|
+        if config.kind_of?(Nest)
+          check_infinite_nest(config.configurable_class)
+        end
+      end
+    end
+
     def guess_config_type(attrs) # :nodoc:
       if type = attrs[:type]
         return(config_types[type] or raise "no such config type: #{type.inspect}")
@@ -289,6 +334,8 @@ module Configurable
       case attrs[:default]
       when Array
         List
+      when Configurable
+        Nest
       else 
         Config
       end
