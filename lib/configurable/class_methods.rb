@@ -373,7 +373,7 @@ module Configurable
         List
       when Configurable
         Nest
-      else 
+      else
         Config
       end
     end

@@ -4,12 +4,12 @@ module Configurable
     # Represents a config where the input is expected to be Configurable.
     class Nest < Config
       
-      def configurable_class
-        default.class
+      def configurable
+        @default
       end
       
-      def configs
-        configurable_class.configs
+      def default
+        configurable.config.to_hash
       end
       
       # Calls the reader on the reciever to retreive an instance of the
@@ -30,23 +30,18 @@ module Configurable
       # If value is an instance of the configurable_class, then it will be set
       # by calling writer.
       def set(receiver, value)
-        if value.kind_of?(configurable_class)
+        if value.kind_of?(configurable.class)
           receiver.send(writer, value)
         else
-          configurable = receiver.send(reader) || receiver.send(writer, default.dup)
+          configurable = receiver.send(reader) || receiver.send(writer, self.configurable.dup)
           configurable.config.merge!(value) # requires value.each_pair
         end
-      end
-      
-      # Returns an inspection string.
-      def inspect
-        "#<#{self.class}:#{object_id} reader=#{reader} writer=#{writer} configurable_class=#{configurable_class.to_s} >"
       end
       
       protected
       
       def check_default(default) # :nodoc:
-        unless default.class.respond_to?(:configs) && default.respond_to?(:config)
+        unless default.respond_to?(:config)
           raise ArgumentError, "invalid default: #{default.inspect} (not a Configurable)"
         end
         super

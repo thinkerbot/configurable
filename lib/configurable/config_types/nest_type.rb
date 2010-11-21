@@ -3,29 +3,25 @@ module Configurable
     class NestType < ObjectType
       matches Configurable
       
-      attr_reader :default
+      attr_reader :configurable
       
       def initialize(attrs={})
-        @default = attrs[:default]
+        @configurable = attrs[:default]
         
-        unless default.kind_of?(Configurable)
-          raise ArgumentError, "not a configurable class: #{default.inspect}"
+        unless configurable.kind_of?(Configurable)
+          raise ArgumentError, "not a Configurable: #{configurable.inspect}"
         end
         
         super
       end
       
       def cast(input)
-        configurable = default.dup
-        configs = configurable.class.configs.import(input)
-        
-        configurable.config.merge!(configs)
-        configurable
+        configurable.class.configs.import(input)
       end
       
       def uncast(value)
         configs = value.config.to_hash
-        default.class.configs.export(configs)
+        configurable.class.configs.export(configs)
       end
     end
   end
