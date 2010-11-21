@@ -150,6 +150,45 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal nil, ConfigTypeFloatParent.config_types[:upcase]
   end
   
+  module ConfigTypeSpecificity
+    include Configurable
+    
+    # increase specificity for Bignum, over IntegerType
+    config_type(:bignum, Bignum)
+    
+    config :one, 10**10
+    config :two, 10**100
+  end
+  
+  def test_config_types_can_increase_specificity
+    assert_equal Configurable::ConfigTypes::IntegerType, ConfigTypeSpecificity.configs[:one].type.class
+    assert_equal ConfigTypeSpecificity::BignumType,      ConfigTypeSpecificity.configs[:two].type.class
+  end
+  
+  module ConfigTypeOverrideByMatch
+    include Configurable
+    
+    # match integers, instead of IntegerType
+    config_type(:num, Integer)
+    config :one, 1
+  end
+  
+  def test_config_types_can_be_overridden_by_match
+    assert_equal ConfigTypeOverrideByMatch::NumType, ConfigTypeOverrideByMatch.configs[:one].type.class
+  end
+  
+  module ConfigTypeOverrideByName
+    include Configurable
+    
+    # match int type, instead of IntegerType
+    config_type(:int)
+    config :one, 1, :type => :int
+  end
+  
+  def test_config_types_can_be_overridden_by_name
+    assert_equal ConfigTypeOverrideByName::IntType, ConfigTypeOverrideByName.configs[:one].type.class
+  end
+  
   #
   # remove_config test
   #

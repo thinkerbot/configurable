@@ -10,7 +10,8 @@ module Configurable
     :integer => ConfigTypes::IntegerType,
     :float   => ConfigTypes::FloatType,
     :string  => ConfigTypes::StringType,
-    :nest    => ConfigTypes::NestType
+    :nest    => ConfigTypes::NestType,
+    :obj     => ConfigTypes::ObjectType
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
@@ -155,10 +156,8 @@ module Configurable
       config = define_config(key, attrs, config_class)
 
       if nest_class
-        const_name = attrs[:const_name] || guess_const_name(config)
-        unless const_defined?(const_name) && const_get(const_name) == nest_class
-          const_set(const_name, nest_class)
-        end
+        const_name = attrs[:const_name] || guess_nest_const_name(config)
+        safe_const_set(const_name, nest_class)
       end
 
       config
@@ -224,24 +223,25 @@ module Configurable
       config
     end
     
-    def define_config_type(type, config_type)
-      config_type_registry[type] = config_type
+    def define_config_type(name, config_type)
+      config_type_registry[name] = config_type
       reset_config_types
       config_type
     end
     
-    def config_type(type, *matchers, &caster)
+    def config_type(name, *matchers, &caster)
       config_type = StringType.subclass(*matchers).cast(&caster)
-      define_config_type(type, config_type)
+      safe_const_set("#{name.to_s.capitalize}Type", config_type)
+      define_config_type(name, config_type)
     end
     
     # Removes a config_type much like remove_method removes a method.
-    def remove_config_type(type)
-      unless config_type_registry.has_key?(type)
-        raise NameError.new("#{type.inspect} is not a config_type on #{self}")
+    def remove_config_type(name)
+      unless config_type_registry.has_key?(name)
+        raise NameError.new("#{name.inspect} is not a config_type on #{self}")
       end
       
-      config_type = config_type_registry.delete(type)
+      config_type = config_type_registry.delete(name)
       reset_config_types
       config_type
     end
@@ -257,13 +257,13 @@ module Configurable
     #
     # This is unlike remove_config_type where the config_type is simply
     # deleted from the config_type_registry.
-    def undef_config_type(type)
-      unless config_types.has_key?(type)
-        raise NameError.new("#{type.inspect} is not a config_type on #{self}")
+    def undef_config_type(name)
+      unless config_types.has_key?(name)
+        raise NameError.new("#{name.inspect} is not a config_type on #{self}")
       end
       
-      config_type = config_type_registry[type]
-      config_type_registry[type] = nil
+      config_type = config_type_registry[name]
+      config_type_registry[name] = nil
       reset_config_types
       config_type
     end
@@ -308,26 +308,55 @@ module Configurable
         end
       end
     end
-
-    def guess_config_type(attrs) # :nodoc:
-      if type = attrs[:type]
-        return(config_types[type] or raise "no such config type: #{type.inspect}")
-      end
-      
-      default = attrs[:default]
-      value   = default.kind_of?(Array) ? default.first : default
-
-      guesses = []
-      config_types.each_pair do |type, config_type|
-        if config_type.matches?(value)
-          guesses << type
+    
+    def each_registry # :nodoc:
+      ancestors.each do |ancestor|
+        case 
+        when ancestor.kind_of?(ClassMethods)
+          yield ancestor.config_type_registry
+          
+        when ancestor == Configurable
+          yield Configurable::DEFAULT_CONFIG_TYPES
+          break
+          
+        else next
         end
       end
-
-      case guesses.length
-      when 0 then ObjectType
-      when 1 then config_types[guesses.at(0)]
-      else raise "multiple guesses for config type: #{guesses.inspect} (default: #{default.inspect})"
+    end
+    
+    def guess_config_type_by_name(name) # :nodoc:
+      return name if name.nil?
+      
+      each_registry do |registry|
+        if registry.has_key?(name)
+          return registry[name]
+        end
+      end
+      
+      raise "no such config type: #{type.inspect}"
+    end
+    
+    def guess_config_type_by_value(value) # :nodoc:
+      each_registry do |registry|
+        guesses = registry.values.select {|config_type| config_type.matches?(value) }
+        
+        case guesses.length
+        when 0 then next
+        when 1 then return guesses.at(0)
+        else raise "multiple guesses for config type: #{guesses.inspect} (default: #{default.inspect})"
+        end
+      end
+      
+      ObjectType
+    end
+    
+    def guess_config_type(attrs) # :nodoc:
+      if attrs.has_key?(:type)
+        guess_config_type_by_name attrs[:type]
+      else
+        value = attrs[:default]
+        value = value.at(0) if value.kind_of?(Array)
+        guess_config_type_by_value value
       end
     end
     
@@ -369,7 +398,13 @@ module Configurable
       end.merge!(base_attrs)
     end
     
-    def guess_const_name(config) # :nodoc:
+    def safe_const_set(const_name, const)
+      unless const_defined?(const_name) && const_get(const_name) == const
+        const_set(const_name, const)
+      end
+    end
+    
+    def guess_nest_const_name(config) # :nodoc:
       config.name.gsub(/(?:^|_)(.)/) { $1.upcase }
     end
   end

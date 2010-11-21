@@ -11,10 +11,8 @@ module Configurable
         end
         
         def subclass(*matchers, &caster)
-          attrs = matchers.last.kind_of?(Hash) ? matchers.pop : {}
-        
           subclass = Class.new(self)
-          subclass.matches(matchers)
+          subclass.matches(*matchers)
           subclass.cast(&caster)
           subclass
         end
