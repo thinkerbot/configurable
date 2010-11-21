@@ -3,12 +3,12 @@ require 'configurable/config_classes'
 
 class ListTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigTypes
+  include Configurable::ConfigClasses
   
   attr_reader :list
   
   def setup
-    @list = List.new(:key)
+    @list = Config.new(:key).extend List
   end
   
   #
@@ -16,7 +16,7 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_cast_casts_each_value_of_the_input
-    list = List.new(:key, :type => IntegerType.new)
+    list = IntegerConfig.new(:key).extend List
     
     input = [1,'2',3]
     output = list.cast(input)
@@ -30,7 +30,7 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_uncast_uncasts_each_value_of_the_input
-    list = List.new(:key, :type => IntegerType.new)
+    list = IntegerConfig.new(:key).extend List
     
     input = [1,'2',3]
     output = list.uncast(input)

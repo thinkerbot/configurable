@@ -1,12 +1,12 @@
 require File.expand_path('../../../test_helper', __FILE__) 
 require 'configurable/config_classes'
-require 'configurable/config_types'
+require 'configurable/config_classes'
 require 'configurable/config_hash'
 require 'ostruct'
 
 class NestTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigTypes
+  include Configurable::ConfigClasses
   ConfigHash = Configurable::ConfigHash
   
   class Parent < OpenStruct

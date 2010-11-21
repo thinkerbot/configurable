@@ -1,10 +1,10 @@
 require File.expand_path('../../test_helper', __FILE__)
 require 'configurable/conversions'
-require 'configurable/config_types'
+require 'configurable/config_classes'
 
 class ConversionsTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigTypes
+  include Configurable::ConfigClasses
   Conversions = Configurable::Conversions
   
   attr_accessor :configs
@@ -14,9 +14,9 @@ class ConversionsTest < Test::Unit::TestCase
     @configs.extend Conversions
   end
   
-  def config(key, attrs={}, &caster)
-    attrs[:type] = StringType.subclass(&caster).new(attrs) if caster
-    configs[key] = Config.new(key, attrs)
+  def config(key, attrs={}, config_class = Config, &caster)
+    config_class = caster ? StringConfig.subclass(&caster) : config_class
+    configs[key] = config_class.new(key, attrs)
   end
   
   #
@@ -122,7 +122,7 @@ class ConversionsTest < Test::Unit::TestCase
   end
 
   def test_export_exports_values
-    config(:one, :type => IntegerType.new)
+    config(:one, {}, IntegerConfig)
 
     assert_equal({
       'one' => '1'

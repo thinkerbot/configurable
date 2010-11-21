@@ -6,19 +6,19 @@ module Configurable
   
   # Hash of default config types (bool, integer, float, string).
   DEFAULT_CONFIG_TYPES = {
-    :bool    => ConfigTypes::BooleanType,
-    :integer => ConfigTypes::IntegerType,
-    :float   => ConfigTypes::FloatType,
-    :string  => ConfigTypes::StringType,
-    :nest    => ConfigTypes::NestType,
-    :obj     => ConfigTypes::ObjectType
+    :bool    => ConfigClasses::BooleanConfig,
+    :integer => ConfigClasses::IntegerConfig,
+    :float   => ConfigClasses::FloatConfig,
+    :string  => ConfigClasses::StringConfig,
+    :nest    => ConfigClasses::Nest,
+    :obj     => ConfigClasses::Config
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
   # for declaring configurations.
   module ClassMethods
     include ConfigClasses
-    include ConfigTypes
+    include ConfigClasses
     
     # A hash of (key, Config) pairs tracking configs defined on self.  See the
     # configs method for all configs declared across all ancestors.
@@ -149,12 +149,16 @@ module Configurable
       nest_class = guess_nest_class(default, block)
       
       attrs[:default] = nest_class ? nest_class.new : default
-      attrs[:type]    = guess_config_type(attrs).new(attrs)
       attrs[:desc]    = guess_config_desc(attrs, Lazydoc.register_caller)
-
-      config_class = attrs[:class] || guess_config_class(attrs)
+      attrs[:list]    = default.kind_of?(Array) unless attrs.has_key?(:list)
+      
+      config_class = guess_config_type(attrs)
       config = define_config(key, attrs, config_class)
-
+      
+      if attrs[:list]
+        config.extend List
+      end
+      
       if nest_class
         const_name = attrs[:const_name] || guess_nest_const_name(config)
         unless const_defined?(const_name)
@@ -232,7 +236,7 @@ module Configurable
     end
     
     def config_type(name, *matchers, &caster)
-      config_type = StringType.subclass(*matchers).cast(&caster)
+      config_type = StringConfig.subclass(*matchers).cast(&caster)
       const_name  = guess_config_type_const_name(name)
       
       unless const_defined?(const_name)
@@ -257,7 +261,7 @@ module Configurable
     #
     # ==== Implementation Note
     #
-    # ConfigTypes are undefined by setting the key to nil in the registry.
+    # ConfigClasses are undefined by setting the key to nil in the registry.
     # Deleting the config_type is not sufficient because the registry needs to
     # convey to self and subclasses to not inherit the config_type from
     # ancestors.
@@ -354,7 +358,7 @@ module Configurable
         end
       end
       
-      ObjectType
+      Config
     end
     
     def guess_config_type(attrs) # :nodoc:
@@ -364,17 +368,6 @@ module Configurable
         value = attrs[:default]
         value = value.at(0) if value.kind_of?(Array)
         guess_config_type_by_value value
-      end
-    end
-    
-    def guess_config_class(attrs) # :nodoc:
-      case attrs[:default]
-      when Array
-        List
-      when Configurable
-        Nest
-      else
-        Config
       end
     end
     

@@ -1,6 +1,6 @@
 module Configurable
-  module ConfigTypes
-    class IntegerType < StringType
+  module ConfigClasses
+    class IntegerConfig < StringConfig
       matches Integer
       
       def cast(input)

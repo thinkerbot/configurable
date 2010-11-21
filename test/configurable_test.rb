@@ -4,7 +4,7 @@ require 'tempfile'
 
 class ConfigurableTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigTypes
+  include Configurable::ConfigClasses
   ConfigHash = Configurable::ConfigHash
   
   #
@@ -110,7 +110,6 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_config_type_registers_a_config_type
     config_type = ConfigTypeClass.config_types[:upcase]
-    assert_equal 'XYZ', config_type.new.cast('xyz')
     assert_equal 'XYZ', ConfigTypeClass.configs[:key].cast('xyz')
   end
   
@@ -177,7 +176,7 @@ class ConfigurableTest < Test::Unit::TestCase
   module ConfigTypeSpecificity
     include Configurable
     
-    # increase specificity for Bignum, over IntegerType
+    # increase specificity for Bignum, over IntegerConfig
     config_type(:bignum, Bignum)
     
     config :one, 10**10
@@ -185,32 +184,32 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_types_can_increase_specificity
-    assert_equal IntegerType, ConfigTypeSpecificity.configs[:one].type.class
-    assert_equal ConfigTypeSpecificity::BignumType,      ConfigTypeSpecificity.configs[:two].type.class
+    assert_equal IntegerConfig, ConfigTypeSpecificity.configs[:one].class
+    assert_equal ConfigTypeSpecificity::BignumType,      ConfigTypeSpecificity.configs[:two].class
   end
   
   module ConfigTypeOverrideByMatch
     include Configurable
     
-    # match integers, instead of IntegerType
+    # match integers, instead of IntegerConfig
     config_type(:num, Integer)
     config :one, 1
   end
   
   def test_config_types_can_be_overridden_by_match
-    assert_equal ConfigTypeOverrideByMatch::NumType, ConfigTypeOverrideByMatch.configs[:one].type.class
+    assert_equal ConfigTypeOverrideByMatch::NumType, ConfigTypeOverrideByMatch.configs[:one].class
   end
   
   module ConfigTypeOverrideByName
     include Configurable
     
-    # match int type, instead of IntegerType
+    # match int type, instead of IntegerConfig
     config_type(:int)
     config :one, 1, :type => :int
   end
   
   def test_config_types_can_be_overridden_by_name
-    assert_equal ConfigTypeOverrideByName::IntType, ConfigTypeOverrideByName.configs[:one].type.class
+    assert_equal ConfigTypeOverrideByName::IntType, ConfigTypeOverrideByName.configs[:one].class
   end
   
   #
@@ -468,7 +467,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_config_generates_a_list_config_for_array_default
     config = ListClass.configs[:key]
-    assert_equal List, config.class
+    assert_equal true, config.kind_of?(List)
   end
   
   class ListOfIntegersClass
@@ -500,9 +499,6 @@ class ConfigurableTest < Test::Unit::TestCase
     config = NestClass.configs[:outer]
     assert_equal Nest, config.class
     assert_equal NestClass::Outer, config.configurable.class
-    
-    assert_equal NestType, config.type.class
-    assert_equal NestClass::Outer, config.type.configurable.class
     assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
   end
   
@@ -515,9 +511,6 @@ class ConfigurableTest < Test::Unit::TestCase
     config = HashNestClass.configs[:outer]
     assert_equal Nest, config.class
     assert_equal HashNestClass::Outer, config.configurable.class
-    
-    assert_equal NestType, config.type.class
-    assert_equal HashNestClass::Outer, config.type.configurable.class
     assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
   end
   
@@ -532,9 +525,6 @@ class ConfigurableTest < Test::Unit::TestCase
     config = BlockNestClass.configs[:outer]
     assert_equal Nest, config.class
     assert_equal BlockNestClass::Outer, config.configurable.class
-    
-    assert_equal NestType, config.type.class
-    assert_equal BlockNestClass::Outer, config.type.configurable.class
     assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
   end
   

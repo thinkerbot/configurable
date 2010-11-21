@@ -3,7 +3,7 @@ require 'configurable/config_classes'
 
 class ConfigTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigTypes
+  include Configurable::ConfigClasses
   
   attr_reader :config
   
@@ -84,23 +84,5 @@ class ConfigTest < Test::Unit::TestCase
     
     config.set(receiver, 'value')
     assert_equal 'value', receiver.key
-  end
-  
-  #
-  # cast test
-  #
-  
-  def test_cast_casts_input_using_type
-    config = Config.new(:key, :type => IntegerType.new)
-    assert_equal 1, config.cast('1')
-  end
-  
-  #
-  # uncast test
-  #
-  
-  def test_uncast_uncasts_value_using_type
-    config = Config.new(:key, :type => IntegerType.new)
-    assert_equal '1', config.uncast(1)
   end
 end

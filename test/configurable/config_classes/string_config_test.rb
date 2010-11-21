@@ -1,13 +1,13 @@
 require File.expand_path('../../../test_helper', __FILE__) 
-require 'configurable/config_types'
+require 'configurable/config_classes'
 
-class StringTypeTest < Test::Unit::TestCase
-  include Configurable::ConfigTypes
+class StringConfigTest < Test::Unit::TestCase
+  include Configurable::ConfigClasses
   
   attr_reader :type
   
   def setup
-    @type = StringType.new
+    @type = StringConfig.new(:key)
   end
   
   #

@@ -1,11 +1,49 @@
-require 'configurable/config_types'
-
 module Configurable
   module ConfigClasses
     # ConfigClasses are used by ConfigHash to delegate get/set configs on a
     # receiver and to map configs between user interfaces.
     class Config
-      include ConfigTypes
+      class << self
+        attr_reader :matchers
+      
+        def inherited(base) # :nodoc:
+          unless base.instance_variable_defined?(:@matchers)
+            base.instance_variable_set(:@matchers, matchers.dup)
+          end
+        end
+        
+        def subclass(*matchers, &caster)
+          subclass = Class.new(self)
+          subclass.matches(*matchers)
+          subclass.cast(&caster)
+          subclass
+        end
+      
+        def cast(&block)
+          define_method(:cast, &block) if block
+          self
+        end
+      
+        def uncast(&block)
+          define_method(:uncast, &block) if block
+          self
+        end
+      
+        def errors(&block)
+          define_method(:errors, &block) if block
+          self
+        end
+      
+        def matches(*matchers)
+          @matchers = matchers
+          self
+        end
+      
+        def matches?(value)
+          matchers.any? {|matcher| matcher === value }
+        end
+      end
+      matches()
       
       # The config key, used as a hash key for access.
       attr_reader :key
@@ -23,9 +61,6 @@ module Configurable
       # The default config value.
       attr_reader :default
       
-      # The config type for self (defaults to an ObjectType)
-      attr_reader :type
-      
       # A hash of information used to render self in various contexts.
       attr_reader :desc
       
@@ -37,7 +72,6 @@ module Configurable
         check_name(@name)
         
         @default  = attrs[:default]
-        @type     = attrs[:type] || ObjectType.new
         check_default(@default)
         
         @reader   = (attrs[:reader] || name).to_sym
@@ -58,13 +92,13 @@ module Configurable
       def set(receiver, value)
         receiver.send(writer, value)
       end
-    
+      
       def cast(input)
-        type.cast(input)
+        input
       end
       
       def uncast(value)
-        type.uncast(value)
+        value
       end
       
       # Returns an inspect string.

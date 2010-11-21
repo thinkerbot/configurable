@@ -3,6 +3,7 @@ module Configurable
     
     # Represents a config where the input is expected to be Configurable.
     class Nest < Config
+      matches Configurable
       
       def configurable
         @default
@@ -36,6 +37,14 @@ module Configurable
           configurable = receiver.send(reader) || receiver.send(writer, self.configurable.dup)
           configurable.config.merge!(value) # requires value.each_pair
         end
+      end
+      
+      def cast(input)
+        configurable.class.configs.import(input)
+      end
+      
+      def uncast(value)
+        configurable.class.configs.export(value)
       end
       
       protected
