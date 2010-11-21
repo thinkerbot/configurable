@@ -157,7 +157,9 @@ module Configurable
 
       if nest_class
         const_name = attrs[:const_name] || guess_nest_const_name(config)
-        safe_const_set(const_name, nest_class)
+        unless const_defined?(const_name)
+          const_set(const_name, nest_class)
+        end
       end
 
       config
@@ -231,7 +233,12 @@ module Configurable
     
     def config_type(name, *matchers, &caster)
       config_type = StringType.subclass(*matchers).cast(&caster)
-      safe_const_set("#{name.to_s.capitalize}Type", config_type)
+      const_name  = guess_config_type_const_name(name)
+      
+      unless const_defined?(const_name)
+        const_set(const_name, config_type)
+      end
+      
       define_config_type(name, config_type)
     end
     
@@ -398,14 +405,12 @@ module Configurable
       end.merge!(base_attrs)
     end
     
-    def safe_const_set(const_name, const)
-      unless const_defined?(const_name) && const_get(const_name) == const
-        const_set(const_name, const)
-      end
-    end
-    
     def guess_nest_const_name(config) # :nodoc:
       config.name.gsub(/(?:^|_)(.)/) { $1.upcase }
+    end
+    
+    def guess_config_type_const_name(name) # :nodoc:
+      "#{name}Type".gsub(/(?:^|_)(.)/) { $1.upcase }
     end
   end
 end

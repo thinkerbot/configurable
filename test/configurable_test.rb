@@ -113,6 +113,29 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 'XYZ', ConfigTypeClass.configs[:key].cast('xyz')
   end
   
+  def test_config_type_sets_the_new_config_type_to_a_const
+    assert_equal ConfigTypeClass::UpcaseType, ConfigTypeClass.config_types[:upcase]
+  end
+  
+  class ConfigTypeAlreadySet
+    include Configurable
+    class ExistsType; end
+    config_type :exists
+  end
+  
+  def test_config_type_does_not_set_config_type_const_if_name_is_taken
+    assert_equal "", ConfigTypeAlreadySet.config_types[:exists].name
+  end
+  
+  class ConfigTypeCamelize
+    include Configurable
+    config_type :camel_case
+  end
+  
+  def test_config_type_guesses_correct_camel_case_constant
+    assert_equal ConfigTypeCamelize::CamelCaseType, ConfigTypeCamelize.config_types[:camel_case]
+  end
+  
   class ConfigTypeParent
     include Configurable
     config_type(:upcase) {|input| input.upcase }
