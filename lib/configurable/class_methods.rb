@@ -311,7 +311,7 @@ module Configurable
 
       klass.configs.each_value do |config|
         if config.kind_of?(Nest)
-          check_infinite_nest(config.configurable_class)
+          check_infinite_nest(config.configurable.class)
         end
       end
     end
@@ -320,10 +320,10 @@ module Configurable
       ancestors.each do |ancestor|
         case 
         when ancestor.kind_of?(ClassMethods)
-          yield ancestor.config_type_registry
+          yield ancestor, ancestor.config_type_registry
           
         when ancestor == Configurable
-          yield Configurable::DEFAULT_CONFIG_TYPES
+          yield ancestor, Configurable::DEFAULT_CONFIG_TYPES
           break
           
         else next
@@ -334,7 +334,7 @@ module Configurable
     def guess_config_type_by_name(name) # :nodoc:
       return name if name.nil?
       
-      each_registry do |registry|
+      each_registry do |ancestor, registry|
         if registry.has_key?(name)
           return registry[name]
         end
@@ -344,13 +344,13 @@ module Configurable
     end
     
     def guess_config_type_by_value(value) # :nodoc:
-      each_registry do |registry|
+      each_registry do |ancestor, registry|
         guesses = registry.values.select {|config_type| config_type.matches?(value) }
         
         case guesses.length
         when 0 then next
         when 1 then return guesses.at(0)
-        else raise "multiple guesses for config type: #{guesses.inspect} (default: #{default.inspect})"
+        else raise "multiple guesses for config type: #{guesses.inspect} (in: #{ancestor} default: #{default.inspect})"
         end
       end
       

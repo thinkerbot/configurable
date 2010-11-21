@@ -9,7 +9,7 @@ module Configurable
       end
       
       def default
-        configurable.config.to_hash
+        uncast configurable.config.to_hash
       end
       
       # Calls the reader on the reciever to retreive an instance of the

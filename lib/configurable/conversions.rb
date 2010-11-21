@@ -17,18 +17,21 @@ module Configurable
         
         nest_keys  = nesting.collect {|nest| nest.key }
         nest_names = nesting.collect {|nest| nest.name }.push(config.name)
-        hint = guess_hint(config)
+
+        guess_attrs = {
+          :long      => nest_names.join(':'),
+          :hint      => guess_hint(config)
+        }
         
-        attrs = {
+        config_attrs = {
           :key       => config.key, 
           :nest_keys => nest_keys,
           :default   => config.default,
-          :long      => nest_names.join(':'),
-          :hint      => hint,
           :callback  => lambda {|value| config.type.cast(value) }
         }
         
-        parser.on(attrs.merge(config.desc))
+        attrs = guess_attrs.merge(config.desc).merge(config_attrs)
+        parser.on(attrs)
       end
       
       parser.sort_opts!
@@ -72,9 +75,9 @@ module Configurable
     # self to nesting.
     def traverse(nesting=[], &block)
       each_value do |config|
-        if config.respond_to?(:configs)
+        if config.respond_to?(:configurable)
           nesting.push config
-          config.configs.traverse(nesting, &block)
+          config.configurable.class.configs.traverse(nesting, &block)
           nesting.pop
         else
           yield(nesting, config)

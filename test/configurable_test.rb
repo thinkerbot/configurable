@@ -539,35 +539,6 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
-  # config combinations test
-  #
-  
-  class ScalarNestClass
-    include Configurable
-    
-    class Outer
-      include Configurable
-      config :inner, 1
-    end
-    
-    config :outer, Outer.new, :class => Configurable::ConfigClasses::Config
-  end
-  
-  def test_nest_config_type_works_as_a_scalar_config
-    config = ScalarNestClass.configs[:outer]
-    assert_equal Config, config.class
-    assert_equal NestType, config.type.class
-    assert_equal ScalarNestClass::Outer, config.type.configurable.class
-    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
-    
-    configurable = ScalarNestClass.new
-    assert_equal 1, configurable.config[:outer].config[:inner]
-    
-    configs = ScalarNestClass.configs.export(configurable.config)
-    assert_equal({'outer' => {'inner' => '1'}}, configs)
-  end
-  
-  #
   # documentation test
   #
   

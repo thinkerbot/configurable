@@ -101,7 +101,7 @@ ConfigClass.configs.to_parser do |psr|
     exit
   end
 end.parse(ARGV) do |args, config|
-  errors = ConfigClass.configs.validate(config)
+  errors = []#ConfigClass.configs.validate(config)
   
   if errors.empty?
     pp args

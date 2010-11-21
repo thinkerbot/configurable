@@ -20,8 +20,7 @@ module Configurable
       end
       
       def uncast(value)
-        configs = value.config.to_hash
-        configurable.class.configs.export(configs)
+        configurable.class.configs.export(value)
       end
     end
   end
