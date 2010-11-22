@@ -1,6 +1,6 @@
 module Configurable
   module ConfigClasses
-    class StringConfig < Config
+    class StringConfig < ObjectConfig
       matches String
       
       def cast(input)

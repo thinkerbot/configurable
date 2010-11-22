@@ -12,7 +12,7 @@ module Configurable
     :float   => ConfigClasses::FloatConfig,
     :string  => ConfigClasses::StringConfig,
     :nest    => ConfigClasses::NestConfig,
-    :obj     => ConfigClasses::Config
+    :obj     => ConfigClasses::ObjectConfig
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
@@ -106,7 +106,7 @@ module Configurable
     # and attrs. Unless attrs specifies a :reader or :writer, the
     # corresponding attr accessors will be defined for the config name (which
     # by default is the key). 
-    def define_config(key, attrs={}, config_class=Config)
+    def define_config(key, attrs={}, config_class=ObjectConfig)
       reader = attrs[:reader]
       writer = attrs[:writer]
       
@@ -358,7 +358,7 @@ module Configurable
         end
       end
       
-      Config
+      ObjectConfig
     end
     
     def guess_config_type(attrs) # :nodoc:

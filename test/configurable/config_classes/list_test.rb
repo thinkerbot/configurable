@@ -3,12 +3,11 @@ require 'configurable/config_classes'
 
 class ListTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigClasses
-  
+
   attr_reader :list
   
   def setup
-    @list = Config.new(:key).extend List
+    @list = ObjectConfig.new(:key).extend List
   end
   
   #

@@ -2,7 +2,7 @@ module Configurable
   module ConfigClasses
     
     # Represents a config where the input is expected to be Configurable.
-    class NestConfig < Config
+    class NestConfig < ObjectConfig
       matches Configurable
       
       def configurable

@@ -13,7 +13,7 @@ class ConversionsTest < Test::Unit::TestCase
     @configs.extend Conversions
   end
   
-  def config(key, attrs={}, config_class = Config, &caster)
+  def config(key, attrs={}, config_class = ObjectConfig, &caster)
     config_class = caster ? StringConfig.subclass(&caster) : config_class
     configs[key] = config_class.new(key, attrs)
   end

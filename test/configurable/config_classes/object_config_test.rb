@@ -1,14 +1,13 @@
 require File.expand_path('../../../test_helper', __FILE__) 
 require 'configurable/config_classes'
 
-class ConfigTest < Test::Unit::TestCase
-  include Configurable::ConfigClasses
+class ObjectConfigTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
   
   attr_reader :config
   
   def setup
-    @config = Config.new(:key)
+    @config = ObjectConfig.new(:key)
   end
   
   #
@@ -16,7 +15,7 @@ class ConfigTest < Test::Unit::TestCase
   #
   
   def test_sets_attributes_from_attrs
-    config = Config.new(:KEY,
+    config = ObjectConfig.new(:KEY,
       :name    => 'NAME', 
       :reader  => :READER, 
       :writer  => :WRITER, 
@@ -33,7 +32,7 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   def test_initialize_determines_name_reader_and_writer_from_key
-    config = Config.new(:key)
+    config = ObjectConfig.new(:key)
     assert_equal :key,  config.key
     assert_equal 'key', config.name
     assert_equal :key,  config.reader
@@ -41,27 +40,27 @@ class ConfigTest < Test::Unit::TestCase
   end
   
   def test_initialize_allows_arbitrary_keys_with_valid_name
-    assert_equal 'string', Config.new('string').key
-    assert_equal 1, Config.new(1, :name => 'one').key
+    assert_equal 'string', ObjectConfig.new('string').key
+    assert_equal 1, ObjectConfig.new(1, :name => 'one').key
   end
   
   def test_initialize_sets_default_to_nil_if_unspecified
-    config = Config.new(:key)
+    config = ObjectConfig.new(:key)
     assert_equal nil, config.default
   end
   
   def test_initialize_respects_boolean_defaults
-    assert_equal true,  Config.new(:key, :default => true).default
-    assert_equal false, Config.new(:key, :default => false).default
+    assert_equal true,  ObjectConfig.new(:key, :default => true).default
+    assert_equal false, ObjectConfig.new(:key, :default => false).default
   end
   
   def test_initialize_raises_error_for_non_string_names
-    err = assert_raises(RuntimeError) { Config.new(:key, :name => :sym) }
+    err = assert_raises(RuntimeError) { ObjectConfig.new(:key, :name => :sym) }
     assert_equal 'invalid name: :sym (not a String)', err.message
   end
   
   def test_config_raises_error_for_non_word_characters_in_name
-    err = assert_raises(NameError) { Config.new(:key, :name => 'k,ey') }
+    err = assert_raises(NameError) { ObjectConfig.new(:key, :name => 'k,ey') }
     assert_equal 'invalid name: "k,ey" (includes non-word characters)', err.message
   end
   
