@@ -121,7 +121,7 @@ class ConversionsTest < Test::Unit::TestCase
   end
 
   def test_export_exports_values
-    config(:one, {}, IntegerConfig)
+    config(:one, {}, StringConfig)
 
     assert_equal({
       'one' => '1'

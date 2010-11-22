@@ -43,10 +43,10 @@ Configs may be exported and imported in a format easily translated to user inter
 
   c.config.export
   # => {
-  # 'flag' => 'false', 
-  # 'switch' => 'true',
-  # 'num' => '1.61', 
-  # 'lst' => ['1', '2', '3'], 
+  # 'flag' => false, 
+  # 'switch' => true,
+  # 'num' => 1.61, 
+  # 'lst' => [1, 2, 3], 
   # 'str' => 'value'
   # }
   

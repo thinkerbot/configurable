@@ -31,8 +31,8 @@ class BooleanConfigTest < Test::Unit::TestCase
   # uncast test
   #
   
-  def test_uncast_returns_booleans_as_strings
-    assert_equal 'true', type.uncast(true)
-    assert_equal 'false', type.uncast(false)
+  def test_uncast_returns_booleans
+    assert_equal true, type.uncast(true)
+    assert_equal false, type.uncast(false)
   end
 end

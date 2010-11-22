@@ -22,10 +22,10 @@ class ReadmeTest < Test::Unit::TestCase
     assert_equal 1.61, c.num
 
     expected = {
-    'flag' => 'false',
-    'switch' => 'true',
-    'num' => '1.61',
-    'lst' => ['1', '2', '3'], 
+    'flag' => false,
+    'switch' => true,
+    'num' => 1.61,
+    'lst' => [1, 2, 3], 
     'str' => 'value'
     }
     assert_equal expected, c.config.export

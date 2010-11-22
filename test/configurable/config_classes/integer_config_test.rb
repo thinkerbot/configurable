@@ -23,6 +23,6 @@ class IntegerConfigTest < Test::Unit::TestCase
   #
   
   def test_uncast_returns_value_to_s
-    assert_equal '1', type.uncast(1)
+    assert_equal 1, type.uncast(1)
   end
 end

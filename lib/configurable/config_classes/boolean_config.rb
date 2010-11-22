@@ -1,6 +1,6 @@
 module Configurable
   module ConfigClasses
-    class BooleanConfig < StringConfig
+    class BooleanConfig < ObjectConfig
       matches TrueClass, FalseClass
       
       # Casts the input to a boolean ie:

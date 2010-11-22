@@ -22,7 +22,7 @@ class FloatConfigTest < Test::Unit::TestCase
   # uncast test
   #
   
-  def test_uncast_returns_value_to_s
-    assert_equal '1.1', type.uncast(1.1)
+  def test_uncast_returns_value
+    assert_equal 1.1, type.uncast(1.1)
   end
 end

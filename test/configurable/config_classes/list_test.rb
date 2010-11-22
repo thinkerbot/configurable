@@ -29,7 +29,7 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_uncast_uncasts_each_value_of_the_input
-    list = IntegerConfig.new(:key).extend List
+    list = StringConfig.new(:key).extend List
     
     input = [1,'2',3]
     output = list.uncast(input)
