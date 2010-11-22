@@ -1,4 +1,5 @@
 require 'lazydoc'
+require 'configurable/config_classes'
 require 'configurable/config_hash'
 require 'configurable/conversions'
 
@@ -10,14 +11,13 @@ module Configurable
     :integer => ConfigClasses::IntegerConfig,
     :float   => ConfigClasses::FloatConfig,
     :string  => ConfigClasses::StringConfig,
-    :nest    => ConfigClasses::Nest,
+    :nest    => ConfigClasses::NestConfig,
     :obj     => ConfigClasses::Config
   }
   
   # ClassMethods extends classes that include Configurable and provides methods
   # for declaring configurations.
   module ClassMethods
-    include ConfigClasses
     include ConfigClasses
     
     # A hash of (key, Config) pairs tracking configs defined on self.  See the
@@ -314,7 +314,7 @@ module Configurable
       raise "infinite nest detected" if klass == self
 
       klass.configs.each_value do |config|
-        if config.kind_of?(Nest)
+        if config.kind_of?(NestConfig)
           check_infinite_nest(config.configurable.class)
         end
       end

@@ -1,5 +1,4 @@
 require 'config_parser'
-require 'configurable/config_classes'
 
 module Configurable
   

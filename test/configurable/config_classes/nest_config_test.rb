@@ -1,11 +1,9 @@
 require File.expand_path('../../../test_helper', __FILE__) 
 require 'configurable/config_classes'
-require 'configurable/config_classes'
 require 'configurable/config_hash'
 require 'ostruct'
 
-class NestTest < Test::Unit::TestCase
-  include Configurable::ConfigClasses
+class NestConfigTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
   ConfigHash = Configurable::ConfigHash
   
@@ -30,7 +28,7 @@ class NestTest < Test::Unit::TestCase
   
   def setup
     Child.configs = {}
-    @nest = Nest.new(:key, :default => Child.new)
+    @nest = NestConfig.new(:key, :default => Child.new)
   end
   
   #

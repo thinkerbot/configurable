@@ -1,6 +1,6 @@
 require 'configurable/config_classes/config'
 require 'configurable/config_classes/list'
-require 'configurable/config_classes/nest'
+require 'configurable/config_classes/nest_config'
 require 'configurable/config_classes/string_config'
 require 'configurable/config_classes/boolean_config'
 require 'configurable/config_classes/integer_config'

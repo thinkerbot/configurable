@@ -4,7 +4,6 @@ require 'configurable/config_classes'
 
 class ConversionsTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigClasses
   Conversions = Configurable::Conversions
   
   attr_accessor :configs
