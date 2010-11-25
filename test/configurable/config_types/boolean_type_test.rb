@@ -1,13 +1,13 @@
 require File.expand_path('../../../test_helper', __FILE__) 
-require 'configurable/config_classes'
+require 'configurable/config_types'
 
-class BooleanConfigTest < Test::Unit::TestCase
-  include Configurable::ConfigClasses
+class BooleanTypeTest < Test::Unit::TestCase
+  include Configurable::ConfigTypes
   
   attr_reader :type
   
   def setup
-    @type = BooleanConfig.new(:key)
+    @type = BooleanType.new
   end
   
   #

@@ -4,7 +4,7 @@ require 'tempfile'
 
 class ConfigurableTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-  include Configurable::ConfigClasses
+  include Configurable::ConfigTypes
   ConfigHash = Configurable::ConfigHash
   
   #
@@ -176,7 +176,7 @@ class ConfigurableTest < Test::Unit::TestCase
   module ConfigTypeSpecificity
     include Configurable
     
-    # increase specificity for Bignum, over IntegerConfig
+    # increase specificity for Bignum, over IntegerType
     config_type(:bignum, Bignum)
     
     config :one, 10**10
@@ -184,32 +184,32 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_types_can_increase_specificity
-    assert_equal IntegerConfig, ConfigTypeSpecificity.configs[:one].class
-    assert_equal ConfigTypeSpecificity::BignumType,      ConfigTypeSpecificity.configs[:two].class
+    assert_equal IntegerType, ConfigTypeSpecificity.configs[:one].type.class
+    assert_equal ConfigTypeSpecificity::BignumType, ConfigTypeSpecificity.configs[:two].type.class
   end
   
   module ConfigTypeOverrideByMatch
     include Configurable
     
-    # match integers, instead of IntegerConfig
+    # match integers, instead of IntegerType
     config_type(:num, Integer)
     config :one, 1
   end
   
   def test_config_types_can_be_overridden_by_match
-    assert_equal ConfigTypeOverrideByMatch::NumType, ConfigTypeOverrideByMatch.configs[:one].class
+    assert_equal ConfigTypeOverrideByMatch::NumType, ConfigTypeOverrideByMatch.configs[:one].type.class
   end
   
   module ConfigTypeOverrideByName
     include Configurable
     
-    # match int type, instead of IntegerConfig
+    # match int type, instead of IntegerType
     config_type(:int)
     config :one, 1, :type => :int
   end
   
   def test_config_types_can_be_overridden_by_name
-    assert_equal ConfigTypeOverrideByName::IntType, ConfigTypeOverrideByName.configs[:one].class
+    assert_equal ConfigTypeOverrideByName::IntType, ConfigTypeOverrideByName.configs[:one].type.class
   end
   
   #
@@ -467,7 +467,7 @@ class ConfigurableTest < Test::Unit::TestCase
   
   def test_config_generates_a_list_config_for_array_default
     config = ListClass.configs[:key]
-    assert_equal true, config.kind_of?(List)
+    assert_equal ListConfig, config.class
   end
   
   class ListOfIntegersClass

@@ -4,6 +4,7 @@ require 'configurable/config_classes'
 
 class ConversionsTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
+  include Configurable::ConfigTypes
   Conversions = Configurable::Conversions
   
   attr_accessor :configs
@@ -13,8 +14,9 @@ class ConversionsTest < Test::Unit::TestCase
     @configs.extend Conversions
   end
   
-  def config(key, attrs={}, config_class = ObjectConfig, &caster)
-    config_class = caster ? StringConfig.subclass(&caster) : config_class
+  def config(key, attrs={}, config_class = SingleConfig, &caster)
+    type_class = caster ? StringType.subclass(&caster) : StringType
+    attrs[:type] = type_class.new(attrs)
     configs[key] = config_class.new(key, attrs)
   end
   
@@ -121,7 +123,7 @@ class ConversionsTest < Test::Unit::TestCase
   end
 
   def test_export_exports_values
-    config(:one, {}, StringConfig)
+    config(:one, {}, StringType)
 
     assert_equal({
       'one' => '1'

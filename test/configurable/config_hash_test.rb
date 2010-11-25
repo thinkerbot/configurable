@@ -10,7 +10,7 @@ class ConfigHashTest < Test::Unit::TestCase
     include Configurable::ConfigClasses
     
     def self.configs
-      @configs ||= {:key => ObjectConfig.new(:key)}
+      @configs ||= {:key => SingleConfig.new(:key)}
     end
     
     attr_accessor :key

@@ -1,13 +1,13 @@
 require File.expand_path('../../../test_helper', __FILE__) 
-require 'configurable/config_classes'
+require 'configurable/config_types'
 
-class FloatConfigTest < Test::Unit::TestCase
-  include Configurable::ConfigClasses
+class FloatTypeTest < Test::Unit::TestCase
+  include Configurable::ConfigTypes
   
   attr_reader :type
   
   def setup
-    @type = FloatConfig.new(:key)
+    @type = FloatType.new
   end
   
   #

@@ -1,13 +1,14 @@
 require File.expand_path('../../../test_helper', __FILE__) 
 require 'configurable/config_classes'
 
-class ListTest < Test::Unit::TestCase
+class ListConfigTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
-
+  include Configurable::ConfigTypes
+  
   attr_reader :list
   
   def setup
-    @list = ObjectConfig.new(:key).extend List
+    @list = ListConfig.new(:key)
   end
   
   #
@@ -15,7 +16,7 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_cast_casts_each_value_of_the_input
-    list = IntegerConfig.new(:key).extend List
+    list = ListConfig.new(:key, :type => IntegerType.new)
     
     input = [1,'2',3]
     output = list.cast(input)
@@ -29,7 +30,7 @@ class ListTest < Test::Unit::TestCase
   #
   
   def test_uncast_uncasts_each_value_of_the_input
-    list = StringConfig.new(:key).extend List
+    list = ListConfig.new(:key, :type => StringType.new)
     
     input = [1,'2',3]
     output = list.uncast(input)

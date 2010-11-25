@@ -1,6 +1,6 @@
 module Configurable
-  module ConfigClasses
-    class FloatConfig < ObjectConfig
+  module ConfigTypes
+    class FloatType < ObjectType
       matches Float
       
       def cast(input)

@@ -1,13 +1,13 @@
 require File.expand_path('../../../test_helper', __FILE__) 
-require 'configurable/config_classes'
+require 'configurable/config_types'
 
-class IntegerConfigTest < Test::Unit::TestCase
-  include Configurable::ConfigClasses
+class IntegerTypeTest < Test::Unit::TestCase
+  include Configurable::ConfigTypes
   
   attr_reader :type
   
   def setup
-    @type = IntegerConfig.new(:key)
+    @type = IntegerType.new
   end
   
   #
@@ -22,7 +22,7 @@ class IntegerConfigTest < Test::Unit::TestCase
   # uncast test
   #
   
-  def test_uncast_returns_value_to_s
+  def test_uncast_returns_value
     assert_equal 1, type.uncast(1)
   end
 end

@@ -26,7 +26,7 @@ module Configurable
           :key       => config.key, 
           :nest_keys => nest_keys,
           :default   => config.default,
-          :callback  => lambda {|value| config.cast(value) }
+          :callback  => lambda {|value| config.type.cast(value) }
         }
         
         attrs = guess_attrs.merge(config.desc).merge(config_attrs)

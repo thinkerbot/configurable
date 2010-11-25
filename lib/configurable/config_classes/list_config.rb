@@ -1,6 +1,15 @@
 module Configurable
   module ConfigClasses
-    module List
+    class ListConfig < SingleConfig
+      
+      def initialize(key, attrs={})
+        unless attrs.has_key?(:default)
+          attrs[:default] = []
+        end
+        
+        super
+      end
+      
       def cast(values)
         results = []
         values.each {|value| results << super(value) } 
