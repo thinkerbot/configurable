@@ -28,7 +28,7 @@ class NestConfigTest < Test::Unit::TestCase
   
   def setup
     Child.configs = {}
-    @nest = NestConfig.new(:key, :default => Child.new)
+    @nest = NestConfig.new(:key, :configurable => Child.new)
   end
   
   #
@@ -68,7 +68,7 @@ class NestConfigTest < Test::Unit::TestCase
   end
   
   def test_set_duplicates_configurable_to_initialize_missing_child
-    nest.configurable.config[:one] = 'one'
+    nest.default[:one] = 'one'
     parent = Parent.new
     
     assert_equal nil, parent.key
@@ -78,6 +78,6 @@ class NestConfigTest < Test::Unit::TestCase
     assert_equal 'one', child.config[:one]
     assert_equal 'two', child.config[:two]
     
-    assert_equal nil, nest.configurable.config[:two]
+    assert_equal nil, nest.default[:two]
   end
 end

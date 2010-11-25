@@ -11,6 +11,7 @@ module Configurable
     :integer => ConfigTypes::IntegerType,
     :float   => ConfigTypes::FloatType,
     :string  => ConfigTypes::StringType,
+    :nest    => ConfigTypes::NestType,
     :obj     => ConfigTypes::ObjectType
   }
   
@@ -146,9 +147,17 @@ module Configurable
     # but if the attrs logic is too convoluted (and at times it is) then
     # define configs manually with the define_config method.
     def config(key, default=nil, attrs={}, &block)
-      nest_class = guess_nest_class(default, block)
+      if nest_class = guess_nest_class(default, block)
+        default = nest_class.new
+      end
       
-      attrs[:default] = nest_class ? nest_class.new : default
+      if default.kind_of?(Configurable)
+        attrs[:default] = default.config.to_hash
+        attrs[:configurable] = default
+      else
+        attrs[:default] = default
+      end
+      
       attrs[:type]    = guess_config_type(attrs).new(attrs)
       attrs[:desc]    = guess_config_desc(attrs, Lazydoc.register_caller)
       
@@ -369,12 +378,9 @@ module Configurable
     
     def guess_config_class(attrs) # :nodoc:
       case attrs[:default]
-      when Array
-        ListConfig
-      when Configurable
-        NestConfig
-      else
-        SingleConfig
+      when Array then ListConfig
+      when Hash  then NestConfig
+      else SingleConfig
       end
     end
     

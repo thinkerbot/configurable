@@ -14,10 +14,10 @@ class ConversionsTest < Test::Unit::TestCase
     @configs.extend Conversions
   end
   
-  def config(key, attrs={}, config_class = SingleConfig, &caster)
+  def config(key, attrs={}, &caster)
     type_class = caster ? StringType.subclass(&caster) : StringType
     attrs[:type] = type_class.new(attrs)
-    configs[key] = config_class.new(key, attrs)
+    configs[key] = SingleConfig.new(key, attrs)
   end
   
   #
@@ -123,7 +123,7 @@ class ConversionsTest < Test::Unit::TestCase
   end
 
   def test_export_exports_values
-    config(:one, {}, StringType)
+    config(:one)
 
     assert_equal({
       'one' => '1'

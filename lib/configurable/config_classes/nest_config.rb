@@ -5,16 +5,19 @@ module Configurable
     class NestConfig < SingleConfig
       
       def initialize(key, attrs={})
-        attrs[:type] ||= NestType.new(attrs)
+        unless attrs.has_key?(:default)
+          attrs[:default] = {}
+        end
+        
+        unless attrs.has_key?(:type)
+          attrs[:type] = NestType.new(attrs)
+        end
+        
         super
-      end
-      
-      def configurable
-        @default
-      end
-      
-      def default
-        configurable.config.to_hash
+        
+        unless type.respond_to?(:init)
+          raise "invalid type for #{self}: #{type.inspect}"
+        end
       end
       
       # Calls the reader on the reciever to retreive an instance of the
@@ -35,29 +38,12 @@ module Configurable
       # If value is an instance of the configurable_class, then it will be set
       # by calling writer.
       def set(receiver, value)
-        unless value.kind_of?(configurable.class)
+        unless value.respond_to?(:config)
           value = default.merge(value)
-          value = type.cast(value)
+          value = type.init(value)
         end
         
         receiver.send(writer, value)
-      end
-      
-      def cast(input)
-        configurable.class.configs.import(input)
-      end
-      
-      def uncast(value)
-        configurable.class.configs.export(value)
-      end
-      
-      protected
-      
-      def check_default(default) # :nodoc:
-        unless default.respond_to?(:config) && default.class.respond_to?(:configs)
-          raise ArgumentError, "invalid default: #{default.inspect} (not a Configurable)"
-        end
-        super
       end
     end
   end

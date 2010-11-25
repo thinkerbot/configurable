@@ -1,28 +1,38 @@
 module Configurable
   module ConfigTypes
     class NestType < ObjectType
-      matches Configurable
+      class << self
+        def init(&block)
+          define_method(:init, &block) if block
+          self
+        end
+      end
+      matches Hash
       
       attr_reader :configurable
       
       def initialize(attrs={})
-        @configurable = attrs[:default]
+        @configurable = attrs[:configurable]
         
-        # unless configurable.kind_of?(Configurable)
-        #   raise ArgumentError, "not a Configurable: #{configurable.inspect}"
-        # end
+        unless configurable.respond_to?(:config) && configurable.class.respond_to?(:configs)
+          raise ArgumentError, "invalid configurable: #{configurable.inspect}"
+        end
         
         super
       end
       
-      def cast(input)
+      def init(input)
         obj = configurable.dup
-        obj.merge!(input)
+        obj.config.merge!(input)
         obj
       end
       
+      def cast(input)
+        configurable.class.configs.import(input)
+      end
+      
       def uncast(value)
-        value.config.to_hash
+        configurable.class.configs.export(value)
       end
     end
   end
