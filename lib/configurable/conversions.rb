@@ -1,3 +1,4 @@
+require 'configurable/config_classes'
 require 'config_parser'
 
 module Configurable
@@ -5,6 +6,7 @@ module Configurable
   # A set of methods used to convert various inputs based on a hash of (key,
   # Config) pairs.  Extend the hash and then use the methods.
   module Conversions
+    include ConfigTypes
     
     # Initializes and returns a ConfigParser generated using the configs for
     # self.  Arguments given to parser are passed to the ConfigParser
@@ -74,9 +76,10 @@ module Configurable
     # self to nesting.
     def traverse(nesting=[], &block)
       each_value do |config|
-        if config.respond_to?(:configurable)
+        if config.type.kind_of?(NestType)
           nesting.push config
-          config.configurable.class.configs.traverse(nesting, &block)
+          configs = config.type.configurable.class.configs
+          configs.traverse(nesting, &block)
           nesting.pop
         else
           yield(nesting, config)

@@ -1,5 +1,4 @@
 require 'lazydoc'
-require 'configurable/config_classes'
 require 'configurable/config_hash'
 require 'configurable/conversions'
 
@@ -320,8 +319,8 @@ module Configurable
       raise "infinite nest detected" if klass == self
 
       klass.configs.each_value do |config|
-        if config.kind_of?(NestConfig)
-          check_infinite_nest(config.configurable.class)
+        if config.type.kind_of?(NestType)
+          check_infinite_nest(config.type.configurable.class)
         end
       end
     end
