@@ -65,7 +65,7 @@ class ReadmeTest < Test::Unit::TestCase
     expected = %Q{
         --flag                       a flag
     -h, --help                       print help
-        --lst LST                    a list of integers (1,2,3)
+        --lst [LST]                  a list of integers (1,2,3)
         --num NUM                    a number (3.14)
     -s, --str STR                    a string, with a short (value)
         --[no-]switch                an on/off switch

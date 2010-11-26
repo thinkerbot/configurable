@@ -20,8 +20,7 @@ module Configurable
         nest_names = nesting.collect {|nest| nest.name }.push(config.name)
 
         guess_attrs = {
-          :long      => nest_names.join(':'),
-          :hint      => guess_hint(config)
+          :long      => nest_names.join(':')
         }
         
         config_attrs = {
@@ -84,22 +83,6 @@ module Configurable
         else
           yield(nesting, config)
         end
-      end
-    end
-    
-    protected
-    
-    def guess_hint(config)
-      default = config.default
-      
-      case default
-      when true, false, nil
-        nil
-      when Array
-        delimiter = config[:delimiter] || ','
-        config.uncast(config.default).join(delimiter)
-      else
-        default.to_s
       end
     end
   end
