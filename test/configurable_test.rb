@@ -20,196 +20,310 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_include_does_not_pollute_namespaces
-    assert_equal false, IncludeClass.const_defined?(:Config)
-    assert_equal false, IncludeClass.class.const_defined?(:Config)
+    assert_equal false, IncludeClass.const_defined?(:SingleConfig)
+    assert_equal false, IncludeClass.class.const_defined?(:SingleConfig)
   end
   
-  def test_extend_initializes_class_configs
-    assert_equal({}, IncludeClass.configs)
-  end
-  
-  #
-  # modules test
-  #
-  
-  module ConfigModule
-    include Configurable
-    config :key, 'value'
-  end
-  
-  def test_configs_may_be_declared_in_modules
-    assert_equal [:key], ConfigModule.configs.keys
-  end
-  
-  class IncludingConfigModule
-    include ConfigModule
-  end
-  
-  def test_module_configs_are_added_to_class_on_include
-    obj = IncludingConfigModule.new
-    assert_equal({:key => 'value'}, obj.config.to_hash)
-  end
-  
-  module ConfigModuleA
-    include Configurable
-    config :a, 'one'
-  end
-  
-  module ConfigModuleB
-    include ConfigModuleA
-    config :b, 'two'
-  end
-  
-  module ConfigModuleC
-    include Configurable
-    config :c, 'three'
-  end
-  
-  class MultiIncludingConfigModule
-    include ConfigModuleB
-    include ConfigModuleC
-  end
-  
-  def test_multiple_modules_may_be_added_to_class_on_include
-    obj = MultiIncludingConfigModule.new
-    assert_equal({
-      :a => 'one',
-      :b => 'two',
-      :c => 'three'
-    }, obj.config.to_hash)
-  end
-  
-  class IncludingConfigModuleInExistingConfigurable
-    include Configurable
-    include ConfigModuleB
-    include ConfigModuleC
-    
-    config :b, 'TWO'
-    config :d, 'four'
-  end
-  
-  def test_modules_may_be_added_to_an_existing_configurable_class
-    obj = IncludingConfigModuleInExistingConfigurable.new
-    assert_equal({
-      :a => 'one',
-      :b => 'TWO',
-      :c => 'three',
-      :d => 'four'
-    }, obj.config.to_hash)
+  def test_extend_initializes_registries
+    assert_equal({}, IncludeClass.config_registry)
+    assert_equal({}, IncludeClass.config_type_registry)
   end
   
   #
-  # config_types test
+  # define_config tests
+  #
+
+  class DefineConfigClass
+    include Configurable
+    define_config :key
+  end
+
+  def test_define_config_initializes_and_registers_config
+    assert_equal [:key], DefineConfigClass.configs.keys
+    assert_equal SingleConfig, DefineConfigClass.configs[:key].class
+  end
+
+  def test_define_config_generates_accessors
+    obj = DefineConfigClass.new
+    assert obj.respond_to?(:key)
+    assert obj.respond_to?(:key=)
+
+    obj.key = 'VALUE'
+    assert_equal 'VALUE', obj.key
+  end
+
+  class DefineConfigNoAccessorsClass
+    include Configurable
+    define_config :no_reader, :reader => :no_reader
+    define_config :no_writer, :writer => :no_writer=
+  end
+
+  def test_define_config_does_not_generate_reader_if_reader_is_specified
+    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader')
+    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader=')
+  end
+  
+  def test_define_config_does_not_generate_writer_if_writer_is_specified
+    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer')
+    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer=')
+  end
+  
+  #
+  # config test
   #
   
-  class ConfigTypeClass
+  class ConfigClass
     include Configurable
-    config_type(:upcase) {|input| input.upcase }
-    config :key, 'abc', :type => :upcase
+    config :key, :default
+  end
+
+  def test_config_defines_a_single_config_with_default
+    config = ConfigClass.configs[:key]
+    assert_equal :default, config.default
+    assert_equal SingleConfig, config.class
   end
   
-  def test_config_type_registers_a_config_type
-    config_type = ConfigTypeClass.config_types[:upcase]
-    assert_equal 'XYZ', ConfigTypeClass.configs[:key].cast('xyz')
-  end
+  #
+  # config type test
+  #
   
-  def test_config_type_sets_the_new_config_type_to_a_const
-    assert_equal ConfigTypeClass::UpcaseType, ConfigTypeClass.config_types[:upcase]
-  end
-  
-  class ConfigTypeAlreadySet
+  class ConfigStringTypeClass
     include Configurable
-    class ExistsType; end
-    config_type :exists
+    config :key, 'abc'
   end
   
-  def test_config_type_does_not_set_config_type_const_if_name_is_taken
-    assert_equal "", ConfigTypeAlreadySet.config_types[:exists].name
+  def test_config_gueses_string_type_for_string_default
+    config = ConfigStringTypeClass.configs[:key]
+    assert_equal 'xyz', config.cast(:xyz)
   end
   
-  class ConfigTypeCamelize
+  class ConfigIntegerTypeClass
     include Configurable
-    config_type :camel_case
+    config :key, 1
   end
   
-  def test_config_type_guesses_correct_camel_case_constant
-    assert_equal ConfigTypeCamelize::CamelCaseType, ConfigTypeCamelize.config_types[:camel_case]
+  def test_config_guesses_integer_type_for_integer_default
+    config = ConfigIntegerTypeClass.configs[:key]
+    assert_equal 2, config.cast('2')
+    assert_equal 2, config.cast(2.1)
+  
+    err = assert_raises(ArgumentError) { config.cast('abc') }
+    assert_equal 'invalid value for Integer: "abc"', err.message
   end
   
-  class ConfigTypeParent
+  class ConfigFloatTypeClass
     include Configurable
-    config_type(:upcase) {|input| input.upcase }
+    config :key, 1.2
   end
   
-  module ConfigTypeModule
+  def test_config_guesses_float_type_for_float_default
+    config = ConfigFloatTypeClass.configs[:key]
+    assert_equal 2.1, config.cast('2.1')
+  
+    err = assert_raises(ArgumentError) { config.cast('abc') }
+    assert_equal 'invalid value for Float(): "abc"', err.message
+  end
+  
+  class ConfigBooleanTypeClass
     include Configurable
-    config_type(:negate) {|input| input * -1 }
+    config :flag, true
+    config :switch, false
   end
   
-  class ConfigTypeChild < ConfigTypeParent
-    include ConfigTypeModule
-    config :one, 'abc', :type => :upcase
-    config :two, 1, :type => :negate
+  def test_config_guesses_boolean_type_for_true_default
+    config = ConfigBooleanTypeClass.configs[:flag]
+    assert_equal true,  config.cast('true')
+    assert_equal false, config.cast('false')
+  
+    err = assert_raises(ArgumentError) { config.cast('abc') }
+    assert_equal 'invalid value for boolean: "abc"', err.message
   end
   
-  def test_config_types_are_inherited
-    config = ConfigTypeChild.configs[:one]
-    assert_equal 'XYZ', config.cast('xyz')
+  def test_config_guesses_boolean_type_for_false_default
+    config = ConfigBooleanTypeClass.configs[:switch]
+    assert_equal true,  config.cast('true')
+    assert_equal false, config.cast('false')
+  
+    err = assert_raises(ArgumentError) { config.cast('abc') }
+    assert_equal 'invalid value for boolean: "abc"', err.message
+  end
+  
+  class ConfigWithTypeClass
+    include Configurable
+    config :int, 1, :type => :float
+  end
+
+  def test_config_uses_specified_config_type
+    config = ConfigWithTypeClass.configs[:int]
+    assert_equal 1.1, config.cast(1.1)
+  end
+  
+  #
+  # list config test
+  #
+  
+  class ListConfigClass
+    include Configurable
+    config :key, []
+  end
+  
+  def test_config_generates_a_list_config_for_array_default
+    config = ListConfigClass.configs[:key]
+    assert_equal ListConfig, config.class
+  end
+  
+  class ListConfigWithIntegerTypeClass
+    include Configurable
+    config :key, [1,2,3]
+  end
+  
+  def test_list_configs_guess_type_from_array_entries
+    config = ListConfigWithIntegerTypeClass.configs[:key]
+    assert_equal [8, 9, 10], config.cast(['8', 9, '10'])
+  end
+  
+  #
+  # nest config test
+  #
+  
+  class NestConfigFromConfigurableClass
+    include Configurable
     
-    config = ConfigTypeChild.configs[:two]
-    assert_equal 8, config.cast(-8)
-  end
-  
-  class ConfigTypeFloatParent
-    include Configurable
-    config :one, 'aBc'
-  end
-  
-  class ConfigTypeFloatChild < ConfigTypeFloatParent
-    config_type(:upcase) {|input| input.upcase }
-  end
-  
-  def test_config_types_do_not_float_up
-    assert_equal nil, ConfigTypeFloatParent.config_types[:upcase]
-  end
-  
-  module ConfigTypeSpecificity
-    include Configurable
+    class Outer
+      include Configurable
+      config :inner, 1
+    end
     
-    # increase specificity for Bignum, over IntegerType
-    config_type(:bignum, Bignum)
-    
-    config :one, 10**10
-    config :two, 10**100
+    config :outer, Outer.new
   end
   
-  def test_config_types_can_increase_specificity
-    assert_equal IntegerType, ConfigTypeSpecificity.configs[:one].type.class
-    assert_equal ConfigTypeSpecificity::BignumType, ConfigTypeSpecificity.configs[:two].type.class
+  def test_config_generates_a_nest_config_for_configurable_default
+    config = NestConfigFromConfigurableClass.configs[:outer]
+    assert_equal NestConfig, config.class
+    assert_equal NestConfigFromConfigurableClass::Outer, config.type.configurable.class
+    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
   end
   
-  module ConfigTypeOverrideByMatch
+  class NestConfigFromHashClass
     include Configurable
-    
-    # match integers, instead of IntegerType
-    config_type(:num, Integer)
-    config :one, 1
+    config :outer, {:inner => 1}
   end
   
-  def test_config_types_can_be_overridden_by_match
-    assert_equal ConfigTypeOverrideByMatch::NumType, ConfigTypeOverrideByMatch.configs[:one].type.class
+  def test_config_generates_a_nest_config_and_configurable_class_for_hash_default
+    config = NestConfigFromHashClass.configs[:outer]
+    assert_equal NestConfig, config.class
+    assert_equal NestConfigFromHashClass::Outer, config.type.configurable.class
+    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
   end
   
-  module ConfigTypeOverrideByName
+  class NestConfigFromBlockClass
     include Configurable
-    
-    # match int type, instead of IntegerType
-    config_type(:int)
-    config :one, 1, :type => :int
+    config :outer do 
+      config :inner, 1
+    end
   end
   
-  def test_config_types_can_be_overridden_by_name
-    assert_equal ConfigTypeOverrideByName::IntType, ConfigTypeOverrideByName.configs[:one].type.class
+  def test_config_generates_a_nest_config_and_configurable_class_for_block
+    config = NestConfigFromBlockClass.configs[:outer]
+    assert_equal NestConfig, config.class
+    assert_equal NestConfigFromBlockClass::Outer, config.type.configurable.class
+    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
+  end
+  
+  #
+  # config metadata test
+  #
+  
+  class ConfigWithMetaDataClass
+    include Configurable
+    config :key, :default, :short => :s
+  end
+
+  def test_config_sets_attrs_into_metadata
+    assert_equal :s, ConfigWithMetaDataClass.configs[:key][:short]
+  end
+  
+  def test_config_does_not_put_guessed_attrs_into_metadata
+    config = ConfigWithMetaDataClass.configs[:key]
+    assert_equal nil, config[:type]
+    assert_equal nil, config[:metadata]
+  end
+  
+  class ConfigDocClass
+    include Configurable
+  
+    config :one, 'value'                   # one
+    config :two, 'value', :desc => "TWO"   # two
+    config :three, 'value',                # three
+      :a => 'a',
+      :b => 'b'
+  end
+  
+  def test_config_extracts_desc_from_documentation_unless_specified
+    assert_equal "one",   ConfigDocClass.configs[:one][:desc]
+    assert_equal "TWO",   ConfigDocClass.configs[:two][:desc]
+    assert_equal "three", ConfigDocClass.configs[:three][:desc]
+  end
+  
+  module DocConfigModule
+    include Configurable
+
+    config :one, 'value'                   # one
+    config :two, 'value', :desc => "TWO"   # two
+  end
+  
+  class DocIncludeClass
+    include DocConfigModule
+    
+    config :three, 'value'                 # three
+    config :four, 'value', :desc => "FOUR" # four
+  end
+  
+  def test_configurable_registers_documentation_for_configs_in_modules
+    [:one, :three].each do |name|
+      assert_equal name.to_s, DocIncludeClass.configs[name][:desc]
+    end
+    
+    [:two, :four].each do |name|
+      assert_equal name.to_s.upcase, DocIncludeClass.configs[name][:desc]
+    end
+  end
+  
+  class DocSyntaxClass
+    include Configurable
+  
+    config :a  # none
+    config :b  # -t, --two       : short and long
+    config :c  #     --three     : long only
+    config :d  # -f              : short only
+    config :e  #     --five FIVE : argname
+    config :f  # --no-desc, -s   :
+  end
+  
+  def test_configurable_extracts_long_and_short_metadata_from_documentation
+    assert_equal nil, DocSyntaxClass.configs[:a][:short]
+    assert_equal nil, DocSyntaxClass.configs[:a][:long]
+    assert_equal nil, DocSyntaxClass.configs[:a][:arg_name]
+    
+    assert_equal '-t',    DocSyntaxClass.configs[:b][:short]
+    assert_equal '--two', DocSyntaxClass.configs[:b][:long]
+    assert_equal nil,     DocSyntaxClass.configs[:b][:arg_name]
+    
+    assert_equal nil,       DocSyntaxClass.configs[:c][:short]
+    assert_equal '--three', DocSyntaxClass.configs[:c][:long]
+    assert_equal nil,       DocSyntaxClass.configs[:c][:arg_name]
+    
+    assert_equal '-f', DocSyntaxClass.configs[:d][:short]
+    assert_equal nil,  DocSyntaxClass.configs[:d][:long]
+    assert_equal nil,  DocSyntaxClass.configs[:d][:arg_name]
+    
+    assert_equal  nil,     DocSyntaxClass.configs[:e][:short]
+    assert_equal '--five', DocSyntaxClass.configs[:e][:long]
+    assert_equal 'FIVE',   DocSyntaxClass.configs[:e][:arg_name]
+    
+    assert_equal '-s',        DocSyntaxClass.configs[:f][:short]
+    assert_equal '--no-desc', DocSyntaxClass.configs[:f][:long]
+    assert_equal nil,         DocSyntaxClass.configs[:f][:arg_name]
   end
   
   #
@@ -289,6 +403,208 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   #
+  # config_types test
+  #
+  
+  class ConfigTypeClass
+    include Configurable
+    config_type(:upcase) {|input| input.upcase }
+    config :key, 'abc', :type => :upcase
+  end
+  
+  def test_config_type_registers_a_config_type
+    config_type = ConfigTypeClass.config_types[:upcase]
+    assert_equal 'XYZ', ConfigTypeClass.configs[:key].cast('xyz')
+  end
+  
+  def test_config_type_sets_the_new_config_type_to_a_const
+    assert_equal ConfigTypeClass::UpcaseType, ConfigTypeClass.config_types[:upcase]
+  end
+  
+  class ConfigTypeAlreadySet
+    include Configurable
+    class ExistsType; end
+    config_type :exists
+  end
+  
+  def test_config_type_does_not_set_config_type_const_if_name_is_taken
+    assert_equal "", ConfigTypeAlreadySet.config_types[:exists].name
+  end
+  
+  class ConfigTypeCamelize
+    include Configurable
+    config_type :camel_case
+  end
+  
+  def test_config_type_guesses_correct_camel_case_constant
+    assert_equal ConfigTypeCamelize::CamelCaseType, ConfigTypeCamelize.config_types[:camel_case]
+  end
+  
+  class ConfigTypeParent
+    include Configurable
+    config_type(:upcase) {|input| input.upcase }
+  end
+  
+  module ConfigTypeModule
+    include Configurable
+    config_type(:negate) {|input| input * -1 }
+  end
+  
+  class ConfigTypeChild < ConfigTypeParent
+    include ConfigTypeModule
+    config :one, 'abc', :type => :upcase
+    config :two, 1, :type => :negate
+  end
+  
+  def test_config_types_are_inherited
+    config = ConfigTypeChild.configs[:one]
+    assert_equal 'XYZ', config.cast('xyz')
+    
+    config = ConfigTypeChild.configs[:two]
+    assert_equal 8, config.cast(-8)
+  end
+  
+  class ConfigTypeFloatParent
+    include Configurable
+    config :one, 'aBc'
+  end
+  
+  class ConfigTypeFloatChild < ConfigTypeFloatParent
+    config_type(:upcase) {|input| input.upcase }
+  end
+  
+  def test_config_types_do_not_float_up
+    assert_equal nil, ConfigTypeFloatParent.config_types[:upcase]
+  end
+  
+  class ConfigTypeMatchClass
+    include Configurable
+    MatchClass = Struct.new(:input)
+    
+    config_type(:match, MatchClass) {|input| MatchClass.new(input) }
+    config :key, MatchClass.new
+  end
+  
+  def test_config_type_is_guessed_for_matching_instances
+    config = ConfigTypeMatchClass.configs[:key]
+    assert_equal ConfigTypeMatchClass::MatchType, config.type.class
+    
+    value = config.cast('input')
+    assert_equal ConfigTypeMatchClass::MatchClass, value.class
+    assert_equal 'input', value.input
+  end
+  
+  module ConfigTypeSpecificity
+    include Configurable
+    
+    # increase specificity for Bignum, over IntegerType
+    config_type(:bignum, Bignum)
+    
+    config :one, 10**10
+    config :two, 10**100
+  end
+  
+  def test_config_types_can_increase_specificity
+    assert_equal IntegerType, ConfigTypeSpecificity.configs[:one].type.class
+    assert_equal ConfigTypeSpecificity::BignumType, ConfigTypeSpecificity.configs[:two].type.class
+  end
+  
+  module ConfigTypeOverrideByMatch
+    include Configurable
+    
+    # match integers, instead of IntegerType
+    config_type(:num, Integer)
+    config :one, 1
+  end
+  
+  def test_config_types_can_be_overridden_by_match
+    assert_equal ConfigTypeOverrideByMatch::NumType, ConfigTypeOverrideByMatch.configs[:one].type.class
+  end
+  
+  module ConfigTypeOverrideByName
+    include Configurable
+    
+    # match int type, instead of IntegerType
+    config_type(:int)
+    config :one, 1, :type => :int
+  end
+  
+  def test_config_types_can_be_overridden_by_name
+    assert_equal ConfigTypeOverrideByName::IntType, ConfigTypeOverrideByName.configs[:one].type.class
+  end
+  
+  #
+  # modules test
+  #
+  
+  module ConfigModule
+    include Configurable
+    config :key, 'value'
+  end
+  
+  def test_configs_may_be_declared_in_modules
+    assert_equal({
+      :key => 'value'
+    }, ConfigModule.configs.to_default)
+  end
+  
+  class IncludingConfigModule
+    include ConfigModule
+  end
+  
+  def test_module_configs_are_added_to_class_on_include
+    assert_equal({
+      :key => 'value'
+    }, IncludingConfigModule.configs.to_default)
+  end
+  
+  module ConfigModuleA
+    include Configurable
+    config :a, 'one'
+  end
+  
+  module ConfigModuleB
+    include ConfigModuleA
+    config :b, 'two'
+  end
+  
+  module ConfigModuleC
+    include Configurable
+    config :c, 'three'
+  end
+  
+  class MultiIncludingConfigModule
+    include ConfigModuleB
+    include ConfigModuleC
+  end
+  
+  def test_multiple_modules_may_be_added_to_class_on_include
+    assert_equal({
+      :a => 'one',
+      :b => 'two',
+      :c => 'three'
+    }, MultiIncludingConfigModule.configs.to_default)
+  end
+  
+  class IncludingConfigModuleInExistingConfigurable
+    include Configurable
+    include ConfigModuleB
+    include ConfigModuleC
+    
+    config :b, 'TWO'
+    config :d, 'four'
+  end
+  
+  def test_modules_may_be_added_to_an_existing_configurable_class
+    assert_equal({
+      :a => 'one',
+      :b => 'TWO',
+      :c => 'three',
+      :d => 'four'
+    }, IncludingConfigModuleInExistingConfigurable.configs.to_default)
+  end
+  
+  #
   # inheritance test
   #
   
@@ -309,16 +625,16 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_baseclass_is_not_affected_by_inheritance
-    obj = IncludeBase.new
-    assert_equal({:one => 'one'}, obj.config.to_hash)
+    assert_equal({
+      :one => 'one'
+    }, IncludeBase.configs.to_default)
   end
     
   def test_subclasses_inherit_configs
-    obj = IncludeSubclass.new
     assert_equal({
       :one => 'one',
       :two => 'two'
-    }, obj.config.to_hash)
+    }, IncludeSubclass.configs.to_default)
   end
   
   def test_subclasses_inherit_accessors
@@ -330,287 +646,6 @@ class ConfigurableTest < Test::Unit::TestCase
   def test_inherited_configs_can_be_overridden
     obj = OverrideSubclass.new
     assert_equal({:one => 'ONE'}, obj.config.to_hash)
-  end
-  
-  #
-  # define_config tests
-  #
-
-  class DefineConfigClass
-    include Configurable
-    define_config :key
-  end
-
-  def test_define_config_registers_config
-    assert_equal [:key], DefineConfigClass.configs.keys
-  end
-
-  def test_define_config_generates_accessors
-    obj = DefineConfigClass.new
-    assert obj.respond_to?(:key)
-    assert obj.respond_to?(:key=)
-
-    obj.key = 'VALUE'
-    assert_equal 'VALUE', obj.key
-  end
-
-  class DefineConfigNoAccessorsClass
-    include Configurable
-    define_config :no_reader, :reader => :no_reader
-    define_config :no_writer, :writer => :no_writer=
-  end
-
-  def test_define_config_does_not_generate_reader_if_reader_is_specified
-    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader')
-    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader=')
-  end
-  
-  def test_define_config_does_not_generate_writer_if_writer_is_specified
-    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer')
-    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer=')
-  end
-  
-  #
-  # config test
-  #
-  
-  class ConfigWithTypeClass
-    include Configurable
-    config_type(:upcase) {|value| value.upcase }
-    config :key, 'XYZ', :type => :upcase
-  end
-
-  def test_config_resolves_config_type_if_possible
-    assert_equal 'ABC', ConfigWithTypeClass.configs[:key].cast('abc')
-  end
-  
-  class ConfigClass
-    include Configurable
-    config :key, :default
-  end
-
-  def test_config_sets_default_as_specified
-    assert_equal :default, ConfigClass.configs[:key].default
-  end
-  
-  class ConfigAttrsClass
-    include Configurable
-    config :key, :default, :short => :s
-  end
-
-  def test_config_sets_desc_using_attrs
-    assert_equal :s, ConfigAttrsClass.configs[:key][:short]
-  end
-  
-  #
-  # config cast test
-  #
-  
-  class StringCastClass
-    include Configurable
-    config :key, 'abc'
-  end
-  
-  def test_config_stringifies_strings
-    config = StringCastClass.configs[:key]
-    assert_equal 'xyz', config.cast(:xyz)
-  end
-  
-  class IntegerCastClass
-    include Configurable
-    config :key, 1
-  end
-  
-  def test_config_casts_integers
-    config = IntegerCastClass.configs[:key]
-    assert_equal 2, config.cast('2')
-  
-    err = assert_raises(ArgumentError) { config.cast('abc') }
-    assert_equal 'invalid value for Integer: "abc"', err.message
-  end
-  
-  class FloatCastClass
-    include Configurable
-    config :key, 1.2
-  end
-  
-  def test_config_casts_floats
-    config = FloatCastClass.configs[:key]
-    assert_equal 2.1, config.cast('2.1')
-  
-    err = assert_raises(ArgumentError) { config.cast('abc') }
-    assert_equal 'invalid value for Float(): "abc"', err.message
-  end
-  
-  class BooleanCastClass
-    include Configurable
-    config :key, true
-  end
-  
-  def test_config_casts_boolean
-    config = BooleanCastClass.configs[:key]
-    assert_equal true, config.cast('true')
-    assert_equal false, config.cast('false')
-  
-    err = assert_raises(ArgumentError) { config.cast('abc') }
-    assert_equal 'invalid value for boolean: "abc"', err.message
-  end
-  
-  #
-  # list config test
-  #
-  
-  class ListClass
-    include Configurable
-    config :key, []
-  end
-  
-  def test_config_generates_a_list_config_for_array_default
-    config = ListClass.configs[:key]
-    assert_equal ListConfig, config.class
-  end
-  
-  class ListOfIntegersClass
-    include Configurable
-    config :key, [1,2,3]
-  end
-  
-  def test_list_configs_guess_type_from_array_entries
-    config = ListOfIntegersClass.configs[:key]
-    assert_equal [8, 9, 10], config.cast(['8', 9, '10'])
-  end
-  
-  #
-  # nest config test
-  #
-  
-  class NestClass
-    include Configurable
-    
-    class Outer
-      include Configurable
-      config :inner, 1
-    end
-    
-    config :outer, Outer.new
-  end
-  
-  def test_config_generates_a_nest_config_for_configurable_default
-    config = NestClass.configs[:outer]
-    assert_equal NestConfig, config.class
-    assert_equal NestClass::Outer, config.type.configurable.class
-    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
-  end
-  
-  class HashNestClass
-    include Configurable
-    config :outer, {:inner => 1}
-  end
-  
-  def test_config_generates_a_nest_config_and_configurable_class_for_hash_default
-    config = HashNestClass.configs[:outer]
-    assert_equal NestConfig, config.class
-    assert_equal HashNestClass::Outer, config.type.configurable.class
-    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
-  end
-  
-  class BlockNestClass
-    include Configurable
-    config :outer do 
-      config :inner, 1
-    end
-  end
-  
-  def test_config_generates_a_nest_config_and_configurable_class_for_block
-    config = BlockNestClass.configs[:outer]
-    assert_equal NestConfig, config.class
-    assert_equal BlockNestClass::Outer, config.type.configurable.class
-    assert_equal({:inner => 1}, config.cast({'inner' => '1'}))
-  end
-  
-  #
-  # documentation test
-  #
-  
-  class DocNestClass
-    include Configurable
-  end
-  
-  class DocClass
-    include Configurable
-  
-    config :one, 'value'                   # one
-    config :two, 'value', :desc => "TWO"   # two
-    config :three, 'value',                # three
-      :a => 'a',
-      :b => 'b'
-  end
-  
-  def test_configurable_extracts_summary_from_documentation_unless_specified
-    assert_equal "one", DocClass.configs[:one][:desc]
-    assert_equal "TWO", DocClass.configs[:two][:desc]
-    assert_equal "three", DocClass.configs[:three][:desc]
-  end
-  
-  module DocConfigModule
-    include Configurable
-
-    config :one, 'value'                 # one
-    config :two, 'value', :desc => "TWO" # two
-  end
-  
-  class DocIncludeClass
-    include DocConfigModule
-    
-    config :three, 'value'                 # three
-    config :four, 'value', :desc => "FOUR" # four
-  end
-  
-  def test_configurable_registers_documentation_for_configs_in_modules
-    [:one, :three].each do |name|
-      assert_equal name.to_s, DocIncludeClass.configs[name][:desc]
-    end
-    
-    [:two, :four].each do |name|
-      assert_equal name.to_s.upcase, DocIncludeClass.configs[name][:desc]
-    end
-  end
-  
-  class DocSyntaxClass
-    include Configurable
-  
-    config :a  # none
-    config :b  # -t, --two       : short and long
-    config :c  #     --three     : long only
-    config :d  # -f              : short only
-    config :e  #     --five FIVE : argname
-    config :f  # --no-desc, -s   :
-  end
-  
-  def test_configurable_extracts_long_and_short_from_documentation
-    assert_equal nil, DocSyntaxClass.configs[:a][:short]
-    assert_equal nil, DocSyntaxClass.configs[:a][:long]
-    assert_equal nil, DocSyntaxClass.configs[:a][:arg_name]
-    
-    assert_equal '-t',    DocSyntaxClass.configs[:b][:short]
-    assert_equal '--two', DocSyntaxClass.configs[:b][:long]
-    assert_equal nil,     DocSyntaxClass.configs[:b][:arg_name]
-    
-    assert_equal nil,       DocSyntaxClass.configs[:c][:short]
-    assert_equal '--three', DocSyntaxClass.configs[:c][:long]
-    assert_equal nil,       DocSyntaxClass.configs[:c][:arg_name]
-    
-    assert_equal '-f', DocSyntaxClass.configs[:d][:short]
-    assert_equal nil,  DocSyntaxClass.configs[:d][:long]
-    assert_equal nil,  DocSyntaxClass.configs[:d][:arg_name]
-    
-    assert_equal  nil,     DocSyntaxClass.configs[:e][:short]
-    assert_equal '--five', DocSyntaxClass.configs[:e][:long]
-    assert_equal 'FIVE',   DocSyntaxClass.configs[:e][:arg_name]
-    
-    assert_equal '-s',        DocSyntaxClass.configs[:f][:short]
-    assert_equal '--no-desc', DocSyntaxClass.configs[:f][:long]
-    assert_equal nil,         DocSyntaxClass.configs[:f][:arg_name]
   end
   
   #

@@ -51,8 +51,8 @@ class ConversionsTest < Test::Unit::TestCase
     assert_equal ['--ONE'], configs.to_parser.options.keys
   end
   
-  def test_to_parser_options_use_config_attrs_as_specifed_in_desc
-    config(:one, :desc => {:short => :S, :long => :LONG})
+  def test_to_parser_options_use_config_attrs_as_specifed_in_metadata
+    config(:one, :metadata => {:short => :S, :long => :LONG})
     
     parser = configs.to_parser
     assert_equal ['--LONG', '-S'], parser.options.keys.sort

@@ -29,7 +29,7 @@ module Configurable
           :callback  => lambda {|value| config.type.cast(value) }
         }
         
-        attrs = guess_attrs.merge(config.desc).merge(config_attrs)
+        attrs = guess_attrs.merge(config.metadata).merge(config_attrs)
         parser.on(attrs)
       end
       

@@ -147,6 +147,8 @@ module Configurable
     # but if the attrs logic is too convoluted (and at times it is) then
     # define configs manually with the define_config method.
     def config(key, default=nil, attrs={}, &block)
+      orig_attrs = attrs.dup
+      
       if nest_class = guess_nest_class(default, block)
         default = nest_class.new
       end
@@ -156,10 +158,10 @@ module Configurable
         default = default.config.to_hash
       end
       
-      attrs[:default] = default
-      attrs[:type]    = guess_config_type(attrs).new(attrs)
-      attrs[:desc]    = guess_config_desc(attrs, Lazydoc.register_caller)
-      config_class    = guess_config_class(attrs)
+      attrs[:default]  = default
+      attrs[:type]     = guess_config_type(attrs).new(attrs)
+      attrs[:metadata] = guess_config_metadata(Lazydoc.register_caller).merge!(orig_attrs)
+      config_class     = guess_config_class(attrs)
       
       config = define_config(key, attrs, config_class)
       
@@ -387,7 +389,7 @@ module Configurable
       end
     end
     
-    def guess_config_desc(base_attrs, comment) # :nodoc:
+    def guess_config_metadata(comment) # :nodoc:
       Hash.new do |hash, key|
         comment.resolve
         
@@ -411,7 +413,7 @@ module Configurable
         end
         
         hash.has_key?(key) ? hash[key] : nil
-      end.merge!(base_attrs)
+      end
     end
     
     def guess_nest_const_name(config) # :nodoc:

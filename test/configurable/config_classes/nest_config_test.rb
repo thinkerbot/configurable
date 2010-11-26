@@ -10,74 +10,65 @@ class NestConfigTest < Test::Unit::TestCase
   class Parent < OpenStruct
   end
   
-  class Child
-    class << self; attr_accessor :configs; end
-    attr_accessor :config
-    
-    def initialize(store={})
-      @config = ConfigHash.new(store, self)
-    end
-    
-    def initialize_copy(orig)
-      super
-      @config = ConfigHash.new(orig.config.store.dup, self)
+  class Child < OpenStruct
+  end
+  
+  class ChildType
+    def init(config)
+      Child.new(:config => config)
     end
   end
   
   attr_accessor :nest
   
   def setup
-    Child.configs = {}
-    @nest = NestConfig.new(:key, :configurable => Child.new)
+    @nest = NestConfig.new(:child, :type => ChildType.new)
   end
   
   #
   # get test
   #
   
-  def test_get_returns_configs_on_child_configurable
-    child  = Child.new
-    parent = Parent.new(:key => child)
+  def test_get_returns_config_on_child
+    child  = Child.new(:config => 'config')
+    parent = Parent.new(:child => child)
     
-    assert_equal child.config, nest.get(parent)
+    assert_equal 'config', nest.get(parent)
   end
   
   #
   # set test
   #
   
-  def test_set_sets_child_configurable_on_receiver
-    child  = Child.new
+  def test_set_sets_input_as_child_if_it_responds_to_config
+    child  = Child.new(:config => 'config')
     parent = Parent.new
     
     nest.set(parent, child)
-    assert_equal child, parent.key
+    assert_equal child, parent.child
   end
   
-  def test_set_merges_non_configurable_values_on_existing_child
-    child  = Child.new(:one => 'one')
-    parent = Parent.new(:key => child)
-    
-    assert_equal 'one', child.config[:one]
-    assert_equal nil,   child.config[:two]
-    
-    nest.set(parent, {:one => 'ONE', :two => 'TWO'})
-    
-    assert_equal 'ONE', child.config[:one]
-    assert_equal 'TWO', child.config[:two]
-  end
-  
-  def test_set_duplicates_configurable_to_initialize_missing_child
-    nest.default[:one] = 'one'
+  def test_set_initializes_child_using_type_if_input_does_not_respond_to_config
     parent = Parent.new
     
-    assert_equal nil, parent.key
-    nest.set(parent, {:two => 'two'})
+    nest.set(parent, {:key => 'value'})
+    child = parent.child
     
-    child = parent.key
-    assert_equal 'one', child.config[:one]
-    assert_equal 'two', child.config[:two]
+    assert_equal Child, child.class
+    assert_equal({:key => 'value'}, child.config)
+  end
+  
+  def test_set_merges_input_with_defaults_before_initializing_child
+    parent = Parent.new
     
-    assert_equal nil, nest.default[:two]
+    nest.default[:one] = 'one'
+    nest.default[:two] = 'two'
+    nest.set(parent, {:two => 'TWO', :three => 'THREE'})
+    
+    assert_equal({
+      :one   => 'one',
+      :two   => 'TWO', 
+      :three => 'THREE'
+    }, parent.child.config)
   end
 end

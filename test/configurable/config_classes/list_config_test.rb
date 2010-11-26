@@ -16,12 +16,12 @@ class ListConfigTest < Test::Unit::TestCase
   #
   
   def test_cast_casts_each_value_of_the_input
-    list = ListConfig.new(:key, :type => IntegerType.new)
+    list = ListConfig.new(:key, :type => StringType.new)
     
     input = [1,'2',3]
     output = list.cast(input)
     
-    assert_equal [1,2,3], output
+    assert_equal ['1','2','3'], output
     assert input.object_id != output.object_id
   end
   

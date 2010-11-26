@@ -16,11 +16,11 @@ class SingleConfigTest < Test::Unit::TestCase
   
   def test_sets_attributes_from_attrs
     config = SingleConfig.new(:KEY,
-      :name    => 'NAME', 
-      :reader  => :READER, 
-      :writer  => :WRITER, 
-      :default => :DEFAULT,
-      :desc    => {:long => 'LONG'}
+      :name     => 'NAME', 
+      :reader   => :READER, 
+      :writer   => :WRITER, 
+      :default  => :DEFAULT,
+      :metadata => {:long => 'LONG'}
     )
     
     assert_equal :KEY,     config.key
@@ -28,7 +28,7 @@ class SingleConfigTest < Test::Unit::TestCase
     assert_equal :READER,  config.reader
     assert_equal :WRITER,  config.writer
     assert_equal :DEFAULT, config.default
-    assert_equal({:long => 'LONG'}, config.desc)
+    assert_equal({:long => 'LONG'}, config.metadata)
   end
   
   def test_initialize_determines_name_reader_and_writer_from_key

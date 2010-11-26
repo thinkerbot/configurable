@@ -27,7 +27,7 @@ module Configurable
       attr_reader :type
       
       # A hash of information used to render self in various contexts.
-      attr_reader :desc
+      attr_reader :metadata
       
       # Initializes a new Config.  Specify attributes like default, reader,
       # writer, type, etc. within attrs.
@@ -42,11 +42,11 @@ module Configurable
         
         @reader   = (attrs[:reader] || name).to_sym
         @writer   = (attrs[:writer] || "#{name}=").to_sym
-        @desc     = attrs[:desc] || {}
+        @metadata = attrs[:metadata] || {}
       end
     
       def [](key)
-        desc[key]
+        metadata[key]
       end
       
       # Calls reader on the receiver and returns the result.
