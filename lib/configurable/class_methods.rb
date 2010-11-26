@@ -152,16 +152,15 @@ module Configurable
       end
       
       if default.kind_of?(Configurable)
-        attrs[:default] = default.config.to_hash
         attrs[:configurable] = default
-      else
-        attrs[:default] = default
+        default = default.config.to_hash
       end
       
+      attrs[:default] = default
       attrs[:type]    = guess_config_type(attrs).new(attrs)
       attrs[:desc]    = guess_config_desc(attrs, Lazydoc.register_caller)
+      config_class    = guess_config_class(attrs)
       
-      config_class = attrs[:class] || guess_config_class(attrs)
       config = define_config(key, attrs, config_class)
       
       if nest_class
@@ -377,10 +376,14 @@ module Configurable
     end
     
     def guess_config_class(attrs) # :nodoc:
-      case attrs[:default]
-      when Array then ListConfig
-      when Hash  then NestConfig
-      else SingleConfig
+      if attrs.has_key?(:class)
+        attrs[:class] 
+      else
+        case attrs[:default]
+        when Array then ListConfig
+        when Hash  then NestConfig
+        else SingleConfig
+        end
       end
     end
     
