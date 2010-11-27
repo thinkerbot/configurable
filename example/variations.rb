@@ -29,9 +29,9 @@ class ConfigClass
     config :c
     
     config :inner do
-      config :x
-      config :y
-      config :z
+      config :x, 'x'    # X
+      config :y, 'y'    # Y
+      config :z, 'z'    # Z
     end
   end
   

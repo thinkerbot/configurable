@@ -1,0 +1,56 @@
+require 'configurable'
+
+class ConfigClass
+  include Configurable
+  
+  config :flag, false             # a flag
+  config :switch, true            # an on/off switch
+  config :integer, 3              # integer only
+  config :float, 3.14             # float only
+  config :string, 'one'           # any string
+end
+
+instance = ConfigClass.new
+instance.string                   # => 'one'
+instance.string = 'two'
+instance.config[:string]          # => 'two'
+instance.config[:string] = 'three'
+instance.string                   # => 'three'
+
+instance.config.to_hash
+# => {
+# :flag => false,
+# :switch => true,
+# :integer => 3,
+# :float => 3.14,
+# :string => 'three'
+# }
+
+argv = %w{a --flag --no-switch --integer 6 --float=6.022 b c}
+instance.config.parse(argv)       # => ['a', 'b', 'c']
+instance.config.to_hash
+# => {
+# :flag => true,
+# :switch => false,
+# :integer => 36,
+# :float => 6.022,
+# :string => 'three'
+# }
+
+argv = %w{--help}
+instance.config.parse(argv) do |psr|
+  psr.on('--help', 'print this help') do 
+    puts "options:"
+    puts psr
+    exit
+  end
+end
+
+# options:
+#         --flag                       a flag
+#         --float FLOAT                float only (3.14)
+#         --help                       print this help
+#         --integer INTEGER            integer only (3)
+#         --string STRING              any string (one)
+#         --[no-]switch                an on/off switch
+
