@@ -394,23 +394,27 @@ module Configurable
         
         if trailer = comment.trailer
           flags, desc = trailer.split(':', 2)
-          flags, desc = '', flags unless desc
-        
+          
+          if desc.nil?
+            flags, desc = '', flags
+          elsif flags.strip.empty?
+            hash[:hidden] = true
+          else
+            hash[:long]     = nil
+            hash[:short]    = nil
+            hash[:arg_name] = nil
+          end
+          
           argv = flags.split(',').collect! {|arg| arg.strip }
-          argv << desc
+          argv << desc.strip
         
           comment_attrs = ConfigParser::Utils.parse_attrs(argv)
           comment_attrs.each_pair do |attr_key, attr_value|
-            unless hash.has_key?(attr_key)
-              hash[attr_key] = attr_value
-            end
+            hash[attr_key] = attr_value
           end
         end
         
-        unless hash.has_key?(:help)
-          hash[:help] = comment.content
-        end
-        
+        hash[:help] = comment.content
         hash.has_key?(key) ? hash[key] : nil
       end
     end
