@@ -18,15 +18,16 @@ class EquivalentConfigClass
   config :e, nil, :desc => "and none means 'default'"
 end
 
+stdout = []
 argv = %w{--help}
 ConfigClass.configs.to_parser do |psr|
   psr.on('--help', 'print this help') do 
-    puts "options:"
-    puts psr
-    exit
+    stdout << "options:"
+    stdout << psr
   end
 end.parse(argv)
 
+stdout.join("\n")
 # options:
 #         --LONG C                     in any combo
 #         --e E                        and none means 'default'
