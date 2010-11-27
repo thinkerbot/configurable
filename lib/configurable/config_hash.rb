@@ -151,6 +151,15 @@ module Configurable
       merge! configs.import(another)
     end
     
+    def parse(argv=ARGV, options={}, &block)
+      parse!(argv.dup, options, &block)
+    end
+    
+    def parse!(argv=ARGV, options={}, &block)
+      options = {:set_defaults => false}.merge(options)
+      configs.to_parser(self, options, &block).parse!(argv)
+    end
+    
     # Returns an inspection string.
     def inspect
       "#<#{self.class}:#{object_id} to_hash=#{to_hash.inspect}>"
