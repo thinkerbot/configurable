@@ -156,7 +156,7 @@ module Configurable
     end
     
     def parse!(argv=ARGV, options={}, &block)
-      options = {:set_defaults => false}.merge(options)
+      options = {:assign_defaults => false}.merge(options)
       configs.to_parser(self, options, &block).parse!(argv)
     end
     

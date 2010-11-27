@@ -32,20 +32,22 @@ instance.config.to_hash
 # => {
 # :flag => true,
 # :switch => false,
-# :integer => 36,
+# :integer => 6,
 # :float => 6.022,
 # :string => 'three'
 # }
 
+stdout = []
 argv = %w{--help}
 instance.config.parse(argv) do |psr|
   psr.on('--help', 'print this help') do 
-    puts "options:"
-    puts psr
-    exit
+    stdout << "options:"
+    stdout << psr
   end
 end
 
+stdout.join("\n")
+# => %q{
 # options:
 #         --flag                       a flag
 #         --float FLOAT                float only (3.14)
@@ -53,4 +55,4 @@ end
 #         --integer INTEGER            integer only (3)
 #         --string STRING              any string (one)
 #         --[no-]switch                an on/off switch
-
+# }
