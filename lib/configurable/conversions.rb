@@ -16,11 +16,13 @@ module Configurable
       traverse do |nesting, config|
         next if config[:hidden] == true || nesting.any? {|nest| nest[:hidden] == true }
         
-        nest_keys  = nesting.collect {|nest| nest.key }
-        nest_names = nesting.collect {|nest| nest.name }.push(config.name)
-
+        nest_keys   = nesting.collect {|nest| nest.key }
+        long, short = nesting.collect {|nest| nest.name }.push(config.name).join(':'), nil
+        long, short = short, long if long.length == 1
+        
         guess_attrs = {
-          :long      => nest_names.join(':')
+          :long => long,
+          :short => short
         }
         
         config_attrs = {
