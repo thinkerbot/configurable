@@ -1,58 +1,68 @@
-require 'configurable'
+= Basic Usage
 
-class ConfigClass
-  include Configurable
+Simply declare configurations by name, and provide a default value. Declaring
+a config generates accessors and allows access through config.
+
+  class ConfigClass
+    include Configurable
   
-  config :flag, false             # a flag
-  config :switch, true            # an on/off switch
-  config :integer, 3              # integer only
-  config :float, 3.14             # float only
-  config :string, 'one'           # any string
-end
-
-instance = ConfigClass.new
-instance.string                   # => 'one'
-instance.string = 'two'
-instance.config[:string]          # => 'two'
-instance.config[:string] = 'three'
-instance.string                   # => 'three'
-
-instance.config.to_hash
-# => {
-# :flag => false,
-# :switch => true,
-# :integer => 3,
-# :float => 3.14,
-# :string => 'three'
-# }
-
-argv = %w{a --flag --no-switch --integer 6 --float=6.022 b c}
-instance.config.parse(argv)       # => ['a', 'b', 'c']
-instance.config.to_hash
-# => {
-# :flag => true,
-# :switch => false,
-# :integer => 6,
-# :float => 6.022,
-# :string => 'three'
-# }
-
-stdout = []
-argv = %w{--help}
-instance.config.parse(argv) do |psr|
-  psr.on('--help', 'print this help') do 
-    stdout << "options:"
-    stdout << psr
+    config :flag, false             # a flag
+    config :switch, true            # an on/off switch
+    config :integer, 3              # integer only
+    config :float, 3.14             # float only
+    config :string, 'one'           # any string
   end
-end
 
-stdout.join("\n")
-# => %q{
-# options:
-#         --flag                       a flag
-#         --float FLOAT                float only (3.14)
-#         --help                       print this help
-#         --integer INTEGER            integer only (3)
-#         --string STRING              any string (one)
-#         --[no-]switch                an on/off switch
-# }
+  instance = ConfigClass.new
+  instance.string                   # => 'one'
+  instance.string = 'two'
+  instance.config[:string]          # => 'two'
+  instance.config[:string] = 'three'
+  instance.string                   # => 'three'
+
+Inspect all configs by converting config, a ConfigHash, to a Hash.
+
+  instance.config.to_hash
+  # => {
+  # :flag => false,
+  # :switch => true,
+  # :integer => 3,
+  # :float => 3.14,
+  # :string => 'three'
+  # }
+
+Configurable allows parsing of configs as options. The type of option (flag,
+switch, option, etc) is guessed based on the default.
+
+  argv = %w{a --flag --no-switch --integer 6 --float=6.022 b c}
+  instance.config.parse(argv)       # => ['a', 'b', 'c']
+  instance.config.to_hash
+  # => {
+  # :flag => true,
+  # :switch => false,
+  # :integer => 6,
+  # :float => 6.022,
+  # :string => 'three'
+  # }
+
+Help is generated from the config documentation automatically.
+
+  stdout = []
+  argv = %w{--help}
+  instance.config.parse(argv) do |psr|
+    psr.on('--help', 'print this help') do 
+      stdout << "options:"
+      stdout << psr
+    end
+  end
+
+  stdout.join("\n")
+  # => %q{
+  # options:
+  #         --flag                       a flag
+  #         --float FLOAT                float only (3.14)
+  #         --help                       print this help
+  #         --integer INTEGER            integer only (3)
+  #         --string STRING              any string (one)
+  #         --[no-]switch                an on/off switch
+  # }

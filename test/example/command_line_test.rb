@@ -4,20 +4,20 @@ require 'configurable'
 class CommandLineTestTest < Test::Unit::TestCase
   class ConfigClass
     include Configurable
-    config :a, nil   # -s, --long ARGNAME : summary...
-    config :b, nil   # -S                 : flags are allowed
-    config :c, nil   #     --LONG         : in any combo
-    config :d, nil   #                    : while empty implies 'hidden'
-    config :e, nil   # and none means 'default'
+    config :a, nil   # -a, --aaa ARGNAME  : cmdline options may be
+    config :b, nil   # -b                 : declared in the docs
+    config :c, nil   #     --ccc          : using a prefix
+    config :d, nil   #                    : an empty prefix implies 'hidden'
+    config :e, nil   # no prefix uses the defaults
   end
   
   class EquivalentConfigClass
     include Configurable
-    config :a, nil, :long => 'long', :short => 's', :arg_name => 'ARGNAME', :desc => 'summary...'
-    config :b, nil, :long => nil, :short => 'S', :desc => 'flags are allowed'
-    config :c, nil, :long => 'LONG', :short => nil, :desc => 'in any combo'
-    config :d, nil, :hidden => true, :desc => "while empty implies 'hidden'"
-    config :e, nil, :desc => "and none means 'default'"
+    config :a, nil, :long => 'aaa', :short => 'a', :arg_name => 'ARGNAME', :desc => 'cmdline options may be'
+    config :b, nil, :long => nil, :short => 'b', :desc => 'declared in the docs'
+    config :c, nil, :long => 'ccc', :short => nil, :desc => 'using a prefix'
+    config :d, nil, :hidden => true, :desc => "an empty prefix implies 'hidden'"
+    config :e, nil, :desc => "no prefix uses the defaults"
   end
   
   def test_example
@@ -33,14 +33,14 @@ class CommandLineTestTest < Test::Unit::TestCase
 
       expected = %q{
 options:
-        --LONG C                     in any combo
-        --e E                        and none means 'default'
+    -a, --aaa ARGNAME                cmdline options may be
+    -b B                             declared in the docs
+        --ccc C                      using a prefix
+    -e E                             no prefix uses the defaults
         --help                       print this help
-    -s, --long ARGNAME               summary...
-    -S B                             flags are allowed
 }.lstrip
 
-      assert_equal expected, stdout.join("\n")
+      assert_equal expected, stdout.join("\n"), stdout.join("\n")
     end
   end
 end
