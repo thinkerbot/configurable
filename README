@@ -87,9 +87,7 @@ Web forms:
 
 Command Line:
 
-  argv = %w{a --flag --no-switch --num 6.022 --lst 7 --lst 8,9 b c}
-  
-  c.config.parse argv
+  c.config.parse %w{a --flag --no-switch --num 6.022 --lst 7 --lst 8,9 b c}
   # => ['a', 'b', 'c']
 
   c.config.to_hash
@@ -121,9 +119,8 @@ Command Line:
   #         --[no-]switch                an on/off switch
   # }
 
-Configurable supports custom data types, nested configs, and help for
-interacting with interfaces (ex: shorts/optional args on the command line,
-help in config files). See the examples and documentation for details.
+Configurable supports custom data types, nested configs, and config modules.
+See the examples and documentation for details.
 
 == Installation
 

@@ -59,10 +59,8 @@ class ReadmeTest < Test::Unit::TestCase
     }
     assert_equal expect, c.config.import(params).to_hash
     
-    argv = %w{a --flag --no-switch --num 6.022 --lst 7 --lst 8,9 b c}
-
     expect = ['a', 'b', 'c']
-    assert_equal expect, c.config.parse(argv)
+    assert_equal expect, c.config.parse(%w{a --flag --no-switch --num 6.022 --lst 7 --lst 8,9 b c})
     
     expect = {
     :flag   => true, 
