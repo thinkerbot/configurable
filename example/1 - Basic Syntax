@@ -1,0 +1,217 @@
+= Basic Syntax
+
+Declare configurations by key, and provide a default value. Declaring a config
+generates accessors with the same name and sets up access through config.
+
+  class ConfigClass
+    include Configurable
+    config :str, 'one'
+  end
+
+  c = ConfigClass.new
+  c.str                      # => 'one'
+  c.str = 'two'
+  c.config[:str]             # => 'two'
+  c.config[:str] = 'three'
+  c.str                      # => 'three'
+  c.config.to_hash           # => {:str => 'three'}
+
+== Initialization
+
+To initialize configs with non-default values, call the initialize_config method during initialization, with any overrides.
+
+  class InitClass
+    include Configurable
+    config :str, 'one'
+    
+    def initialize(configs={})
+      initialize_config(configs)
+    end
+  end
+  
+  c = InitClass.new(:str => 'two')
+  c.str                      # => 'two'
+
+== Key/Name
+
+Configs have both a key and a name. The key may be any object and is the
+literal key to access a configuration in config. The name is a string and must
+be an ordinary word; it is used wherever a word-identifier is needed (for instance in creating the accessors).
+
+By default the name is the key converted to a string. When key.to_s results in
+an illegal name, or when you want a different name, you can specify it
+manually.
+
+  class KeyNameClass
+    include Configurable
+    config :key, 'val', :name => 'name'
+  end
+
+  c = KeyNameClass.new
+  c.name                     # => 'val'
+  c.config[:key]             # => 'val'
+
+== Reader/Writer
+
+Specify a reader and/or writer to map configs to non-name-based accessors. You
+must define these accessors yourself, even if you manually specify the default
+reader and writer (ie 'name' and 'name='). The reader takes no arguments and
+the writer takes the input value.
+
+  class ReaderWriterClass
+    include Configurable
+    config :str, 'one', :reader => :get, :writer => :set
+    
+    def get
+      @ivar
+    end
+    
+    def set(value)
+      @ivar = value
+    end
+  end
+
+  c = ReaderWriterClass.new
+  c.get                      # => 'one'
+  c.set 'two'
+  c.config[:str]             # => 'two'
+  c.config[:str] = 'three'
+  c.get                      # => 'three'
+  c.config.to_hash           # => {:str => 'three'}
+
+== Import/Export
+
+Configs may be imported/exported between the objects used in active code and
+the static data used by textual interfaces like config files, the
+command-line, and web forms. 
+
+After import a hash is composed of key-value pairs of arbitrary class (ex a
+symbol key and a string value). After export a hash is composed of name-input
+pairs which must be directly serializable as JSON (ex a string key and a
+string value).
+
+Import/export can occur at the class level:
+
+  configs = KeyNameClass.configs
+  defaults = configs.to_default
+  defaults                   # => {:key => 'val'}
+
+  static_data = configs.export(defaults)
+  static_data                # => {'name' => 'val'}
+
+  active_hash = configs.import({'name' => 'VAL'})
+  active_hash                # => {:key => 'VAL'}
+
+Or the instance level:
+
+  c = KeyNameClass.new
+  c.config.to_hash           # => {:key => 'val'}
+  c.config.export            # => {'name' => 'val'}
+
+  c.config.import({'name' => 'VAL'})
+  c.config.to_hash           # => {:key => 'VAL'}
+
+Import/export support for basic types (boolean, integer, float, string, array,
+and hash) is provided by Configurable. The details of setting up custom config
+types is described later.
+
+== Lists
+
+When an array of values is given as the default value, config will construct a
+list-style configuration. The syntax and usage is the no different than any
+other config, except that type information is expected to be preserved across
+all members of the array (ie array-of-strings, array-of-integers, etc).
+
+  class ListClass
+    include Configurable
+    config :integers, [1, 2, 3]
+  end
+  
+  c = ListClass.new
+  c.integers                 # => [1, 2, 3]
+  c.config.import('integers' => ['7', '8'])
+  c.config[:integers]        # => [7, 8]
+
+== Nesting
+
+Configurable classes may be nested to represent a hash within a hash. To
+construct a nested class, provide a hash default of key-value pairs, a block
+defining the nested class, or an instance of the nested class.
+
+  class Parent
+    include Configurable
+    
+    config :a, {:key => 'hash'}
+    
+    config :b do
+      config :key, 'block'
+    end
+    
+    class Child
+      include Configurable
+      config :key, 'instance'
+    end
+    config :c, Child.new
+  end
+
+  c = Parent.new
+  c.config.to_hash
+  # => {
+  #  :a => {:key => 'hash'},
+  #  :b => {:key => 'block'},
+  #  :c => {:key => 'instance'}
+  # }
+
+Nest configs are structured to provide clean access to the nested configurable
+through the accessor and the config:
+
+  c.a.key                    # => 'hash'
+  c.config[:a][:key]         # => 'hash'
+  c.config[:a][:key] = 'HASH'
+  c.a.key                    # => 'HASH'
+  c.a.config.to_hash         # => {:key => 'HASH'}
+
+Import/export of nested classes occurs seamlessly:
+
+  c.config.import('b' => {'key' => 'BLOCK'})
+  c.config.export
+  # => {
+  #  'a' => {'key' => 'HASH'},
+  #  'b' => {'key' => 'BLOCK'},
+  #  'c' => {'key' => 'instance'}
+  # }
+  
+== Inheritance
+
+Configurations can be inherited, overridden, declared in modules, and
+generally treated like methods.
+
+  class A
+    include Configurable
+    config :a, 'one'
+  end
+  
+  module B
+    include Configurable
+    config :b, 'two'
+  end
+  
+  class C < A
+    include B
+    config :c, 'three'
+  end
+  
+  c = C.new
+  c.a                   # => 'one'
+  c.b                   # => 'two'
+  c.c                   # => 'three'
+  c.config.to_hash      # => {:a => 'one', :b => 'two', :c => 'three'}
+  
+  class D < C
+    config :a, 'ONE'
+    undef_config :c
+  end
+  
+  d = D.new
+  d.respond_to?(:c)     # => false
+  d.config.to_hash      # => {:a => 'ONE', :b => 'two'}

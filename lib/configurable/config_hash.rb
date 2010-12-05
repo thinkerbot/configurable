@@ -107,6 +107,7 @@ module Configurable
           store[key] = value
         end
       end
+      self
     end
     
     # Calls block once for each key-value pair stored in self.
@@ -156,8 +157,12 @@ module Configurable
     end
     
     def parse!(argv=ARGV, options={}, &block)
+      parser(options, &block).parse!(argv)
+    end
+    
+    def parser(options={}, &block)
       options = {:assign_defaults => false}.merge(options)
-      configs.to_parser(self, options, &block).parse!(argv)
+      configs.to_parser(self, options, &block)
     end
     
     # Returns an inspection string.

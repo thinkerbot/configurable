@@ -16,87 +16,114 @@ Check out these links for development and bug tracking.
 
 ==== Usage
 
-Include Configurable and declare configurations using the config method.
-Configs have accessors and initialize with the default value.  Casters
-are guessed for common types (true/false, numbers, strings).
+Declare configurations using the config method. Config generates accessors
+that initialize with the default value.
 
   class ConfigClass
     include Configurable
-    config :flag, false                    # a flag
-    config :switch, true                   # an on/off switch
-    config :num, 3.14                      # a number
-    config :lst, [1,2,3]                   # a list of integers
-    config :str, 'value', :short => :s     # a string, with a short
+    config :flag, false    # a flag
+    config :switch, true   # an on/off switch
+    config :num, 3.14      # a number
+    config :lst, [1,2,3]   # a list of integers
+    config :str, 'one'     # a string
   end
 
   c = ConfigClass.new
-  c.num                   # => 3.14
+  c.str                    # => 'one'
 
-Configs may be set through config (a kind of delegating hash):
+Configs may also be accessed through config (a kind of delegating hash):
 
-  c.num = 6.022
-  c.config[:num]          # => 6.022
-  c.config[:num] = 1.61
-  c.num                   # => 1.61
+  c.str = 'two'
+  c.config[:str]           # => 'two'
+  c.config[:str] = 'three'
+  c.str                    # => 'three'
 
-Configs may be exported and imported in a format easily translated to user interfaces, be they config files, web forms, or the command line.
-
-  c.config.export
-  # => {
-  # 'flag' => false, 
-  # 'switch' => true,
-  # 'num' => 1.61, 
-  # 'lst' => [1, 2, 3], 
-  # 'str' => 'value'
-  # }
-  
-  c.config.import('flag' => 'true', 'num' => '2.71', 'lst' => ['8', '9'])
   c.config.to_hash
   # => {
-  # :flag => true, 
+  # :flag => false, 
   # :switch => true,
-  # :num => 2.71, 
-  # :lst => [8,9],
-  # :str => 'value'
+  # :num => 3.14,
+  # :lst => [1, 2, 3], 
+  # :str => 'three'
   # }
 
-Use a {ConfigParser}[http://tap.rubyforge.org/config_parser] to parse
-configurations from the command line. Non-class options may be defined with
-(mostly) the same syntax as
-{OptionParser}[http://www.ruby-doc.org/core/classes/OptionParser.html]:
+Configs may be imported and exported as simple objects which easily translate
+to and from user interfaces, be they config files, web forms, or the command
+line.
 
-  # define other options a-la OptionParser
-  parser = ConfigClass.configs.to_parser do |psr|
-    psr.on '-h', '--help', 'print help' do |value|
-      puts "ConfigClass options:"
-      puts parser
+Config files:
+
+  c.config.import(
+    'flag'   => true,
+    'num'    => 6.022
+  )
+  
+  c.config.export
+  # => {
+  # 'flag'   => true, 
+  # 'switch' => true,
+  # 'num'    => 6.022,
+  # 'lst'    => [1, 2, 3], 
+  # 'str'    => 'three'
+  # }
+
+Web forms:
+
+  params = {
+    'flag'   => 'true',      # checkbox
+    'switch' => 'true',      # radio button
+    'num'    => '2.71',      # text input
+    'lst'    => ['2', '6']   # list input (lst[]=2&lst[]=6)
+  }
+  
+  c.config.import(params).to_hash
+  # => {
+  # :flag    => true, 
+  # :switch  => true,
+  # :num     => 2.71, 
+  # :lst     => [2, 6],
+  # :str     => 'three'
+  # }
+
+Command Line:
+
+  argv = %w{a --flag --no-switch --num 6.022 --lst 7 --lst 8,9 b c}
+  
+  c.config.parse argv
+  # => ['a', 'b', 'c']
+
+  c.config.to_hash
+  # => {
+  # :flag   => true, 
+  # :switch => false,
+  # :num    => 6.022,
+  # :lst    => [7, 8, 9], 
+  # :str    => 'three'
+  # }
+
+  stdout = []
+  parser = c.config.parser do |psr|
+    psr.on '-h', '--help', 'print help' do
+      stdout << "options:"
+      stdout << psr
     end
   end
   
-  parser.class            # => ConfigParser
-  parser.parse "one two --flag --no-switch --num=-1 --lst 3,6,9 -s val three"
-  # => ['one', 'two', 'three']
-  
-  parser.config
-  # => {
-  # :flag => true,
-  # :switch => false,
-  # :num => -1,
-  # :lst => [3, 6, 9],
-  # :str => 'val'
-  # }
-  
-  "\n" + parser.to_s
-  # => %Q{
+  parser.parse('--help')
+  "\n" + stdout.join("\n")
+  # => %q{
+  # options:
   #         --flag                       a flag
   #     -h, --help                       print help
-  #         --lst [LST]                  a list of integers (1,2,3)
+  #         --lst LST...                 a list of integers (1,2,3)
   #         --num NUM                    a number (3.14)
-  #     -s, --str STR                    a string, with a short (value)
+  #         --str STR                    a string (one)
   #         --[no-]switch                an on/off switch
   # }
 
-See the examples and documentation for details.
+Configurable supports custom data types, nested configs, and help for
+interacting with interfaces (ex: shorts/optional args on the command line,
+help in config files). See the examples and documentation for details.
 
 == Installation
 
