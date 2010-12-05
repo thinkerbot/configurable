@@ -128,6 +128,11 @@ class BasicSyntaxTest < Test::Unit::TestCase
     assert_equal 'HASH', c.a.key
     assert_equal({:key => 'HASH'}, c.a.config.to_hash)
 
+    c.a = Parent::A.new
+    assert_equal({:key => 'hash'}, c.config[:a])
+    c.config[:a] = {:key => 'HASH'}
+    assert_equal({:key => 'HASH'}, c.a.config.to_hash)
+    
     c.config.import('b' => {'key' => 'BLOCK'})
     
     expected = {
