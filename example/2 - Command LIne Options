@@ -1,45 +1,141 @@
 = Command Line Options
 
 Configurable guesses a command-line option for each config, based on the
-config name (ex: --name for :name, -n for :n). To specify alternatives use a
-prefix section in the documentation.
+config name (ex: --name for :name, -n for :n) and the default value. Flags,
+switches, list configs, and nested configs are all supported.
 
   class ConfigClass
+    include Configurable
+    config :flag, false    # a flag
+    config :switch, true   # an on/off switch
+    config :num, 3.14      # a number
+    config :lst, [1,2,3]   # a list of integers
+    config :nest do
+      config :str, 'one'   # a string
+    end
+  end
+
+Options can be parsed at the class level:
+
+  parser  = ConfigClass.configs.to_parser
+  parser.parse("a --flag --no-switch --num 6.02 b c") do |args, config|
+    args      
+    # => ['a', 'b', 'c']
+    
+    config 
+    # => {
+    # :flag   => true, 
+    # :switch => false,
+    # :num    => 6.02,
+    # :lst    => [1, 2, 3], 
+    # :nest   => {:str => 'one'}
+    # }
+  end
+
+Or at the instance level:
+
+  c = ConfigClass.new
+  c.config.parse('a --lst 7 --lst 8,9 --nest:str=two b c')
+  # => ['a', 'b', 'c']
+  
+  c.config.to_hash
+  # => {
+  # :flag   => false, 
+  # :switch => true,
+  # :num    => 3.14,
+  # :lst    => [7, 8, 9], 
+  # :nest   => {:str => 'two'}
+  # }
+
+A description string is extracted from the comment trailing a config
+declaration, such that a help is readily available.
+
+  stdout = []
+  c.config.parse('--help') do |psr|
+    psr.on('--help', 'print this help') do 
+      stdout << "options:"
+      stdout << psr
+    end
+  end
+  
+  "\n" + stdout.join("\n")
+  # => %q{
+  # options:
+  #         --flag                       a flag
+  #         --help                       print this help
+  #         --lst LST...                 a list of integers (1,2,3)
+  #         --nest:str STR               a string (one)
+  #         --num NUM                    a number (3.14)
+  #         --[no-]switch                an on/off switch
+  # }
+  
+To specify alternative long/short options, or a different argument name, use a
+prefix section in the description.
+
+  class AltClass
     include Configurable
     config :a, nil   # -a, --aaa ARGNAME  : cmdline options may be
     config :b, nil   # -b                 : declared in the docs
     config :c, nil   #     --ccc          : using a prefix
     config :d, nil   #                    : an empty prefix implies 'hidden'
     config :e, nil   # no prefix uses the defaults
+    config :f, nil   # -f [OPTIONAL]      : bracket argname means 'optional'
+    
+    config :g, []    # -g, --ggg LIST     : same rules for list opts
+    config :nest do
+      config :i, nil # -i, --iii NEST     : and same for nested opts
+    end
   end
 
   stdout = []
-  argv = %w{--help}
-  ConfigClass.configs.to_parser do |psr|
-    psr.on('--help', 'print this help') do 
+  AltClass.configs.to_parser do |psr|
+    psr.on('-h', '--help', 'print this help') do 
       stdout << "options:"
       stdout << psr
     end
-  end.parse(argv)
+  end.parse('--help')
 
-  stdout.join("\n")
+  "\n" + stdout.join("\n")
+  # => %q{
   # options:
   #     -a, --aaa ARGNAME                cmdline options may be
   #     -b B                             declared in the docs
   #         --ccc C                      using a prefix
   #     -e E                             no prefix uses the defaults
-  #         --help                       print this help
+  #     -f [OPTIONAL]                    bracket argname means 'optional'
+  #     -g, --ggg LIST...                same rules for list opts
+  #     -h, --help                       print this help
+  #     -i, --iii NEST                   and same for nested opts
+  # }
 
-If necessary you can specify all the options manually:
+If necessary you can specify all aspects of an option manually:
 
-  class EquivalentConfigClass
+  class ManualClass
     include Configurable
-    config :a, nil, :long => 'aaa', :short => 'a', :arg_name => 'ARGNAME', :desc => 'cmdline options may be'
-    config :b, nil, :long => nil, :short => 'b', :desc => 'declared in the docs'
-    config :c, nil, :long => 'ccc', :short => nil, :desc => 'using a prefix'
-    config :d, nil, :hidden => true, :desc => "an empty prefix implies 'hidden'"
-    config :e, nil, :desc => "no prefix uses the defaults"
+    config :key, nil, {
+      :long     => 'long',
+      :short    => 's',
+      :arg_name => 'ARGNAME',
+      :desc     => 'summary',
+      :hint     => 'hint',
+      :optional => false,
+      :hidden   => false
+    }
   end
+  
+  stdout = []
+  ManualClass.configs.to_parser do |psr|
+    psr.on('-h', '--help', 'print this help') do 
+      stdout << "options:"
+      stdout << psr
+    end
+  end.parse('--help')
 
-Note that the default option is based on the config name, not the config key.
-See other documents for the technical distinction.
+  "\n" + stdout.join("\n")
+  # => %q{
+  # options:
+  #     -h, --help                       print this help
+  #     -s, --long ARGNAME               summary (hint)
+  # }
+
+See the ConfigParser documentation for more details.

@@ -2,13 +2,13 @@ PATH
   remote: .
   specs:
     configurable (0.7.0)
-      config_parser (= 0.5.3)
+      config_parser (= 0.5.4)
       lazydoc (~> 1.0)
 
 GEM
   remote: http://rubygems.org/
   specs:
-    config_parser (0.5.3)
+    config_parser (0.5.4)
       lazydoc (~> 1.0)
     lazydoc (1.0)
 
@@ -17,6 +17,6 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (~> 1.0)
-  config_parser (= 0.5.3)
+  config_parser (= 0.5.4)
   configurable!
   lazydoc (~> 1.0)
