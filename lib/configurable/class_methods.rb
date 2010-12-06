@@ -39,6 +39,10 @@ module Configurable
       unless base.instance_variable_defined?(:@config_type_registry)
         base.instance_variable_set(:@config_type_registry, {})
       end
+      
+      unless base.instance_variable_defined?(:@config_type_context)
+        base.instance_variable_set(:@config_type_context, base)
+      end
     end
     
     # A hash of (key, Config) pairs representing all configs defined on this
@@ -78,11 +82,15 @@ module Configurable
     # to be recalculated for any reason.
     def config_types
       @config_types ||= begin
-        config_types = Configurable::DEFAULT_CONFIG_TYPES.dup
-      
-        ancestors.reverse.each do |ancestor|
-          next unless ancestor.kind_of?(ClassMethods)
-          ancestor.config_type_registry.each_pair do |key, value|
+        config_types = {}
+        
+        registries = []
+        each_registry do |ancestor, registry|
+          registries.unshift(registry)
+        end
+        
+        registries.each do |registry|
+          registry.each_pair do |key, value|
             if value.nil?
               config_types.delete(key)
             else
@@ -101,6 +109,8 @@ module Configurable
     end
     
     protected
+    
+    attr_accessor :config_type_context
     
     # Defines and registers an instance of config_class with the specified key
     # and attrs. Unless attrs specifies a :reader or :writer, the
@@ -296,9 +306,8 @@ module Configurable
         return nil
       end
 
-      nest_class = base.kind_of?(Class) ? 
-        Class.new(base) :
-        Class.new { include Configurable }
+      nest_class = Class.new { include Configurable }
+      nest_class.config_type_context = self
 
       if base.kind_of?(Hash)
         base.each_pair do |key, value|
@@ -326,8 +335,16 @@ module Configurable
     end
     
     def each_registry # :nodoc:
-      ancestors.each do |ancestor|
-        case 
+      # yield the registry for self first to take account of times when
+      # config_type_context.ancestors does not include self (otherwise
+      # config types defined on self are missed)
+      yield self, config_type_registry
+      
+      config_type_context.ancestors.each do |ancestor|
+        case
+        when ancestor == self
+          next
+          
         when ancestor.kind_of?(ClassMethods)
           yield ancestor, ancestor.config_type_registry
           
