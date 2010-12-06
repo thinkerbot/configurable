@@ -1,7 +1,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 require 'configurable'
 
-class CommandLineTestTest < Test::Unit::TestCase
+class CommandLineTest < Test::Unit::TestCase
   class ConfigClass
     include Configurable
     config :flag, false    # a flag

@@ -1,0 +1,141 @@
+== Config Types
+
+Configs have two conceptual parts; a config class that determines how to map
+config values between various contexts, and a config type that determines how
+to cast config values. Configurable provides support for basic types (ex
+booleans, numbers, strings) and a syntax to declare custom types.
+
+Custom types are declared using the config_type method. The config method then
+matches the default against all available config types to guess the type for
+the new configuration.
+
+  require 'time'
+  
+  now = Time.now
+  class TimeExample
+    include Configurable
+    
+    config_type :time, Time do |input|
+      Time.parse(input)
+    end
+    
+    config :obj, now
+  end
+  
+  c = TimeExample.new
+  c.obj                             # => now
+  
+  c.config.import('obj' => 'Sun Dec 05 16:52:19 -0700 2010')
+  c.obj.strftime('%Y-%m-%d')        # => '2010-12-05'
+  
+  c.config.export
+  # => {'obj' => 'Sun Dec 05 16:52:19 -0700 2010'}
+
+Config types define how to cast/uncast values during import/export. The type
+is free to determine how to do so, so long as the uncast value can be cleanly
+serialized as JSON. This is also possible:
+
+  class RangeExample
+    include Configurable
+  
+    config_type(:range, Range) do |input|
+      Range.new(
+        input['begin'], 
+        input['end'],
+        input['exclusive']
+      )
+    end.uncast do |value|
+      { 
+        'begin'     => value.begin,
+        'end'       => value.end,
+        'exclusive' => value.exclude_end?
+      }
+    end
+  
+    config :obj, 1..10
+  end
+  
+  c = RangeExample.new
+  c.obj                             # => 1..10
+  
+  c.config.import('obj' => {'begin' => 2, 'end' => 20, 'exclusive' => false})
+  c.obj                             # => 2..20
+  
+  c.obj = 3...30
+  c.config.export
+  # => {'obj' => {'begin' => 3, 'end' => 30, 'exclusive' => true}}
+
+The config_type method defines a type class, which is set to a constant
+according to the type name.
+
+  config = RangeExample.configs[:obj]
+  config.type.class                 # => RangeExample::RangeType
+
+== Matching/Inheritance
+
+Upon declaration the config type for a config is guessed by matching the
+default against all available types. Matching walks up the inheritance
+hierarchy to find a match if necessary, and stops when a match is found. An
+error is raised if more than one type matches for a given ancestor; in that
+case the type must be specified manually.
+
+  class A
+    include Configurable
+    config_type :datetime, Date, Time, DateTime
+    config :a, Time.now     # matches :datetime type
+  end
+  
+  class B < A
+    config_type :time, Time
+    
+    config :b, Time.now     # matches :time type
+    config :c, Date.today   # skips :time, walks up to match :datetime
+  end
+  
+  class C < B
+    config_type :date1, Date
+    config_type :date2, Date
+    
+    config :d, Date.today, :type => :date1
+    config :e, Date.today, :type => :date2
+  end
+  
+  configs = C.configs
+  configs[:a].type.class          # => A::DatetimeType
+  configs[:b].type.class          # => B::TimeType
+  configs[:c].type.class          # => A::DatetimeType
+  configs[:d].type.class          # => C::Date1Type
+  configs[:e].type.class          # => C::Date2Type
+
+For nest configs defined from a block or hash, config types are guessed in the
+context of the parent (although config_types defined in a nested child do not
+bleed back up).
+
+  class Parent
+    include Configurable
+    config_type :datetime, Time, Date
+    
+    config :a, {:b => Time.now}
+    config :c do
+      config_type :time, Time
+      
+      config :d, Time.now
+      config :e, Date.today
+    end
+    config :f, Date.today
+  end
+  
+  configs = Parent.configs
+  configs[:a].type.class          # => Configurable::ConfigTypes::NestType
+  configs[:c].type.class          # => Configurable::ConfigTypes::NestType
+  configs[:f].type.class          # => Parent::DatetimeType
+  
+  a_configs = configs[:a].type.configurable.class.configs
+  a_configs[:b].type.class        # => Parent::DatetimeType
+  
+  c_configs = configs[:c].type.configurable.class.configs
+  c_configs[:d].type.class        # => Parent::C::TimeType
+  c_configs[:e].type.class        # => Parent::DatetimeType
+
+Aside from direct inheritance, config_types may be overridden, declared in
+modules, and handled as if they were methods.
