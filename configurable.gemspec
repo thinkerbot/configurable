@@ -23,28 +23,30 @@ Gem::Specification.new do |s|
     MIT-LICENSE
     README
     History
+    doc/Basic\ Syntax
+    doc/Command\ Line
+    doc/Config\ Types
   }
   
   # list the files you want to include here. you can
   # check this manifest using 'rake :print_manifest'
   s.files = %W{
-    lib/cdoc.rb
-    lib/cdoc/cdoc_html_generator.rb
-    lib/cdoc/cdoc_html_template.rb
-    lib/config_parser.rb
-    lib/config_parser/option.rb
-    lib/config_parser/switch.rb
-    lib/config_parser/utils.rb
     lib/configurable.rb
     lib/configurable/class_methods.rb
-    lib/configurable/config.rb
+    lib/configurable/config_classes.rb
+    lib/configurable/config_classes/list_config.rb
+    lib/configurable/config_classes/nest_config.rb
+    lib/configurable/config_classes/single_config.rb
     lib/configurable/config_hash.rb
-    lib/configurable/indifferent_access.rb
+    lib/configurable/config_types.rb
+    lib/configurable/config_types/boolean_type.rb
+    lib/configurable/config_types/float_type.rb
+    lib/configurable/config_types/integer_type.rb
+    lib/configurable/config_types/nest_type.rb
+    lib/configurable/config_types/object_type.rb
+    lib/configurable/config_types/string_type.rb
+    lib/configurable/conversions.rb
     lib/configurable/module_methods.rb
-    lib/configurable/nest_config.rb
-    lib/configurable/ordered_hash_patch.rb
-    lib/configurable/utils.rb
-    lib/configurable/validation.rb
     lib/configurable/version.rb
   }
 end
