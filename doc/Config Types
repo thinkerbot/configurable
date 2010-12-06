@@ -96,8 +96,8 @@ case the type must be specified manually.
     config_type :date1, Date
     config_type :date2, Date
     
-    config :d, Date.today, :type => :date1
-    config :e, Date.today, :type => :date2
+    config :d, Date.today, :type => :date1  # manually specify which to match;
+    config :e, Date.today, :type => :date2  # ambiguous type will raise error
   end
   
   configs = C.configs
