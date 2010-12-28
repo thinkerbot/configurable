@@ -4,7 +4,7 @@ module Configurable
   module ConfigClasses
     # ConfigClasses are used by ConfigHash to delegate get/set configs on a
     # receiver and to map configs between user interfaces.
-    class SingleConfig
+    class ScalarConfig
       include ConfigTypes
       
       # The config key, used as a hash key for access.

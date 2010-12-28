@@ -17,7 +17,7 @@ class ConversionsTest < Test::Unit::TestCase
   def config(key, attrs={}, &caster)
     type_class = caster ? StringType.subclass(&caster) : StringType
     attrs[:type] = type_class.new(attrs)
-    configs[key] = SingleConfig.new(key, attrs)
+    configs[key] = ScalarConfig.new(key, attrs)
   end
   
   #

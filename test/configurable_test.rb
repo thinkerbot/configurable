@@ -20,8 +20,8 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_include_does_not_pollute_namespaces
-    assert_equal false, IncludeClass.const_defined?(:SingleConfig)
-    assert_equal false, IncludeClass.class.const_defined?(:SingleConfig)
+    assert_equal false, IncludeClass.const_defined?(:ScalarConfig)
+    assert_equal false, IncludeClass.class.const_defined?(:ScalarConfig)
   end
   
   def test_extend_initializes_registries
@@ -40,7 +40,7 @@ class ConfigurableTest < Test::Unit::TestCase
 
   def test_define_config_initializes_and_registers_config
     assert_equal [:key], DefineConfigClass.configs.keys
-    assert_equal SingleConfig, DefineConfigClass.configs[:key].class
+    assert_equal ScalarConfig, DefineConfigClass.configs[:key].class
   end
 
   def test_define_config_generates_accessors
@@ -77,10 +77,10 @@ class ConfigurableTest < Test::Unit::TestCase
     config :key, :default
   end
 
-  def test_config_defines_a_single_config_with_default
+  def test_config_defines_a_scalar_config_with_default
     config = ConfigClass.configs[:key]
     assert_equal :default, config.default
-    assert_equal SingleConfig, config.class
+    assert_equal ScalarConfig, config.class
   end
   
   #

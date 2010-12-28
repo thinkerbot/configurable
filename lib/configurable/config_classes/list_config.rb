@@ -1,6 +1,6 @@
 module Configurable
   module ConfigClasses
-    class ListConfig < SingleConfig
+    class ListConfig < ScalarConfig
       
       def initialize(key, attrs={})
         unless attrs.has_key?(:default)

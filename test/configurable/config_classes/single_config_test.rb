@@ -1,13 +1,13 @@
 require File.expand_path('../../../test_helper', __FILE__) 
 require 'configurable/config_classes'
 
-class SingleConfigTest < Test::Unit::TestCase
+class ScalarConfigTest < Test::Unit::TestCase
   include Configurable::ConfigClasses
   
   attr_reader :config
   
   def setup
-    @config = SingleConfig.new(:key)
+    @config = ScalarConfig.new(:key)
   end
   
   #
@@ -15,7 +15,7 @@ class SingleConfigTest < Test::Unit::TestCase
   #
   
   def test_sets_attributes_from_attrs
-    config = SingleConfig.new(:KEY,
+    config = ScalarConfig.new(:KEY,
       :name     => 'NAME', 
       :reader   => :READER, 
       :writer   => :WRITER, 
@@ -32,7 +32,7 @@ class SingleConfigTest < Test::Unit::TestCase
   end
   
   def test_initialize_determines_name_reader_and_writer_from_key
-    config = SingleConfig.new(:key)
+    config = ScalarConfig.new(:key)
     assert_equal :key,  config.key
     assert_equal 'key', config.name
     assert_equal :key,  config.reader
@@ -40,27 +40,27 @@ class SingleConfigTest < Test::Unit::TestCase
   end
   
   def test_initialize_allows_arbitrary_keys_with_valid_name
-    assert_equal 'string', SingleConfig.new('string').key
-    assert_equal 1, SingleConfig.new(1, :name => 'one').key
+    assert_equal 'string', ScalarConfig.new('string').key
+    assert_equal 1, ScalarConfig.new(1, :name => 'one').key
   end
   
   def test_initialize_sets_default_to_nil_if_unspecified
-    config = SingleConfig.new(:key)
+    config = ScalarConfig.new(:key)
     assert_equal nil, config.default
   end
   
   def test_initialize_respects_boolean_defaults
-    assert_equal true,  SingleConfig.new(:key, :default => true).default
-    assert_equal false, SingleConfig.new(:key, :default => false).default
+    assert_equal true,  ScalarConfig.new(:key, :default => true).default
+    assert_equal false, ScalarConfig.new(:key, :default => false).default
   end
   
   def test_initialize_raises_error_for_non_string_names
-    err = assert_raises(RuntimeError) { SingleConfig.new(:key, :name => :sym) }
+    err = assert_raises(RuntimeError) { ScalarConfig.new(:key, :name => :sym) }
     assert_equal 'invalid name: :sym (not a String)', err.message
   end
   
   def test_config_raises_error_for_non_word_characters_in_name
-    err = assert_raises(NameError) { SingleConfig.new(:key, :name => 'k,ey') }
+    err = assert_raises(NameError) { ScalarConfig.new(:key, :name => 'k,ey') }
     assert_equal 'invalid name: "k,ey" (includes non-word characters)', err.message
   end
   

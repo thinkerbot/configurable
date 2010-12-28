@@ -2,7 +2,7 @@ module Configurable
   module ConfigClasses
     
     # Represents a config where the input is expected to be Configurable.
-    class NestConfig < SingleConfig
+    class NestConfig < ScalarConfig
       
       def initialize(key, attrs={})
         unless attrs.has_key?(:default)

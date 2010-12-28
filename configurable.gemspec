@@ -36,7 +36,7 @@ Gem::Specification.new do |s|
     lib/configurable/config_classes.rb
     lib/configurable/config_classes/list_config.rb
     lib/configurable/config_classes/nest_config.rb
-    lib/configurable/config_classes/single_config.rb
+    lib/configurable/config_classes/scalar_config.rb
     lib/configurable/config_hash.rb
     lib/configurable/config_types.rb
     lib/configurable/config_types/boolean_type.rb

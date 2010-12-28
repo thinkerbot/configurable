@@ -116,7 +116,7 @@ module Configurable
     # and attrs. Unless attrs specifies a :reader or :writer, the
     # corresponding attr accessors will be defined for the config name (which
     # by default is the key). 
-    def define_config(key, attrs={}, config_class=SingleConfig)
+    def define_config(key, attrs={}, config_class=ScalarConfig)
       reader = attrs[:reader]
       writer = attrs[:writer]
       
@@ -400,7 +400,7 @@ module Configurable
         case attrs[:default]
         when Array then ListConfig
         when Hash  then NestConfig
-        else SingleConfig
+        else ScalarConfig
         end
       end
     end
