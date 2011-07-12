@@ -66,8 +66,7 @@ task :bundle do
   
   unless $?.to_i == 0
     puts output
-    puts "bundle install 2>&1"
-    system "bundle install 2>&1"
+    sh "bundle install 2>&1"
     puts
   end
 end
