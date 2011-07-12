@@ -6,26 +6,33 @@ Gem::Specification.new do |s|
   s.version = Configurable::VERSION
   s.author = 'Simon Chiang'
   s.email = 'simon.a.chiang@gmail.com'
-  s.homepage = 'http://tap.rubyforge.org/configurable'
+  s.homepage = 'http://github.com/thinkerbot/configurable'
   s.platform = Gem::Platform::RUBY
   s.summary = 'configurable'
+  s.description = %w{
+    Configurable adds methods to declare class configurations. Configurations are
+    inheritable, delegate to methods, and have hash-like access. Configurable
+    constructs configs such that they easily map to config files, web forms, and
+    the command line.
+  }.join(' ')
+  
   s.require_path = 'lib'
   s.rubyforge_project = 'tap'
   s.has_rdoc = true
-  s.rdoc_options.concat %w{--main README -S -N --title Configurable}
+  s.rdoc_options.concat %w{--main README.rdoc -S -N --title Configurable}
   
   s.add_dependency('lazydoc', "~> 1.0")
-  s.add_dependency('config_parser', "= 0.5.4")
+  s.add_dependency('config_parser', "~> 0.5.4")
   s.add_development_dependency('bundler', '~> 1.0')
 
   # list extra rdoc files here.
   s.extra_rdoc_files = %W{
     MIT-LICENSE
-    README
-    History
-    doc/Basic\ Syntax
-    doc/Command\ Line
-    doc/Config\ Types
+    README.rdoc
+    History.rdoc
+    doc/Basic\ Syntax.rdoc
+    doc/Command\ Line.rdoc
+    doc/Config\ Types.rdoc
   }
   
   # list the files you want to include here. you can
