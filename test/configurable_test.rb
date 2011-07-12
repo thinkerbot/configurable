@@ -108,7 +108,7 @@ class ConfigurableTest < Test::Unit::TestCase
     assert_equal 2, config.cast(2.1)
   
     err = assert_raises(ArgumentError) { config.cast('abc') }
-    assert_equal 'invalid value for Integer: "abc"', err.message
+    assert_match(/invalid value for Integer/, err.message)
   end
   
   class ConfigFloatTypeClass
