@@ -122,8 +122,15 @@ module Configurable
       
       config = config_class.new(key, attrs)
       
-      attr_reader(config.name) unless reader
-      attr_writer(config.name) unless writer
+      unless reader
+        attr_reader(config.name)
+        public(config.name)
+      end
+      
+      unless writer
+        attr_writer(config.name)
+        public("#{config.name}=")
+      end
       
       config_registry[config.key] = config
       reset_configs
