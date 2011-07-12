@@ -1,18 +1,13 @@
-= Configurable[http://tap.rubyforge.org/configurable]
+= Configurable
 
 Class configurations for the command line and web.
 
 == Description
 
-Configurable allows the declaration of class configurations.  Configurations
-are inheritable, delegate to methods, and have hash-like access. Configurable
-constructs configs such that they easily map to config files, web forms, and the command line.
-
-Check out these links for development and bug tracking.
-
-* Website[http://tap.rubyforge.org/configurable]
-* Github[http://github.com/bahuvrihi/configurable/tree/master]
-* {Google Group}[http://groups.google.com/group/ruby-on-tap]
+Configurable adds methods to declare class configurations. Configurations are
+inheritable, delegate to methods, and have hash-like access. Configurable
+constructs configs such that they easily map to config files, web forms, and
+the command line.
 
 ==== Usage
 
@@ -124,12 +119,11 @@ See the examples and documentation for details.
 
 == Installation
 
-Configurable is available as a gem on Gemcutter[http://gemcutter.org/gems/configurable].
+Configurable is available as a gem[http://rubygems.org/gems/configurable].
 
   % gem install configurable
 
 == Info 
 
-Developer:: {Simon Chiang}[http://bahuvrihi.wordpress.com]
+Developer:: {Simon Chiang}[http://github.com/thinkerbot]
 License:: {MIT-Style}[link:files/MIT-LICENSE.html]
-
