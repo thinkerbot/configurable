@@ -59,13 +59,17 @@ class ConfigurableTest < Test::Unit::TestCase
   end
 
   def test_define_config_does_not_generate_reader_if_reader_is_specified
-    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader')
-    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_reader=')
+    instance_methods = DefineConfigNoAccessorsClass.instance_methods.collect {|m| m.to_s }
+    
+    assert_equal false, instance_methods.include?('no_reader')
+    assert_equal true, instance_methods.include?('no_reader=')
   end
   
   def test_define_config_does_not_generate_writer_if_writer_is_specified
-    assert_equal true, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer')
-    assert_equal false, DefineConfigNoAccessorsClass.instance_methods.include?('no_writer=')
+    instance_methods = DefineConfigNoAccessorsClass.instance_methods.collect {|m| m.to_s }
+    
+    assert_equal true, instance_methods.include?('no_writer')
+    assert_equal false, instance_methods.include?('no_writer=')
   end
   
   #
