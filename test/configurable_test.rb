@@ -432,7 +432,7 @@ class ConfigurableTest < Test::Unit::TestCase
   end
   
   def test_config_type_does_not_set_config_type_const_if_name_is_taken
-    assert_equal "", ConfigTypeAlreadySet.config_types[:exists].name
+    assert_equal "", ConfigTypeAlreadySet.config_types[:exists].name.to_s
   end
   
   class ConfigTypeCamelize
