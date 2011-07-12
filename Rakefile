@@ -75,17 +75,25 @@ end
 # Test tasks
 #
 
+def current_ruby
+  `ruby -v`.split[0,2].join('-')
+end
+
 desc 'Default: Run tests.'
 task :default => :test
 
 desc 'Run the tests'
 task :test => :bundle do
+  puts "Using #{current_ruby}"
+
   tests = Dir.glob('test/**/*_test.rb')
   sh('ruby', '-w', '-e', 'ARGV.dup.each {|test| load test}', *tests)
 end
 
 desc 'Run the benchmarks'
 task :benchmark => :bundle do
+  puts "Using #{current_ruby}"
+
   benchmarks = Dir.glob('benchmark/**/*_benchmark.rb')
   sh('ruby', '-w', '-e', 'ARGV.dup.each {|benchmark| load benchmark}', *benchmarks)
 end
