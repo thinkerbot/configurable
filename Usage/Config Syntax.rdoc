@@ -1,4 +1,4 @@
-= Basic Syntax
+= Config Syntax
 
 Declare configurations by key, and provide a default value. Declaring a config
 generates accessors with the same name and sets up access through config.

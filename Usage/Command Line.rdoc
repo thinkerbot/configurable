@@ -1,4 +1,4 @@
-= Command Line
+= Command Line Usage
 
 Configurable guesses a command-line option for each config, based on the
 config name (ex: --name for :name, -n for :n) and the default value. Flags,
@@ -138,4 +138,4 @@ If necessary you can specify all aspects of an option manually:
   #     -s, --long ARGNAME               summary (hint)
   # }
 
-See the ConfigParser documentation for more details.
+See the {ConfigParser}[http://rubygems.org/gems/config_parser] documentation for more details.
