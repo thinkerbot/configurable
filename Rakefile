@@ -87,7 +87,12 @@ task :test => :bundle do
   puts "Using #{current_ruby}"
 
   tests = Dir.glob('test/**/*_test.rb')
-  sh('ruby', '-w', '-e', 'ARGV.dup.each {|test| load test}', *tests)
+  if ENV['RCOV'] == 'true'
+    FileUtils.rm_rf File.expand_path('../coverage', __FILE__)
+    sh('rcov', '-w', '--text-report', '--exclude', '^/', *tests)
+  else
+    sh('ruby', '-w', '-e', 'ARGV.dup.each {|test| load test}', *tests)
+  end
 end
 
 desc 'Run the benchmarks'
@@ -98,3 +103,8 @@ task :benchmark => :bundle do
   sh('ruby', '-w', '-e', 'ARGV.dup.each {|benchmark| load benchmark}', *benchmarks)
 end
 
+desc 'Run rcov'
+task :rcov do
+  ENV['RCOV'] = 'true'
+  Rake::Task['test'].invoke
+end
