@@ -13,7 +13,7 @@ def gemspec
 end
 
 desc 'Prints the gemspec manifest.'
-task :print_manifest do
+task :manifest do
   # collect files from the gemspec, labeling 
   # with true or false corresponding to the
   # file existing or not
@@ -27,7 +27,7 @@ task :print_manifest do
   # included already (marking by the absence
   # of a label)
   Dir.glob('**/*').each do |file|
-    next if file =~ /^(rdoc|pkg|test|.*\.rbc)/ || File.directory?(file)
+    next if file =~ /^(rdoc|pkg|test|coverage|benchmark|.*\.rbc)/ || File.directory?(file)
     
     path = File.expand_path(file)
     files[path] = ['', file] unless files.has_key?(path)
