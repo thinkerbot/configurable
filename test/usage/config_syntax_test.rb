@@ -1,7 +1,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 require 'configurable'
 
-class BasicSyntaxTest < Test::Unit::TestCase
+class ConfigSyntaxTest < Test::Unit::TestCase
   class ConfigClass
     include Configurable
     config :str, 'one'
