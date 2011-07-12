@@ -7,9 +7,7 @@ Bundler::GemHelper.install_tasks
 #
 
 def gemspec
-  require 'rubygems/specification'
-  path = File.expand_path('configurable.gemspec')
-  eval(File.read(path), binding, path, 0)
+  @gemspec ||= eval(File.read('configurable.gemspec'), TOPLEVEL_BINDING)
 end
 
 desc 'Prints the gemspec manifest.'
