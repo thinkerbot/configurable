@@ -17,6 +17,8 @@ the new configuration.
     
     config_type :time, Time do |input|
       Time.parse(input)
+    end.uncast do |value|
+      time.strftime('%Y-%m-%d %H:%M:%S')
     end
     
     config :obj, now
@@ -29,7 +31,7 @@ the new configuration.
   c.obj.strftime('%Y-%m-%d')        # => '2010-12-05'
   
   c.config.export
-  # => {'obj' => 'Sun Dec 05 16:52:19 -0700 2010'}
+  # => {'obj' => '2010-12-05 16:52:19'}
 
 Config types define how to cast/uncast values during import/export. The type
 is free to determine how to do so, so long as the uncast value can be cleanly

@@ -10,6 +10,8 @@ class ConfigTypesTest < Test::Unit::TestCase
   
     config_type(:time, Time) do |input|
       Time.parse(input)
+    end.uncast do |time|
+      time.strftime('%Y-%m-%d %H:%M:%S')
     end
   
     config :obj, NOW
@@ -22,7 +24,7 @@ class ConfigTypesTest < Test::Unit::TestCase
     c.config.import('obj' => 'Sun Dec 05 16:52:19 -0700 2010')
     assert_equal '2010-12-05', c.obj.strftime('%Y-%m-%d')
 
-    expected = {'obj' => 'Sun Dec 05 16:52:19 -0700 2010'}
+    expected = {'obj' => '2010-12-05 16:52:19'}
     assert_equal expected, c.config.export
   end
   
