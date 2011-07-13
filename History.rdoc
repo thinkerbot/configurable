@@ -1,9 +1,11 @@
+== 1.0.0 / 2011-07-12
 
-* removed numerous validations
-* removed indifferent access -- all configs are stored and accessed
-  by symbol keys
-* configs now do not duplicate default values by default
-* configs now order alphabetically, and have no guaranteed set order
+Significant rewrite of all internals. Configurations are easier to declare and
+have a more formal type system that allows almost everything to be inferred
+from the default value. The rewrite is designed to be flexible and to handle
+usage in a variety of interfaces, but only time will tell.
+
+Currently passes all tests on: 1.8.6, 1.8.7, 1.9.2, rbx, jruby
 
 == 0.7.0 / 2010-05-02
 
