@@ -116,11 +116,11 @@ Command Line:
 
 Configurable supports custom data types, nested configs, and config modules.
 
-See the usage documentation for more details:
+See the help documentation for more details:
 
-* {Command Line Usage}[link:files/Usage/Command%20Line_rdoc.html]
-* {Config Syntax}[link:files/Usage/Config%20Syntax_rdoc.html]
-* {Config Types}[link:files/Usage/Config%20Types_rdoc.html]
+* {Command Line Usage}[link:files/Help/Command%20Line_rdoc.html]
+* {Config Syntax}[link:files/Help/Config%20Syntax_rdoc.html]
+* {Config Types}[link:files/Help/Config%20Types_rdoc.html]
 
 == Installation
 

@@ -30,9 +30,9 @@ Gem::Specification.new do |s|
     MIT-LICENSE
     README.rdoc
     History.rdoc
-    Usage/Command\ Line.rdoc
-    Usage/Config\ Syntax.rdoc
-    Usage/Config\ Types.rdoc
+    Help/Command\ Line.rdoc
+    Help/Config\ Syntax.rdoc
+    Help/Config\ Types.rdoc
   }
 
   # list the files you want to include here. you can
